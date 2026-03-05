@@ -1,37 +1,77 @@
 import express from 'express';
 import type { Request, Response } from 'express';
-/**
- * In Node 24, we explicitly use .ts extensions and 'import type' 
- * to handle TypeScript's native type stripping correctly.
- */
 import { taskService } from './services/task.service.ts';
 
 const app = express();
 const PORT = 3000;
 
 /**
- * Main route: Creates a task and returns the current list.
- * This demonstrates the connection between the Express server 
- * and the TaskService logic.
+ * Middleware to parse JSON bodies. 
+ * This allows the server to understand the data we send in POST or PATCH.
  */
-app.get('/', (req: Request, res: Response) => {
-    // 1. Create a dynamic task using our service
-    taskService.createTask(
-        'Complete Phase 1', 
-        'Strict typing and project structure successfully implemented'
-    );
-    
-    // 2. Retrieve all tasks from memory
-    const currentTasks = taskService.getAllTasks();
-    
-    // 3. Send the list as a JSON response
-    res.json(currentTasks);
+app.use(express.json());
+
+/**
+ * GET /tasks
+ * Returns all tasks from our in-memory storage.
+ */
+app.get('/tasks', (req: Request, res: Response) => {
+    res.json(taskService.getAllTasks());
 });
 
 /**
- * Start the Express server
+ * POST /tasks
+ * Receives title and description to create a new task.
  */
+app.post('/tasks', (req: Request, res: Response) => {
+    const { title, description } = req.body;
+    
+    if (!title || !description) {
+        return res.status(400).json({ message: 'Title and description are required' });
+    }
+
+    const newTask = taskService.createTask(title, description);
+    res.status(201).json(newTask);
+});
+
+/**
+ * GET /tasks/:id
+ * Finds a specific task using the ID from the URL.
+ */
+app.get('/tasks/:id', (req: Request, res: Response) => {
+    const { id } = req.params;
+    
+    // Validamos que el ID existe y es un string para calmar a TS
+    if (typeof id !== 'string') {
+        return res.status(400).json({ message: 'Invalid ID format' });
+    }
+
+    const task = taskService.getTaskById(id);
+    if (!task) {
+        return res.status(404).json({ message: 'Task not found' });
+    }
+    res.json(task);
+});
+
+/**
+ * DELETE /tasks/:id
+ * Deletes a task. Returns 204 (No Content) if successful.
+ */
+app.delete('/tasks/:id', (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    if (typeof id !== 'string') {
+        return res.status(400).json({ message: 'Invalid ID format' });
+    }
+
+    const deleted = taskService.deleteTask(id);
+    if (!deleted) {
+        return res.status(404).json({ message: 'Task not found' });
+    }
+    res.status(204).send();
+});
+
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
-    console.log('Task Service is active and managing data in memory.');
+    console.log('Endpoints ready: GET, POST, DELETE /tasks');
 });
