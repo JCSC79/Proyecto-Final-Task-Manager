@@ -34,6 +34,7 @@ This project strictly follows a "Zero Any" policy, ensuring all code is properly
 
 - `src/`: Source code.
 - `src/models/`: Data interfaces and enums (ITask, TaskStatus).
+- `src/services/`: Business logic and data management (TaskService).
 - `dist/`: Compiled JavaScript files.
 - `eslint.config.js/`: Linter configuration for code quality.
 - `tsconfig.json`: TypeScript compiler settings.
