@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { taskService } from '../services/task.service.ts';
+import { TaskStatus } from '../models/task.model.ts';
 
 /**
  * Handles incoming HTTP requests and formats outgoing responses.
@@ -69,6 +70,13 @@ class TaskController {
 
         if (typeof id !== 'string') {
             return res.status(400).json({ message: 'Invalid ID format' });
+        }
+
+        // New Validation: Ensure that if 'status' is being updated, it must be a valid TaskStatus
+        if (updates.status && !Object.values(TaskStatus).includes(updates.status)) {
+            return res.status(400).json({ 
+                message: `Invalid status. Allowed values: ${Object.values(TaskStatus).join(', ')}` 
+            });
         }
 
         const updatedTask = taskService.updateTask(id, updates);
