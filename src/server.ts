@@ -24,5 +24,5 @@ app.patch('/tasks/:id', (req, res) => taskController.update(req, res));
  */
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
-    console.log('Endpoints ready: GET, POST, DELETE /tasks');
+    console.log('Endpoints ready: GET, POST, DELETE, PATCH /tasks');
 });
