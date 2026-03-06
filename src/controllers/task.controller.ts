@@ -20,8 +20,9 @@ class TaskController {
     create(req: Request, res: Response) {
         const { title, description } = req.body;
         
-        if (!title || !description) {
-            return res.status(400).json({ message: 'Title and description are required' });
+        if (!title?.trim() || !description?.trim()) {
+            return res.status(400).json({ 
+                message: 'Title and description are required and cannot be empty' });
         }
 
         const newTask = taskService.createTask(title, description);
