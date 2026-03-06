@@ -1,20 +1,22 @@
 import { TaskStatus } from '../models/task.model.ts';
 import type { ITask } from '../models/task.model.ts';
+import { taskDAO } from '../daos/task.dao.ts';
 
+/**
+ * Orchestrates business logic and coordinates data access.
+ */
 export class TaskService {
-    private tasks: ITask[] = [];
-
     getAllTasks(): ITask[] {
-        return this.tasks;
+        return taskDAO.getAll();
+    }
+
+    getTaskById(id: string): ITask | undefined {
+        return taskDAO.getById(id);
     }
 
     /**
-     * Finds a specific task by its unique ID
+     * Logic for generating new tasks with metadata.
      */
-    getTaskById(id: string): ITask | undefined {
-        return this.tasks.find(task => task.id === id);
-    }
-
     createTask(title: string, description: string): ITask {
         const newTask: ITask = {
             id: crypto.randomUUID(),
@@ -24,30 +26,20 @@ export class TaskService {
             createdAt: new Date()
         };
 
-        this.tasks.push(newTask);
-        return newTask;
+        return taskDAO.create(newTask);
+    }
+
+    deleteTask(id: string): boolean {
+        return taskDAO.delete(id);
     }
 
     /**
-     * Updates an existing task's data
+     * Delegates update operations to the storage layer.
+     * It receives the ID and the partial object with changes.
      */
     updateTask(id: string, updates: Partial<ITask>): ITask | undefined {
-        const task = this.getTaskById(id);
-        if (!task) {
-            return undefined;
-        }
-        // We apply the updates to the found task
-        Object.assign(task, updates);
-        return task;
-    }
-
-    /**
-     * Removes a task from the array
-     */
-    deleteTask(id: string): boolean {
-        const initialLength = this.tasks.length;
-        this.tasks = this.tasks.filter(task => task.id !== id);
-        return this.tasks.length < initialLength;
+        // Here we just act as a bridge to the DAO
+        return taskDAO.update(id, updates);
     }
 }
 
