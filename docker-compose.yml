@@ -14,5 +14,16 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  rabbitmq: 
+    image: rabbitmq:3-management
+    container_name: rabbitmq_broker
+    restart: always
+    ports:
+      - "5672:5672"   # Port for communication
+      - "15672:15672" # Control web panel
+    environment:
+      RABBITMQ_DEFAULT_USER: JC
+      RABBITMQ_DEFAULT_PASS: abc123..
+
 volumes:
   postgres_data:

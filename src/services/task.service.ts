@@ -1,6 +1,7 @@
 import { TaskStatus } from '../models/task.model.ts';
 import type { ITask } from '../models/task.model.ts';
 import { taskDAO } from '../daos/task.dao.ts';
+import { messagingService } from './messaging.service.ts';
 
 /**
  * Orchestrates business logic and coordinates data access.
@@ -29,7 +30,12 @@ export class TaskService {
         };
 
         // We must await the creation in the database
-        return await taskDAO.create(newTask);
+        const createdTask = await taskDAO.create(newTask);
+
+        // Notify via RabbitMQ about the new task creation
+        await messagingService.sendTaskNotification(createdTask);
+
+        return createdTask;
     }
 
     async deleteTask(id: string): Promise<boolean> {
@@ -45,4 +51,5 @@ export class TaskService {
         return await taskDAO.update(id, updates);
     }
 }
+
 export const taskService = new TaskService();

@@ -1,5 +1,6 @@
 import express from 'express';
 import { taskController } from './controllers/task.controller.ts';
+import { messagingService } from './services/messaging.service.ts';
 
 const app = express();
 const PORT = 3000;
@@ -32,7 +33,10 @@ app.patch('/tasks/:id', (req, res) => taskController.update(req, res));
 /**
  * Start the Express server
  */
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+    // Initialize RabbitMQ connection
+    await messagingService.init();
+    
     console.log(`Server running at http://localhost:${PORT}`);
     console.log('Endpoints ready: GET, POST, DELETE, PATCH /tasks');
 });

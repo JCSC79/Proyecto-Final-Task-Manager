@@ -1,15 +1,16 @@
-# Task Manager Backend - Phase 1
+# Task Manager Backend - Phase 2
 
-This project has evolved from a basic setup to a **Multi-layered Architecture**, focusing on the **Separation of Concerns (SoC)** and **SOLID principles**. It is a REST API built with **Node.js (v24)** and **Express**, using **TypeScript** in strict mode.
+This project has evolved into a **Distributed Architecture**, focusing on **Separation of Concerns (SoC)**, **SOLID principles**, and **Asynchronous Messaging**. It is a REST API built with **Node.js (v24)**, **Express**, and **RabbitMQ**, using **TypeScript** in strict mode.
 
 ## Architecture Overview
 
-The project follows a modular structure to ensure scalability and maintainability:
+The project follows a modular and decoupled structure:
 
-- **Controller Layer (`src/controllers/`):** Handles HTTP requests, input validation, and sends standardized API responses (201, 204, 404).
-- **Service Layer (`src/services/`):** Orchestrates business logic (ID generation, timestamps, and status rules). It is agnostic to the transport layer (Express).
-- **DAO Layer (`src/daos/`):** (Data Access Object) Encapsulates data persistence. Migrated from in-memory storage to PostgreSQL using Knex.js query builder.
-- **Model Layer (`src/models/`):** Defines strict contracts using TypeScript Interfaces and Enums.
+- **Controller Layer (`src/controllers/`):** Handles HTTP requests and standardized API responses.
+- **Service Layer (`src/services/`):** Orchestrates business logic and triggers asynchronous events.
+- **Messaging Service (`src/services/messaging.service.ts`):** Encapsulates RabbitMQ producer logic using type-safe narrowing.
+- **DAO Layer (`src/daos/`):** Encapsulates data persistence using Knex.js.
+- **Worker (`src/worker.ts`):** An independent consumer process that processes task notifications from the message broker.
 
 ## API Capabilities (CRUD)
 
@@ -22,21 +23,27 @@ The project follows a modular structure to ensure scalability and maintainabilit
 ## Tech Stack
 
 - **Runtime:** Node.js v24.14.0+ (ESM Mode)
-- **Language:** [TypeScript](https://www.typescriptlang.org/) (Strict Mode)
+- **Language:** [TypeScript](https://www.typescriptlang.org/) (Strict Mode - Zero any policy)
 - **Framework:** [Express.js](https://expressjs.com/)
-- **Linter:** [ESLint v10](https://eslint.org/) (Flat Config)
-- **Development Engine:** [tsx](https://tsx.is/) (TypeScript Execute with native Node 24 support)
-- **Database:** PostgreSQL 15+ (Running on Docker).
-- **Query Builder:** Knex.js (with Migration and Seeding support).
-- **Containerization:** Docker
+- **Messaging:** [RabbitMQ](https://www.rabbitmq.com/) (Message Broker)
+- **Database:** PostgreSQL 15+ (Running on Docker)
+- **Query Builder:** Knex.js (with Migration support)
+- **Containerization:** Docker & Docker Compose
+
+## Asynchronous Communication (RabbitMQ)
+
+The system implements a **Producer-Consumer pattern**:
+
+- When a task is created, the API (Producer) sends a persistent message to the `task_notifications` queue.
+- An independent Worker (Consumer) listens to the queue and processes the data without blocking the main API flow.
+- **Reliability:** Uses Manual Acknowledgments (ACK) and Durable Queues to ensure zero message loss.
 
 ## Persistence & Security (OWASP Focus)
 
-The system is now fully persistent, moving away from volatile memory.
+The system is fully persistent, following **OWASP Defense Option 1**:
 
-- **Infrastructure as Code:** Database lifecycle is managed via Docker and Knex Migrations.
-- **SQL Injection Prevention:** Following **OWASP Defense Option 1**, all database interactions use **Parameterized Queries**. By using Knex's built-in methods, user input is never concatenated directly into SQL strings.
-- **Reversibility:** Supports schema versioning with `up` and `down` migration patterns.
+- **Parameterized Queries:** All database interactions use Knex's built-in methods to prevent SQL Injection.
+- **Infrastructure as Code:** Database and Broker lifecycle are managed via Docker.
 
 ### Database Commands
 
@@ -46,17 +53,26 @@ The system is now fully persistent, moving away from volatile memory.
 
 ## Installation & Usage
 
-1. **Install dependencies:**
+1. **Spin up Infrastructure (Database & Broker):**
+   ```docker compose up -d```
+2. **Install dependencies:**
    ```npm install```
-2. **Run in development mode (Hot Reload):**
+3. **Run migrations:**
+   ```npx knex migrate:latest --knexfile knexfile.cjs```
+
+## Running the Application
+
+This project requires running two separate processes:
+
+1. **Terminal 1 - API Server:**
    ```npm run dev```
-3. **Build to JavaScript:**
-   ```npm run build```
+2. **Terminal 2 - Background Worker:**
+   ```npx tsx src/worker.ts```
 
 ## Quality Standards
 
 - **Zero Any Policy:** 100% type coverage for robust development.
-- **RESTful Best Practices:** Proper use of HTTP verbs and status codes.
+- **Narrowing Strategy:** Custom type-narrowing to handle complex library interfaces (amqplib) safely.
 - **Decoupled Logic:** The business logic is isolated from the infrastructure.
 
 ## Key Technical Features
