@@ -1,20 +1,20 @@
-# Usamos una imagen de Node estable
-FROM node:20-alpine
+# Use the official Node 24 Alpine image for a lightweight and secure environment
+FROM node:24-alpine3.23
 
-# Creamos la carpeta de trabajo dentro del contenedor
+# Set the working directory inside the container
 WORKDIR /usr/src/app
 
-# Copiamos los archivos de configuración de paquetes
+# Copy package management files to leverage Docker layer caching
 COPY package*.json ./
 
-# Instalamos las dependencias
+# Install project dependencies
 RUN npm install
 
-# Copiamos el resto del código
+# Copy the rest of the application source code
 COPY . .
 
-# Exponemos el puerto 3000
+# Expose the API port
 EXPOSE 3000
 
-# Comando para arrancar en modo desarrollo con TypeScript
+# Start the application in development mode using tsx
 CMD ["npm", "run", "dev"]

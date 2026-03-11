@@ -1,6 +1,6 @@
 /**
- * Task status options
- * Using an enum ensures type safety for task states
+ * Task status options.
+ * Using an enum ensures type safety for task states across the application.
  */
 export enum TaskStatus {
     PENDING = 'PENDING',
@@ -9,8 +9,8 @@ export enum TaskStatus {
 }
 
 /**
- * Main Task Interface
- * Defines the strict structure that every task must follow
+ * Main Task Interface.
+ * Defines the strict contract that every task object must satisfy.
  */
 export interface ITask {
     id: string;

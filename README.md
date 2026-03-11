@@ -34,8 +34,7 @@ The project follows a modular and decoupled structure:
 - **Messaging:** [RabbitMQ](https://www.rabbitmq.com/) (Message Broker)
 - **Database:** PostgreSQL 15+ (Running on Docker)
 - **Query Builder:** Knex.js (with Migration support)
-- **Containerization:** Docker & Docker Compose
-- **Documentation:** [Swagger UI](https://swagger.io/tools/swagger-ui/) & [OpenAPI 3.0](https://www.openapis.org/)
+- **Containerization:** Docker & Docker Compose (Base image: `node:24-alpine3.23`)- **Documentation:** [Swagger UI](https://swagger.io/tools/swagger-ui/) & [OpenAPI 3.0](https://www.openapis.org/)
 
 ## Asynchronous Communication (RabbitMQ)
 
@@ -80,12 +79,13 @@ The project includes a fully interactive documentation interface built with **Sw
 
 ## Running the Application
 
-This project requires running two separate processes:
+This project requires running two separate processes to handle the full lifecycle:
 
 1. **Terminal 1 - API Server:**
    ```npm run dev```
 2. **Terminal 2 - Background Worker:**
    ```npx tsx src/worker.ts```
+Note: The worker includes a failsafe mechanism to handle malformed messages and provides decorated logs for real-time monitoring.
 
 ## Quality Standards
 
