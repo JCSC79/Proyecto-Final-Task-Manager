@@ -35,6 +35,7 @@ The project follows a modular and decoupled structure:
 - **Database:** PostgreSQL 15+ (Running on Docker)
 - **Query Builder:** Knex.js (with Migration support)
 - **Containerization:** Docker & Docker Compose
+- **Documentation:** [Swagger UI](https://swagger.io/tools/swagger-ui/) & [OpenAPI 3.0](https://www.openapis.org/)
 
 ## Asynchronous Communication (RabbitMQ)
 
@@ -66,6 +67,17 @@ The system is fully persistent, following **OWASP Defense Option 1**:
 3. **Run migrations:**
    ```npx knex migrate:latest --knexfile knexfile.cjs```
 
+## Interactive API Documentation (Swagger)
+
+The project includes a fully interactive documentation interface built with **Swagger UI** and **OpenAPI 3.0**. This allows for real-time testing of all endpoints without external tools like Postman.
+
+- **Access URL:** [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+- **Features:**
+  - Visual CRUD explorer.
+  - Standardized Request/Response schemas (`Task`, `ErrorResponse`).
+  - Integrated testing client ("Try it out" feature).
+  - Detailed error state modeling based on the **Result Pattern**.
+
 ## Running the Application
 
 This project requires running two separate processes:
@@ -81,6 +93,7 @@ This project requires running two separate processes:
 - **Narrowing Strategy:** Custom type-narrowing to handle complex library interfaces (amqplib) safely.
 - **Decoupled Logic:** The business logic is isolated from the infrastructure.
 - **Consistent Error Modeling:** All API responses follow a standardized JSON structure derived from the Result object, providing clear feedback for both success and failure states.
+- **Contract-First Documentation:** Standardized API contracts using OpenAPI 3.0 to ensure consistency between Backend and potential Frontend consumers.
 
 ## Key Technical Features
 
@@ -95,6 +108,7 @@ This project requires running two separate processes:
 - `src/services/`: Core business logic and service orchestration (TaskService).
 - `src/daos/`: Data Access Objects for persistence abstraction (TaskDAO).
 - `src/models/`: Data contracts, interfaces, and enums (ITask, TaskStatus).
+- `src/config/`: Configuration files for external libraries (Swagger, etc.).
 - `eslint.config.js`: Linter configuration for high code quality.
 - `tsconfig.json`: TypeScript compiler and strict mode settings.
 - `Dockerfile`: Containerization and deployment definition.

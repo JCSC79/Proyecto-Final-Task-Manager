@@ -1,4 +1,6 @@
 import express from 'express';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger.ts';
 import { taskController } from './controllers/task.controller.ts';
 import { messagingService } from './services/messaging.service.ts';
 
@@ -12,13 +14,19 @@ app.use(express.json());
 
 /**
  * LOGGER MIDDLEWARE
- * Shows in console: [Time] METHOD /route
+ * Logs to console: [Time] METHOD /route
  */
 app.use((req, _res, next) => {
     const time = new Date().toLocaleTimeString();
     console.log(`[${time}] ${req.method} ${req.url}`);
     next(); // Mandatory! Otherwise, the request gets "stuck" here.
 });
+
+/**
+ * Swagger Documentation Route
+ * Serves the interactive API explorer.
+ */
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 /**
  * Routes
@@ -38,5 +46,6 @@ app.listen(PORT, async () => {
     await messagingService.init();
     
     console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
     console.log('Endpoints ready: GET, POST, DELETE, PATCH /tasks');
 });
