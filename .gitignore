@@ -1,6 +1,21 @@
-# .gitignore update
-node_modules
-dist
+# Dependencias (Ignora node_modules en cualquier carpeta)
+node_modules/
+
+# Compilación
+dist/
+build/
+
+# Variables de entorno (¡Crítico!)
 .env
-# Add this for Docker/Postgres logs or local data if needed
+.env.local
+
+# Bases de datos y Logs
 pgdata/
+*.log
+
+# Docker
+.docker/
+
+# IDEs
+.vscode/
+.idea/

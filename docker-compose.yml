@@ -19,11 +19,26 @@ services:
     container_name: rabbitmq_broker
     restart: always
     ports:
-      - "5672:5672"   # Port for communication
-      - "15672:15672" # Control web panel
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: JC
       RABBITMQ_DEFAULT_PASS: abc123..
+
+  api:
+    build: ./backend  # New line to build the API from the Dockerfile in the backend directory
+    container_name: task_api
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: db
+      DB_USER: postgres
+      DB_PASSWORD: abc123..
+      DB_NAME: tasks_db
+      RABBITMQ_URL: amqp://JC:abc123..@rabbitmq:5672
+    depends_on:
+      - db
+      - rabbitmq
 
 volumes:
   postgres_data:
