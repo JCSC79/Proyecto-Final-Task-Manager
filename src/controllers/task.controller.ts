@@ -32,17 +32,27 @@ class TaskController {
   }
 
   /**
-   * Validates input using Yup and creates a new task.
+   * Validates input using Yup schemas and creates a new task.
+   * Replaced try-catch with a safe validation approach to maintain architecture consistency.
    */
   async create(req: Request, res: Response) {
-    try {
-      const validatedData = await createTaskSchema.validate(req.body);
-      const result = await taskService.createTask(validatedData.title, validatedData.description);
-      res.status(201).json(result.getValue());
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      res.status(400).json({ error: message });
+    // 1. Safe validation without throwing exceptions
+    const validatedData = await createTaskSchema.validate(req.body)
+      .catch(err => ({ isError: true, message: err.message }));
+
+    // 2. Check if Yup returned a validation error object
+    if ('isError' in validatedData) {
+      return res.status(400).json({ error: validatedData.message });
     }
+
+    // 3. Delegate to service and handle the Result object
+    const result = await taskService.createTask(validatedData.title, validatedData.description);
+    
+    if (result.isFailure) {
+      return res.status(500).json({ error: result.error });
+    }
+
+    res.status(201).json(result.getValue());
   }
 
   /**
@@ -62,25 +72,34 @@ class TaskController {
 
   /**
    * Updates an existing task partially.
+   * Refactored to avoid try-catch blocks in favor of functional error handling.
    */
   async update(req: Request, res: Response) {
     const { id } = req.params;
     if (typeof id !== 'string') {
       return res.status(400).json({ error: "Invalid ID format" });
     }
-    try {
-      const validatedUpdates = await updateTaskSchema.validate(req.body, { 
-        stripUnknown: true 
-      }) as Partial<ITask>;
-      const result = await taskService.updateTask(id, validatedUpdates);
-      if (result.isFailure) {
-        return res.status(404).json({ error: result.error });
-      }
-      res.json(result.getValue());
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      res.status(400).json({ error: message });
+
+    // 1. Safe validation for partial updates
+    const validatedUpdates = await updateTaskSchema.validate(req.body, { 
+      stripUnknown: true 
+    }).catch(err => ({ isError: true, message: err.message }));
+
+    // 2. Handle Schema validation failure
+    if ('isError' in validatedUpdates) {
+      return res.status(400).json({ error: validatedUpdates.message });
     }
+
+    // 3. Delegate to service and process Result
+    const result = await taskService.updateTask(id, validatedUpdates as Partial<ITask>);
+    
+    if (result.isFailure) {
+      // Differentiate between 404 (Not Found) and other errors
+      const status = result.error?.includes('not found') ? 404 : 500;
+      return res.status(status).json({ error: result.error });
+    }
+
+    res.json(result.getValue());
   }
 }
 
