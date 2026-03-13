@@ -1,10 +1,9 @@
-import { H1, Card, Elevation, Spinner, Callout } from "@blueprintjs/core";
+import { H1, Spinner, Callout } from "@blueprintjs/core";
 import { useQuery } from "@tanstack/react-query";
 import api from "./api/axiosInstance";
+import { TaskItem } from "./components/TaskItem";
+import { TaskForm } from "./components/TaskForm"; // New import
 
-/**
- * Task interface to define the data structure
- */
 interface Task {
   id: string;
   title: string;
@@ -13,46 +12,46 @@ interface Task {
 }
 
 function App() {
-  /**
-   * Fetching tasks from the backend API using TanStack Query
-   */
   const { data: tasks, isLoading, error } = useQuery<Task[]>({
     queryKey: ["tasks"],
     queryFn: async () => {
-      // API call to our backend
       const response = await api.get("/tasks");
       return response.data;
     },
   });
 
   return (
-    <div style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
-      <H1>Task Manager</H1>
-      <hr />
+    <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto", backgroundColor: "#f0f2f5", minHeight: "100vh" }}>
+      <header style={{ marginBottom: "20px", textAlign: "center" }}>
+        <H1>Task Manager</H1>
+      </header>
 
-      {/* Show spinner while loading data */}
-      {isLoading && <Spinner />}
+      <main>
+        {/* Isolated Form Component */}
+        <TaskForm />
 
-      {/* Show error message if the API call fails */}
-      {error && (
-        <Callout intent="danger" title="Connection Error">
-          Could not fetch tasks. Is the backend running?
-        </Callout>
-      )}
+        {isLoading && <Spinner style={{ marginTop: "20px" }} />}
 
-      {/* Render list of tasks using BlueprintJS Cards */}
-      {tasks?.map((task) => (
-        <Card key={task.id} elevation={Elevation.ONE} style={{ marginBottom: "10px" }}>
-          <h5>{task.title}</h5>
-          <p>{task.description}</p>
-          <small>Status: <b>{task.status}</b></small>
-        </Card>
-      ))}
+        {error && (
+          <Callout intent="danger" title="Connection Error" style={{ marginBottom: "20px" }}>
+            Could not fetch tasks. Is the backend running?
+          </Callout>
+        )}
 
-      {/* Message if no tasks are found */}
-      {tasks?.length === 0 && <p>No tasks found. Everything is done!</p>}
+        {/* Task List */}
+        <section>
+          {tasks?.map((task) => (
+            <TaskItem key={task.id} task={task} />
+          ))}
+        </section>
+
+        {tasks?.length === 0 && !isLoading && (
+          <p style={{ textAlign: "center", color: "#5c7080" }}>No tasks yet. Create your first one above!</p>
+        )}
+      </main>
     </div>
   );
 }
 
 export default App;
+
