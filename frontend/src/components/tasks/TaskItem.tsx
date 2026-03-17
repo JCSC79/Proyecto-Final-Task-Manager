@@ -7,13 +7,16 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axiosInstance';
 import type { Task, TaskStatus } from '../../types/task';
+import { useTranslation } from 'react-i18next'; // <--- Import i18n hook
 
 /**
  * TaskItem Component
  * Handles task display, lifecycle transitions, editing, and detailed read-only view.
  * The ID is hidden and 'uppercase' prop error is fixed with CSS.
+ * Updated with i18n support.
  */
 export const TaskItem: React.FC<{ task: Task }> = ({ task }) => {
+  const { t } = useTranslation(); // <--- Initialize translation
   const queryClient = useQueryClient();
   
   const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -45,6 +48,13 @@ export const TaskItem: React.FC<{ task: Task }> = ({ task }) => {
   const nextStatus: TaskStatus | null = isPending ? 'IN_PROGRESS' : isInProgress ? 'COMPLETED' : null;
   const prevStatus: TaskStatus | null = isCompleted ? 'IN_PROGRESS' : isInProgress ? 'PENDING' : null;
 
+  // Helper to get the correct translated status key
+  const getTranslatedStatus = (status: TaskStatus) => {
+    if (status === 'IN_PROGRESS') return t('inProgress');
+    if (status === 'PENDING') return t('pending');
+    return t('completed');
+  };
+
   return (
     <>
       <Card 
@@ -72,7 +82,7 @@ export const TaskItem: React.FC<{ task: Task }> = ({ task }) => {
             {task.title}
           </H5>
           <Text ellipsize style={{ color: '#5c7080', fontSize: '12px' }}>
-            {task.description || "No description"}
+            {task.description || t('noDescription')} {/* <--- Translated fallback */}
           </Text>
         </div>
 
@@ -88,51 +98,59 @@ export const TaskItem: React.FC<{ task: Task }> = ({ task }) => {
         </ButtonGroup>
       </Card>
 
-      <Dialog icon="info-sign" onClose={() => setIsDetailsOpen(false)} title="Task Details" isOpen={isDetailsOpen}>
+      <Dialog icon="info-sign" onClose={() => setIsDetailsOpen(false)} title={t('taskDetails')} isOpen={isDetailsOpen}>
         <div className={Classes.DIALOG_BODY}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <H5 style={{ margin: 0 }}>{task.title}</H5>
             <Tag intent={statusIntent} large round style={{ textTransform: 'uppercase' }}>
-              {task.status.replace('_', ' ')}
+              {getTranslatedStatus(task.status)} {/* <--- Translated status tag */}
             </Tag>
           </div>
           <div style={{ padding: '20px', backgroundColor: '#f5f8fa', borderRadius: '8px', border: '1px solid #dbe3e8', whiteSpace: 'pre-wrap', minHeight: '100px' }}>
             <Text style={{ fontSize: '14px', lineHeight: '1.5' }}>
-              {task.description || "No additional details provided for this task."}
+              {task.description || t('noDetails')} {/* <--- Translated fallback */}
             </Text>
           </div>
         </div>
         <div className={Classes.DIALOG_FOOTER}>
           <div className={Classes.DIALOG_FOOTER_ACTIONS}>
-            <Button onClick={() => setIsDetailsOpen(false)}>Close</Button>
+            <Button onClick={() => setIsDetailsOpen(false)}>{t('close')}</Button>
             <Button intent="primary" icon="edit" onClick={() => { setIsDetailsOpen(false); setIsEditOpen(true); }}>
-              Edit Task
+              {t('editTask')}
             </Button>
           </div>
         </div>
       </Dialog>
 
-      <Dialog icon="edit" onClose={() => setIsEditOpen(false)} title="Edit Task" isOpen={isEditOpen}>
+      <Dialog icon="edit" onClose={() => setIsEditOpen(false)} title={t('editTask')} isOpen={isEditOpen}>
         <div className={Classes.DIALOG_BODY}>
-          <FormGroup label="Task Title" labelInfo="(required)">
+          <FormGroup label={t('title')} labelInfo={`(${t('required')})`}>
             <InputGroup value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
           </FormGroup>
-          <FormGroup label="Description">
+          <FormGroup label={t('description')}>
             <TextArea fill style={{ minHeight: '120px' }} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
           </FormGroup>
         </div>
         <div className={Classes.DIALOG_FOOTER}>
           <div className={Classes.DIALOG_FOOTER_ACTIONS}>
-            <Button onClick={() => setIsEditOpen(false)}>Cancel</Button>
+            <Button onClick={() => setIsEditOpen(false)}>{t('cancel')}</Button>
             <Button intent="primary" onClick={() => updateMutation.mutate({ title: editTitle, description: editDescription })} loading={updateMutation.isPending}>
-              Save Changes
+              {t('saveChanges')}
             </Button>
           </div>
         </div>
       </Dialog>
 
-      <Alert isOpen={isAlertOpen} icon="trash" intent={Intent.DANGER} confirmButtonText="Delete Task" cancelButtonText="Cancel" onCancel={() => setIsAlertOpen(false)} onConfirm={() => deleteMutation.mutate()}>
-        <p>Are you sure you want to delete <b>{task.title}</b>? This action is permanent.</p>
+      <Alert 
+        isOpen={isAlertOpen} 
+        icon="trash" 
+        intent={Intent.DANGER} 
+        confirmButtonText={t('deleteTask')} 
+        cancelButtonText={t('cancel')} 
+        onCancel={() => setIsAlertOpen(false)} 
+        onConfirm={() => deleteMutation.mutate()}
+      >
+        <p>{t('deleteWarning')} <b>{task.title}</b>? {t('deleteAction')}</p>
       </Alert>
     </>
   );

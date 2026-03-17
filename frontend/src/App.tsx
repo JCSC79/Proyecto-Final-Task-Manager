@@ -5,14 +5,18 @@ import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { TaskFilters } from './components/tasks/TaskFilters';
 import { TaskForm } from './components/tasks/TaskForm';
-import { TaskItem } from './components/tasks/TaskItem';
+import { TaskBoard } from './components/tasks/TaskBoard'; // <--- Import the new component
 import type { Task, TaskStatus } from './types/task';
+import { useTranslation } from 'react-i18next'; // <--- Import i18n hook
 
 /**
  * Main Application Component
- * Orchestrates data fetching, global filtering, and the Kanban board layout
+ * Orchestrates data fetching, global filtering, and component layout.
+ * Updated to use modular TaskBoard and i18n.
  */
 const App: React.FC = () => {
+  const { t } = useTranslation();
+
   // Global filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
@@ -44,47 +48,6 @@ const App: React.FC = () => {
   const completed = tasks?.filter(t => t.status === 'COMPLETED').length || 0;
   const progressValue = total > 0 ? completed / total : 0;
 
-  /**
-   * Helper function to render a Kanban column
-   */
-  const renderColumn = (label: string, status: TaskStatus) => {
-    const columnTasks = filteredTasks.filter(task => task.status === status);
-    
-    return (
-      <div style={{ 
-        flex: 1, 
-        minWidth: '300px', 
-        backgroundColor: '#ebf1f5', 
-        padding: '15px', 
-        borderRadius: '8px',
-        minHeight: '400px'
-      }}>
-        <h3 style={{ 
-          borderBottom: '2px solid #5c7080', 
-          paddingBottom: '10px', 
-          marginBottom: '15px',
-          color: '#182026',
-          display: 'flex',
-          justifyContent: 'space-between'
-        }}>
-          {label} 
-          <span style={{ fontSize: '0.8em', color: '#5c7080' }}>({columnTasks.length})</span>
-        </h3>
-        
-        <div>
-          {columnTasks.map((task) => (
-            <TaskItem key={task.id} task={task} />
-          ))}
-          {columnTasks.length === 0 && (
-            <div style={{ textAlign: 'center', color: '#a7b6c2', marginTop: '20px', fontStyle: 'italic' }}>
-              No tasks here
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div style={{ backgroundColor: '#f5f8fa', minHeight: '100vh' }}>
       <Header progress={progressValue} />
@@ -100,20 +63,13 @@ const App: React.FC = () => {
           <TaskForm />
         </div>
 
-        {isLoading && <div style={{ textAlign: 'center', marginTop: '50px' }}>Synchronizing with DB...</div>}
+        {/* Translated Loading State */}
+        {isLoading && <div style={{ textAlign: 'center', marginTop: '50px' }}>{t('syncing')}</div>}
 
-        <div style={{ 
-          display: 'flex', 
-          gap: '20px', 
-          marginTop: '30px',
-          alignItems: 'flex-start',
-          overflowX: 'auto',
-          paddingBottom: '20px'
-        }}>
-          {(statusFilter === 'ALL' || statusFilter === 'PENDING') && renderColumn('PENDING', 'PENDING')}
-          {(statusFilter === 'ALL' || statusFilter === 'IN_PROGRESS') && renderColumn('IN PROGRESS', 'IN_PROGRESS')}
-          {(statusFilter === 'ALL' || statusFilter === 'COMPLETED') && renderColumn('COMPLETED', 'COMPLETED')}
-        </div>
+        {/* The new modular TaskBoard component replaces the inline columns */}
+        {!isLoading && (
+          <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} />
+        )}
       </main>
 
       <Footer />
