@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({ progress, isDark, toggleDark, ac
           <img 
             src={logoImg} 
             alt="App Logo" 
-            style={{ height: '80px', width: 'auto', marginRight: '12px' }} 
+            style={{ height: '50px', width: 'auto', marginRight: '12px' }} 
           />
           <Navbar.Heading style={{ fontSize: '20px', display: 'flex', alignItems: 'center' }}>
             <strong style={{ color: isDark ? '#ffffff' : '#182026' }}>{t('appName')}</strong>
