@@ -17,8 +17,9 @@ const options: swaggerJSDoc.Options = {
             id: { type: 'string', format: 'uuid' },
             title: { type: 'string' },
             description: { type: 'string' },
-            status: { type: 'string', enum: ['PENDING', 'COMPLETED'] },
-            createdAt: { type: 'string', format: 'date-time' }
+            status: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'] },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' } // Added property
           }
         },
         ErrorResponse: {
@@ -67,7 +68,7 @@ const options: swaggerJSDoc.Options = {
           tags: ['Tasks'],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
           requestBody: {
-            content: { 'application/json': { schema: { type: 'object', properties: { status: { type: 'string', enum: ['PENDING', 'COMPLETED'] } } } } }
+            content: { 'application/json': { schema: { type: 'object', properties: { status: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'] } } } } }
           },
           responses: {
             200: { description: 'Updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Task' } } } },
@@ -83,7 +84,6 @@ const options: swaggerJSDoc.Options = {
       }
     }
   },
-  // Since paths are defined explicitly above, we leave this empty to avoid scanning conflicting comments
   apis: [], 
 };
 

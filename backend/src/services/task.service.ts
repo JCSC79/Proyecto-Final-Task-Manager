@@ -11,7 +11,6 @@ import { Result } from '../utils/result.ts';
 export class TaskService {
     /**
      * Retrieves all tasks from the persistence layer.
-     * @returns {Promise<Result<ITask[]>>} A Result containing an array of tasks.
      */
     async getAllTasks(): Promise<Result<ITask[]>> {
         const tasks = await taskDAO.getAll();
@@ -20,8 +19,6 @@ export class TaskService {
 
     /**
      * Finds a specific task by its unique identifier.
-     * @param {string} id - The UUID of the task.
-     * @returns {Promise<Result<ITask>>} Success with task data or failure if not found.
      */
     async getTaskById(id: string): Promise<Result<ITask>> {
         const task = await taskDAO.getById(id);
@@ -32,11 +29,7 @@ export class TaskService {
     }
 
     /**
-     * Logic for generating new tasks, persisting them in PostgreSQL, 
-     * and triggering asynchronous notifications via RabbitMQ.
-     * @param {string} title - Task title.
-     * @param {string} description - Detailed task description.
-     * @returns {Promise<Result<ITask>>} The newly created task.
+     * Logic for generating new tasks.
      */
     async createTask(title: string, description: string): Promise<Result<ITask>> {
         const newTask: ITask = {
@@ -50,10 +43,8 @@ export class TaskService {
         const createdTask = await taskDAO.create(newTask);
 
         try {
-            // Notify via RabbitMQ message broker about the new task event
             await messagingService.sendTaskNotification(createdTask);
         } catch (error) {
-            // We log the error but don't fail the operation since the task is already in DB
             console.error("[TaskService] Messaging notification failed:", error);
         }
 
@@ -62,8 +53,6 @@ export class TaskService {
 
     /**
      * Removes a task from the system.
-     * @param {string} id - The UUID of the task to delete.
-     * @returns {Promise<Result<boolean>>} Success if deleted, failure if ID is missing.
      */
     async deleteTask(id: string): Promise<Result<boolean>> {
         const success = await taskDAO.delete(id);
@@ -75,12 +64,16 @@ export class TaskService {
 
     /**
      * Delegates partial update operations to the storage layer.
-     * @param {string} id - Task UUID.
-     * @param {Partial<ITask>} updates - Object containing fields to be updated.
-     * @returns {Promise<Result<ITask>>} The updated task record.
+     * UPDATED: Automatically injects the updatedAt timestamp for KPI calculations.
      */
     async updateTask(id: string, updates: Partial<ITask>): Promise<Result<ITask>> {
-        const updatedTask = await taskDAO.update(id, updates);
+        // We force the updatedAt field to the current server time on every update
+        const updatesWithTimestamp = {
+            ...updates,
+            updatedAt: new Date()
+        };
+
+        const updatedTask = await taskDAO.update(id, updatesWithTimestamp);
         
         if (!updatedTask) {
             return Result.fail<ITask>("Task not found or update failed");

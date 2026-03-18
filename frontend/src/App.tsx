@@ -6,12 +6,13 @@ import { Footer } from './components/layout/Footer';
 import { TaskFilters } from './components/tasks/TaskFilters';
 import { TaskForm } from './components/tasks/TaskForm';
 import { TaskBoard } from './components/tasks/TaskBoard';
+import { DashboardView } from './components/dashboard/DashboardView';
 import type { Task, TaskStatus } from './types/task';
 import { useTranslation } from 'react-i18next';
 
 /**
  * Main Application Component
- * Updated: Re-added the global wrapper class to ensure Blueprint components inherit the dark theme.
+ * Updated: Integrated interactive navigation between Dashboard and Kanban.
  */
 const App: React.FC = () => {
   const { t } = useTranslation();
@@ -19,8 +20,9 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
   const [isDark, setIsDark] = useState(false);
+  const [activeView, setActiveView] = useState<'home' | 'dashboard'>('home');
 
-  // Global dark mode effect for body background and modals
+  // Global dark mode effect for body background
   useEffect(() => {
     if (isDark) {
       document.body.classList.add('bp4-dark');
@@ -31,6 +33,7 @@ const App: React.FC = () => {
     }
   }, [isDark]);
 
+  // Data Fetching
   const { data: tasks, isLoading } = useQuery<Task[]>({
     queryKey: ['tasks'],
     queryFn: async () => {
@@ -38,6 +41,16 @@ const App: React.FC = () => {
       return response.data;
     },
   });
+
+  /**
+   * NEW: Handles clicks from Dashboard charts to jump to Kanban with filters.
+   * Clears search and sets the specific status filter.
+   */
+  const handleDashboardClick = (status: TaskStatus) => {
+    setSearchTerm('');      // Clear search to avoid conflicts
+    setStatusFilter(status); // Apply selected status
+    setActiveView('home');   // Switch to Kanban view
+  };
 
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
@@ -56,27 +69,47 @@ const App: React.FC = () => {
   const progressValue = total > 0 ? completed / total : 0;
 
   return (
-    // Re-added className={isDark ? "bp4-dark" : ""} to force inheritance
     <div className={isDark ? "bp4-dark" : ""} style={{ minHeight: '100vh', color: isDark ? '#f5f8fa' : '#182026' }}>
-      <Header progress={progressValue} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />
+      <Header 
+        progress={progressValue} 
+        isDark={isDark} 
+        toggleDark={() => setIsDark(!isDark)} 
+        activeView={activeView}
+        setActiveView={setActiveView}
+      />
       
       <main style={{ maxWidth: '1400px', margin: '20px auto', padding: '0 20px' }}>
-        <div style={{ marginTop: '20px' }}>
-          <TaskFilters 
-            searchTerm={searchTerm} 
-            setSearchTerm={setSearchTerm}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-          />
-          {/* Passed isDark to TaskForm to ensure its background changes */}
-          <TaskForm isDark={isDark} />
-        </div>
+        
+        {/* View: Home / Kanban Board */}
+        {activeView === 'home' && (
+          <>
+            <div style={{ marginTop: '20px' }}>
+              <TaskFilters 
+                searchTerm={searchTerm} 
+                setSearchTerm={setSearchTerm}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+              />
+              <TaskForm isDark={isDark} />
+            </div>
 
-        {isLoading && <div style={{ textAlign: 'center', marginTop: '50px', color: isDark ? '#a7b6c2' : 'inherit' }}>{t('syncing')}</div>}
+            {isLoading && <div style={{ textAlign: 'center', marginTop: '50px', color: isDark ? '#a7b6c2' : 'inherit' }}>{t('syncing')}</div>}
 
-        {!isLoading && (
-          <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} isDark={isDark} />
+            {!isLoading && (
+              <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} isDark={isDark} />
+            )}
+          </>
         )}
+
+        {/* View: KPI Dashboard */}
+        {activeView === 'dashboard' && (
+          <DashboardView 
+            tasks={tasks || []} 
+            isDark={isDark} 
+            onChartClick={handleDashboardClick} // Pass click handler
+          />
+        )}
+
       </main>
 
       <Footer isDark={isDark} />

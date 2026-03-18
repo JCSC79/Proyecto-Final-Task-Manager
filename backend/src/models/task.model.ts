@@ -10,7 +10,7 @@ export enum TaskStatus {
 
 /**
  * Main Task Interface.
- * Defines the strict contract that every task object must satisfy.
+ * Added updatedAt to support efficiency metrics in the KPI Dashboard.
  */
 export interface ITask {
     id: string;
@@ -18,4 +18,5 @@ export interface ITask {
     description: string;
     status: TaskStatus;
     createdAt: Date;
+    updatedAt?: Date; // Optional: only present after the first update
 }
