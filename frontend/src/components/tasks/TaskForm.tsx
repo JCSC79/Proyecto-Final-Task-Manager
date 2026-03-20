@@ -1,12 +1,14 @@
 import React, { useState } from "react";
-import { Card, Elevation, Button, InputGroup, TextArea, FormGroup, H4 } from "@blueprintjs/core";
+import { Card, Elevation, Button, InputGroup, TextArea, FormGroup, H4, Intent } from "@blueprintjs/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../api/axiosInstance";
 import { useTranslation } from "react-i18next";
+import { AppToaster } from "../../utils/toaster";
 
 /**
  * TaskForm Component
  * Updated: Receives isDark prop to dynamically change its background color.
+ * Integrated: AppToaster for success feedback on creation.
  */
 interface TaskFormProps {
   isDark: boolean;
@@ -22,6 +24,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({ isDark }) => {
     mutationFn: (newTask: { title: string; description: string }) => api.post("/tasks", newTask),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      // SUCCESS NOTIFICATION: Professional feedback after creation
+      AppToaster.show({
+        message: t('taskCreated'),
+        intent: Intent.SUCCESS,
+        icon: "tick-circle"
+      });
       handleClear();
     },
   });
@@ -44,7 +52,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({ isDark }) => {
       style={{ 
         marginBottom: "30px", 
         padding: '25px',
-        // Dynamic background logic
         backgroundColor: isDark ? '#293742' : '#ffffff',
         transition: 'background-color 0.3s ease'
       }} 

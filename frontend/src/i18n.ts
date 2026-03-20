@@ -61,7 +61,17 @@ i18n
           "boardHealth": "Board Health",
           "workloadTitle": "Workload by Status",
           "healthExcellent": "EXCELLENT",
-          "healthImprovable": "IMPROVABLE"
+          "healthImprovable": "IMPROVABLE",
+          "errorTitle": "Connection Issue",
+          "errorMessage": "We couldn't reach the server. Please check your connection.",
+          "errorLoadingTasks": "Failed to sync tasks",
+          "retry": "Retry",
+          "taskCreated": "Task created successfully!",
+          "taskUpdated": "Task updated successfully!",
+          "taskDeleted": "Task removed",
+          "clearBoard": "Clear Board",
+          "boardCleared": "All tasks have been removed",
+          "clearBoardWarning": "Are you sure you want to clear the entire board? All tasks will be permanently deleted.",
         }
       },
       es: {
@@ -118,7 +128,16 @@ i18n
           "boardHealth": "Salud del Tablero",
           "workloadTitle": "Carga de Trabajo por Estado",
           "healthExcellent": "EXCELENTE",
-          "healthImprovable": "MEJORABLE"
+          "healthImprovable": "MEJORABLE",
+          "errorTitle": "Problema de Conexión",
+          "errorMessage": "No pudimos contactar con el servidor. Revisa tu conexión.",
+          "errorLoadingTasks": "Error al sincronizar tareas",
+          "retry": "Reintentar",
+          "taskCreated": "¡Tarea creada con éxito!",
+          "taskUpdated": "¡Tarea actualizada con éxito!","taskDeleted": "Tarea eliminada",
+          "clearBoard": "Limpiar Tablero",
+          "boardCleared": "Se han eliminado todas las tareas",
+          "clearBoardWarning": "¿Estás seguro de que deseas limpiar todo el tablero? Todas las tareas se borrarán permanentemente.",
         }
       }
     },

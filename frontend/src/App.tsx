@@ -10,9 +10,14 @@ import { DashboardView } from './components/dashboard/DashboardView';
 import type { Task, TaskStatus } from './types/task';
 import { useTranslation } from 'react-i18next';
 
+// BLUEPRINT COMPONENTS: UI refinement for Phase 3 
+import { Spinner, NonIdealState, Button, Intent, Icon } from '@blueprintjs/core';
+import { AppToaster } from './utils/toaster'; 
+
 /**
- * Main Application Component
- * Updated: Integrated interactive navigation between Dashboard and Kanban.
+ * App Component
+ * Core container managing global state, theme, and data fetching.
+ * Aligned with Phase 3: Frontend React + Vite + TanStack Query.
  */
 const App: React.FC = () => {
   const { t } = useTranslation();
@@ -22,7 +27,7 @@ const App: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
   const [activeView, setActiveView] = useState<'home' | 'dashboard'>('home');
 
-  // Global dark mode effect for body background
+  // THEME EFFECT: Manages BlueprintJS dark theme classes and body background
   useEffect(() => {
     if (isDark) {
       document.body.classList.add('bp4-dark');
@@ -33,25 +38,35 @@ const App: React.FC = () => {
     }
   }, [isDark]);
 
-  // Data Fetching
-  const { data: tasks, isLoading } = useQuery<Task[]>({
+  // DATA FETCHING: Server state management using TanStack Query (Phase 3)
+  const { data: tasks, isLoading, isError, error, refetch } = useQuery<Task[]>({
     queryKey: ['tasks'],
     queryFn: async () => {
       const response = await api.get('/tasks');
       return response.data;
     },
+    // ERROR HANDLING: Triggers global toaster on failure (Phase 1/3 integration)
+    meta: {
+      onError: (err: Error) => {
+        AppToaster.show({
+          message: `${t('errorLoadingTasks')}: ${err.message}`,
+          intent: Intent.DANGER, 
+          icon: "error"
+        });
+      }
+    }
   });
 
   /**
-   * NEW: Handles clicks from Dashboard charts to jump to Kanban with filters.
-   * Clears search and sets the specific status filter.
+   * NAVIGATION: Handles dashboard interactions to filter and switch views
    */
   const handleDashboardClick = (status: TaskStatus) => {
-    setSearchTerm('');      // Clear search to avoid conflicts
-    setStatusFilter(status); // Apply selected status
-    setActiveView('home');   // Switch to Kanban view
+    setSearchTerm('');
+    setStatusFilter(status);
+    setActiveView('home');
   };
 
+  // MEMOIZED FILTERING: Optimization for task list display
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
     
@@ -64,6 +79,7 @@ const App: React.FC = () => {
     });
   }, [tasks, searchTerm, statusFilter]);
 
+  // KPI CALCULATIONS: Shared metrics for Header and Dashboard
   const total = tasks?.length || 0;
   const completed = tasks?.filter(t => t.status === 'COMPLETED').length || 0;
   const progressValue = total > 0 ? completed / total : 0;
@@ -80,33 +96,72 @@ const App: React.FC = () => {
       
       <main style={{ maxWidth: '1400px', margin: '20px auto', padding: '0 20px' }}>
         
-        {/* View: Home / Kanban Board */}
-        {activeView === 'home' && (
+        {/* REFINED ERROR STATE: Noticeable alert style (Phase 3 refinement) */}
+        {isError && (
+          <div style={{ 
+            marginTop: '80px', 
+            padding: '40px', 
+            border: `1px solid ${isDark ? '#5c2526' : '#f5e0e0'}`, 
+            borderRadius: '12px', 
+            backgroundColor: isDark ? '#29333a' : '#fff1f1', 
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)' 
+          }}>
+            <NonIdealState
+              icon={
+                <div style={{ padding: '15px', borderRadius: '50%', backgroundColor: '#f5e0e0', color: '#c23030', display: 'inline-flex' }}>
+                   <Icon icon="warning-sign" size={60} intent={Intent.DANGER} />
+                </div>
+              } 
+              title={<span style={{ color: Intent.DANGER }}>{t('errorTitle')}</span>} 
+              description={<div style={{ marginTop: '10px', fontSize: '1.1em' }}>{(error as Error)?.message || t('errorMessage')}</div>}
+              action={
+                <Button 
+                  intent={Intent.PRIMARY} 
+                  icon="refresh" 
+                  onClick={() => refetch()}
+                  large
+                  style={{ marginTop: '20px' }}
+                >
+                  {t('retry')}
+                </Button>
+              }
+            />
+          </div>
+        )}
+
+        {/* HOME VIEW: Kanban Board and Filters */}
+        {activeView === 'home' && !isError && (
           <>
             <div style={{ marginTop: '20px' }}>
+              {/* FIXED: Added isDark prop to satisfy TypeScript and TaskFilters requirements */}
               <TaskFilters 
                 searchTerm={searchTerm} 
                 setSearchTerm={setSearchTerm}
                 statusFilter={statusFilter}
                 setStatusFilter={setStatusFilter}
+                isDark={isDark} 
               />
               <TaskForm isDark={isDark} />
             </div>
 
-            {isLoading && <div style={{ textAlign: 'center', marginTop: '50px', color: isDark ? '#a7b6c2' : 'inherit' }}>{t('syncing')}</div>}
-
-            {!isLoading && (
+            {/* LOADING STATE: Using Blueprint Spinner (Phase 3 refinement)  */}
+            {isLoading ? (
+              <div style={{ textAlign: 'center', marginTop: '100px' }}>
+                <Spinner size={50} intent={Intent.PRIMARY} />
+                <div style={{ marginTop: '15px', fontWeight: 500 }}>{t('syncing')}</div>
+              </div>
+            ) : (
               <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} isDark={isDark} />
             )}
           </>
         )}
 
-        {/* View: KPI Dashboard */}
-        {activeView === 'dashboard' && (
+        {/* DASHBOARD VIEW: Analytics and Charts */}
+        {activeView === 'dashboard' && !isError && (
           <DashboardView 
             tasks={tasks || []} 
             isDark={isDark} 
-            onChartClick={handleDashboardClick} // Pass click handler
+            onChartClick={handleDashboardClick}
           />
         )}
 

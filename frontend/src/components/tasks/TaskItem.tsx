@@ -2,17 +2,14 @@ import React, { useState } from 'react';
 import { 
   Card, Elevation, H5, Text, Button, ButtonGroup, 
   Alert, Intent, Dialog, Classes, FormGroup, InputGroup, TextArea,
-  Tag, Icon // Added Icon import
+  Tag, Icon 
 } from "@blueprintjs/core";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axiosInstance';
 import type { Task, TaskStatus } from '../../types/task';
 import { useTranslation } from 'react-i18next';
+import { AppToaster } from '../../utils/toaster';
 
-/**
- * TaskItem Component
- * Updated to display the creation date discreetly.
- */
 interface TaskItemProps {
   task: Task;
   isDark: boolean;
@@ -29,26 +26,38 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDark }) => {
   const [editTitle, setEditTitle] = useState(task.title);
   const [editDescription, setEditDescription] = useState(task.description);
 
-  const isPending = task.status === 'PENDING';
   const isInProgress = task.status === 'IN_PROGRESS';
   const isCompleted = task.status === 'COMPLETED';
-
   const statusIntent = isCompleted ? Intent.SUCCESS : isInProgress ? Intent.PRIMARY : Intent.WARNING;
 
   const updateMutation = useMutation({
     mutationFn: (payload: Partial<Task>) => api.patch(`/tasks/${task.id}`, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      // SUCCESS NOTIFICATION: Task updated
+      AppToaster.show({
+        message: t('taskUpdated'),
+        intent: Intent.SUCCESS,
+        icon: "refresh"
+      });
       setIsEditOpen(false);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => api.delete(`/tasks/${task.id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      // SUCCESS NOTIFICATION: Task removed
+      AppToaster.show({
+        message: t('taskDeleted'),
+        intent: Intent.DANGER,
+        icon: "trash"
+      });
+    },
   });
 
-  const nextStatus: TaskStatus | null = isPending ? 'IN_PROGRESS' : isInProgress ? 'COMPLETED' : null;
+  const nextStatus: TaskStatus | null = task.status === 'PENDING' ? 'IN_PROGRESS' : isInProgress ? 'COMPLETED' : null;
   const prevStatus: TaskStatus | null = isCompleted ? 'IN_PROGRESS' : isInProgress ? 'PENDING' : null;
 
   const getTranslatedStatus = (status: TaskStatus) => {
@@ -91,7 +100,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDark }) => {
             {task.description || t('noDescription')}
           </Text>
 
-          {/* NEW: Creation Date Display */}
           {task.createdAt && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: isDark ? '#8a9ba8' : '#738694', fontSize: '10px' }}>
               <Icon icon="calendar" size={10} />
@@ -112,7 +120,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDark }) => {
         </ButtonGroup>
       </Card>
 
-      {/* Details Dialog */}
       <Dialog className={isDark ? "bp4-dark" : ""} icon="info-sign" onClose={() => setIsDetailsOpen(false)} title={t('taskDetails')} isOpen={isDetailsOpen}>
         <div className={Classes.DIALOG_BODY}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -126,10 +133,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDark }) => {
               {task.description || t('noDetails')}
             </Text>
           </div>
-          {/* Also show date in the details modal */}
           {task.createdAt && (
             <div style={{ marginTop: '15px', color: isDark ? '#8a9ba8' : '#738694', fontSize: '12px', fontStyle: 'italic' }}>
-              Created on: {new Date(task.createdAt).toLocaleString()}
+              {t('createdOn')}: {new Date(task.createdAt).toLocaleString()}
             </div>
           )}
         </div>
@@ -143,7 +149,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDark }) => {
         </div>
       </Dialog>
 
-      {/* Edit Dialog */}
       <Dialog className={isDark ? "bp4-dark" : ""} icon="edit" onClose={() => setIsEditOpen(false)} title={t('editTask')} isOpen={isEditOpen}>
         <div className={Classes.DIALOG_BODY}>
           <FormGroup label={t('title')} labelInfo={`(${t('required')})`}>
@@ -163,7 +168,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDark }) => {
         </div>
       </Dialog>
 
-      {/* Delete Alert */}
       <Alert className={isDark ? "bp4-dark" : ""} isOpen={isAlertOpen} icon="trash" intent={Intent.DANGER} confirmButtonText={t('deleteTask')} cancelButtonText={t('cancel')} onCancel={() => setIsAlertOpen(false)} onConfirm={() => deleteMutation.mutate()}>
         <p>{t('deleteWarning')} <b>{task.title}</b>? {t('deleteAction')}</p>
       </Alert>
