@@ -19,23 +19,24 @@ export class TaskService {
         this.messaging = messaging;
     }
 
-    async getAllTasks(): Promise<Result<ITask[]>> {
-        const tasks = await this.dao.getAll();
+    async getAllTasks(userId: string): Promise<Result<ITask[]>> {
+        const tasks = await this.dao.getAll(userId);
         return Result.ok(tasks);
     }
 
-    async getTaskById(id: string): Promise<Result<ITask>> {
+    /**
+     * Phase 4: Retrieves a task only if it belongs to the requester.
+     */
+    async getTaskById(id: string, userId: string): Promise<Result<ITask>> {
         const task = await this.dao.getById(id);
-        if (!task) {
-            return Result.fail<ITask>("Task not found");
+        if (!task) return Result.fail<ITask>("Task not found");
+        
+        if (task.userId !== userId) {
+            return Result.fail<ITask>("Access denied. You do not own this task.");
         }
         return Result.ok(task);
     }
 
-    /**
-     * Creates a new task and associates it with a specific user.
-     * Phase 4: userId is now mandatory to maintain referential integrity.
-     */
     async createTask(title: string, description: string, userId: string): Promise<Result<ITask>> {
         if (!title || title.trim() === '') {
             return Result.fail<ITask>("Title is required");
@@ -47,43 +48,61 @@ export class TaskService {
             description,
             status: TaskStatus.PENDING,
             createdAt: new Date(),
-            userId // Link task to the authenticated user
+            userId
         };
 
         const createdTask = await this.dao.create(newTask);
-        
         try {
             await this.messaging.sendTaskNotification(createdTask);
         } catch (error) {
             console.error("[TaskService] Messaging notification failed:", error);
         }
-        
         return Result.ok(createdTask);
     }
 
-    async deleteTask(id: string): Promise<Result<boolean>> {
-        const success = await this.dao.delete(id);
-        if (!success) {
+    /**
+     * Phase 4: Deletes a task only if the user is the owner.
+     */
+    async deleteTask(id: string, userId: string): Promise<Result<boolean>> {
+        const task = await this.dao.getById(id);
+        if (!task) {
             return Result.fail<boolean>("Task not found");
         }
+        
+        if (task.userId !== userId) {
+            return Result.fail<boolean>("Access denied. Unauthorized deletion.");
+        }
+
+        const success = await this.dao.delete(id);
+        return Result.ok(success);
+    }
+
+    /**
+     * Phase 4: Clears only the requester's tasks.
+     */
+    async deleteAllTasks(userId: string): Promise<Result<boolean>> {
+        await this.dao.deleteAll(userId);
         return Result.ok(true);
     }
 
-    async deleteAllTasks(): Promise<Result<boolean>> {
-        await this.dao.deleteAll();
-        return Result.ok(true);
-    }
+    /**
+     * Phase: Updates a task only if the user is the owner.
+     */
+    async updateTask(id: string, updates: Partial<ITask>, userId: string): Promise<Result<ITask>> {
+        const task = await this.dao.getById(id);
+        if (!task) {
+            return Result.fail<ITask>("Task not found");
+        }
+        if (task.userId !== userId) {
+            return Result.fail<ITask>("Access denied. Unauthorized update.");
+        }
 
-    async updateTask(id: string, updates: Partial<ITask>): Promise<Result<ITask>> {
         const updatesWithTimestamp = {
             ...updates,
             updatedAt: new Date()
         };
         const updatedTask = await this.dao.update(id, updatesWithTimestamp);
-        if (!updatedTask) {
-            return Result.fail<ITask>("Task not found or update failed");
-        }
-        return Result.ok(updatedTask);
+        return Result.ok(updatedTask!);
     }
 }
 

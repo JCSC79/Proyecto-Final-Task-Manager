@@ -9,12 +9,14 @@ const db = knex(config.development);
 /**
  * Data Access Object.
  * Encapsulates all interactions with the PostgreSQL storage via Knex query builder.
- * Implements security best practices by using parameterized queries (OWASP).
  */
 class TaskDAO {
     
-    async getAll(): Promise<ITask[]> {
-        return await db<ITask>('tasks').select('*');
+    /**
+     * Retrieves tasks filtered by the owner's ID.
+     */
+    async getAll(userId: string): Promise<ITask[]> {
+        return await db<ITask>('tasks').select('*').where({ userId });
     }
 
     async getById(id: string): Promise<ITask | undefined> {
@@ -46,12 +48,11 @@ class TaskDAO {
     }
 
     /**
-     * NEW: Removes all task records from the table.
-     * SQL equivalent: DELETE FROM tasks
-     * Part of Phase 1: Bulk data operations for board maintenance.
+     * Phase 4: Removes all tasks ONLY for a specific user.
+     * Prevents one user from clearing the entire database.
      */
-    async deleteAll(): Promise<void> {
-        await db('tasks').del();
+    async deleteAll(userId: string): Promise<void> {
+        await db('tasks').where({ userId }).del();
     }
 }
 
