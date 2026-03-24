@@ -79,6 +79,17 @@ i18n
           "noAccount": "Don't have an account? Register",
           "authError": "Invalid email or password",
           "logout": "Logout",
+          "register": "Create Account",
+          "alreadyHaveAccount": "Already have an account? Login",
+          "registerSuccess": "Account created successfully! Please login.",
+          "registrationError": "Could not create account. Email might be taken.",
+          "confirmPassword": "Confirm Password",
+          "passwordsDontMatch": "Passwords do not match",
+          "noTasksTitle": "Your board is clear",
+          "noTasksDescription": "Ready to be productive? Create your first task to get started.",
+          "noResultsTitle": "No tasks found",
+          "noResultsDescription": "Try adjusting your search or filters.",
+
         }
       },
       es: {
@@ -153,6 +164,16 @@ i18n
           "noAccount": "¿No tienes cuenta? Regístrate",
           "authError": "Email o contraseña incorrectos",
           "logout": "Cerrar Sesión",
+          "register": "Crear Cuenta",
+          "alreadyHaveAccount": "¿Ya tienes cuenta? Inicia sesión",
+          "registerSuccess": "¡Cuenta creada con éxito! Por favor, inicia sesión.",
+          "registrationError": "No se pudo crear la cuenta. El email podría estar en uso.",
+          "confirmPassword": "Confirmar Contraseña",
+          "passwordsDontMatch": "Las contraseñas no coinciden",
+          "noTasksTitle": "Tu tablero está vacío",
+          "noTasksDescription": "¿Listo para ser productivo? Crea tu primera tarea para empezar.",
+          "noResultsTitle": "No se encontraron tareas",
+          "noResultsDescription": "Prueba a ajustar la búsqueda o los filtros.",
         }
       }
     },

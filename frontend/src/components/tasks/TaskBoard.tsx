@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, HTMLSelect } from "@blueprintjs/core";
+import { Button, HTMLSelect, NonIdealState, Icon, Intent } from "@blueprintjs/core";
 import { TaskItem } from './TaskItem';
 import type { Task, TaskStatus } from '../../types/task';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,8 @@ interface TaskBoardProps {
 
 /**
  * TaskBoard Component
- * Updated for Phase 3: Fixed heights, independent column pagination (5 items), and sorting.
+ * Updated for Phase 4: Added Non-Ideal States for empty boards and filtered results.
+ * Maintains Phase 3: Fixed heights, independent column pagination, and sorting.
  */
 export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDark }) => {
   const { t } = useTranslation();
@@ -42,15 +43,40 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDar
     return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
   });
 
+  // --- NEW UX LOGIC: EMPTY STATES ---
+  
+  // 1. Check if the board is completely empty for this user (at 'ALL' filter level)
+  if (tasks.length === 0 && statusFilter === 'ALL') {
+    return (
+      <div style={{ marginTop: '80px', padding: '40px' }}>
+        <NonIdealState
+          icon={<Icon icon="clipboard" size={60} intent={Intent.PRIMARY} />}
+          title={t('noTasksTitle')}
+          description={t('noTasksDescription')}
+        />
+      </div>
+    );
+  }
+
+  // 2. Check if there are no results for a specific filter
+  if (tasks.length === 0) {
+    return (
+      <div style={{ marginTop: '80px', padding: '40px' }}>
+        <NonIdealState
+          icon={<Icon icon="search" size={60} />}
+          title={t('noResultsTitle')}
+          description={t('noResultsDescription')}
+        />
+      </div>
+    );
+  }
+
   const renderColumn = (labelKey: string, status: TaskStatus) => {
     const columnTasks = sortedTasks.filter(task => task.status === status);
     const totalPages = Math.ceil(columnTasks.length / ITEMS_PER_PAGE) || 1;
     const currentPage = pages[status];
 
-    // Ensure current page is within bounds (if tasks are deleted)
     const validPage = Math.min(currentPage, totalPages);
-    
-    // Slice tasks for current page
     const startIndex = (validPage - 1) * ITEMS_PER_PAGE;
     const paginatedTasks = columnTasks.slice(startIndex, startIndex + ITEMS_PER_PAGE);
     
@@ -61,13 +87,11 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDar
         backgroundColor: isDark ? '#293742' : '#ebf1f5', 
         padding: '15px', 
         borderRadius: '8px',
-        // FIXED HEIGHT & FLEX COLUMN LOGIC 
-        height: '580px', // Fixed height so all columns are strictly equal
+        height: '580px', 
         display: 'flex',
         flexDirection: 'column',
         transition: 'background-color 0.3s ease'
       }}>
-        {/* Column Header */}
         <h3 style={{ 
           borderBottom: '2px solid #5c7080', 
           paddingBottom: '10px', 
@@ -76,13 +100,12 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDar
           display: 'flex',
           justifyContent: 'space-between',
           transition: 'color 0.3s ease',
-          flexShrink: 0 // Prevent header from squishing
+          flexShrink: 0 
         }}>
           {t(labelKey)} 
           <span style={{ fontSize: '0.8em', color: '#5c7080' }}>({columnTasks.length})</span>
         </h3>
         
-        {/* Scrollable Tasks Container */}
         <div style={{ flex: 1, overflowY: 'auto', paddingRight: '5px' }}>
           {paginatedTasks.map((task) => (
             <TaskItem key={task.id} task={task} isDark={isDark} />
@@ -94,14 +117,13 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDar
           )}
         </div>
 
-        {/* Pagination Controls (Sticks to the bottom) */}
         <div style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center',
           paddingTop: '15px',
           borderTop: `1px solid ${isDark ? '#394b59' : '#dbe3e8'}`,
-          marginTop: 'auto', // Pushes pagination to the very bottom
+          marginTop: 'auto', 
           flexShrink: 0
         }}>
           <Button 
@@ -128,17 +150,15 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDar
 
   return (
     <div>
-      {/* Sorting Control */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
         <HTMLSelect 
           value={sortOrder} 
           onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
           className={isDark ? "bp4-dark" : ""}
-          minimal={false} /* Disabled minimal to enforce background rendering */
           style={{ 
-            backgroundColor: isDark ? '#293742' : '#ffffff', // Solid background
-            color: isDark ? '#f5f8fa' : '#182026',           // Contrasted text
-            boxShadow: isDark ? '0 0 0 1px rgba(16, 22, 26, 0.4)' : 'none' // Subtle border
+            backgroundColor: isDark ? '#293742' : '#ffffff', 
+            color: isDark ? '#f5f8fa' : '#182026',           
+            boxShadow: isDark ? '0 0 0 1px rgba(16, 22, 26, 0.4)' : 'none' 
           }}
         >
           <option value="desc">{t('sortNewest')}</option>
@@ -146,7 +166,6 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDar
         </HTMLSelect>
       </div>
 
-      {/* Kanban Board Columns */}
       <div style={{ 
         display: 'flex', 
         gap: '20px', 

@@ -11,7 +11,7 @@ import { LoginView } from './views/LoginView';
 import type { Task, TaskStatus } from './types/task';
 import { useTranslation } from 'react-i18next';
 
-// BLUEPRINT COMPONENTS: UI refinement for Phase 4
+// BLUEPRINT COMPONENTS
 import { Spinner, NonIdealState, Button, Intent, Icon } from '@blueprintjs/core';
 import { AppToaster } from './utils/toaster'; 
 
@@ -27,16 +27,23 @@ const App: React.FC = () => {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
 
-  // AUTH STATE: Manage session token and user identity
+  // AUTH STATE
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [userEmail, setUserEmail] = useState<string | null>(localStorage.getItem('userEmail'));
   
-  const [searchTerm, setSearchTerm] = useState('');
+  // UI PERSISTENCE: Initialized from localStorage
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
+
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
-  const [isDark, setIsDark] = useState(false);
   const [activeView, setActiveView] = useState<'home' | 'dashboard'>('home');
 
+  /**
+   * Effect to persist theme preference and apply global styles
+   */
   useEffect(() => {
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
     if (isDark) {
       document.body.classList.add('bp4-dark');
       document.body.style.backgroundColor = '#202b33'; 
@@ -73,14 +80,20 @@ const App: React.FC = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
     setToken(null);
-    setUserEmail(null);
     queryClient.clear();
-    AppToaster.show({ message: "Logged out", icon: "log-out" });
+    AppToaster.show({ message: "Logged out", intent: Intent.WARNING, icon: "log-out" });
   };
 
-  const total = tasks?.length || 0;
-  const completed = tasks?.filter(t => t.status === 'COMPLETED').length || 0;
-  const progressValue = total > 0 ? completed / total : 0;
+  const toggleLanguage = () => {
+    const newLang = i18n.language.startsWith('es') ? 'en' : 'es';
+    i18n.changeLanguage(newLang);
+  };
+
+  const progress = useMemo(() => {
+    if (!tasks || tasks.length === 0) return 0;
+    const completed = tasks.filter(t => t.status === 'COMPLETED').length;
+    return completed / tasks.length;
+  }, [tasks]);
 
   const handleDashboardClick = (status: TaskStatus) => {
     setSearchTerm('');
@@ -98,30 +111,35 @@ const App: React.FC = () => {
     });
   }, [tasks, searchTerm, statusFilter]);
 
+  // LOGIN SCREEN RENDER: Added top toolbar for settings access
   if (!token) {
     return (
       <div className={isDark ? "bp4-dark" : ""} style={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        flexDirection: 'column',
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
         backgroundColor: isDark ? '#202b33' : '#f5f8fa'
       }}>
+        {/* SETTINGS TOOLBAR FOR LOGIN SCREEN */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '20px', gap: '10px' }}>
           <Button 
             className="bp4-minimal" 
             icon="translate" 
             text={i18n.language.startsWith('es') ? 'EN' : 'ES'} 
-            onClick={() => i18n.changeLanguage(i18n.language.startsWith('es') ? 'en' : 'es')} 
+            onClick={toggleLanguage} 
             large 
           />
-          <Button className="bp4-minimal" icon={isDark ? "flash" : "moon"} onClick={() => setIsDark(!isDark)} large />
+          <Button 
+            className="bp4-minimal" 
+            icon={isDark ? "flash" : "moon"} 
+            onClick={() => setIsDark(!isDark)} 
+            large 
+          />
         </div>
+
+        {/* CENTERED LOGIN CARD */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <LoginView onLoginSuccess={(newToken) => {
-            setToken(newToken);
-            setUserEmail(localStorage.getItem('userEmail'));
-          }} />
+          <LoginView onLoginSuccess={(newToken) => setToken(newToken)} />
         </div>
+        
         <Footer isDark={isDark} />
       </div>
     );
@@ -130,12 +148,12 @@ const App: React.FC = () => {
   return (
     <div className={isDark ? "bp4-dark" : ""} style={{ minHeight: '100vh', color: isDark ? '#f5f8fa' : '#182026' }}>
       <Header 
-        progress={progressValue} 
+        progress={progress} 
         isDark={isDark} 
         toggleDark={() => setIsDark(!isDark)} 
         activeView={activeView}
         setActiveView={setActiveView}
-        userEmail={userEmail || ''}
+        userEmail={localStorage.getItem('userEmail') || ''}
       />
       
       <div style={{ maxWidth: '1400px', margin: '10px auto', padding: '0 20px', textAlign: 'right' }}>
@@ -169,8 +187,13 @@ const App: React.FC = () => {
             )}
           </>
         )}
+        
         {activeView === 'dashboard' && !isError && (
-          <DashboardView tasks={tasks || []} isDark={isDark} onChartClick={handleDashboardClick} />
+          <DashboardView 
+            tasks={tasks || []} 
+            isDark={isDark} 
+            onChartClick={handleDashboardClick} 
+          />
         )}
       </main>
       <Footer isDark={isDark} />
