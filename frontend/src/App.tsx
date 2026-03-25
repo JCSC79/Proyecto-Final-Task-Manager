@@ -15,6 +15,13 @@ import { useTranslation } from 'react-i18next';
 import { Spinner, NonIdealState, Button, Intent, Icon } from '@blueprintjs/core';
 import { AppToaster } from './utils/toaster'; 
 
+interface UserProfile {
+  email: string;
+  name: string | null;
+  avatar_url: string | null;
+  role: string;
+}
+
 interface AxiosErrorResponse {
   response?: {
     status: number;
@@ -27,20 +34,21 @@ const App: React.FC = () => {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
 
-  // AUTH STATE
+  // AUTH & PROFILE STATE: Persisted in localStorage
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [userEmail, setUserEmail] = useState<string | null>(localStorage.getItem('userEmail'));
+  const [userName, setUserName] = useState<string | null>(localStorage.getItem('userName'));
+  const [userAvatar, setUserAvatar] = useState<string | null>(localStorage.getItem('userAvatar'));
   
-  // UI PERSISTENCE: Initialized from localStorage
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    return localStorage.getItem('theme') === 'dark';
-  });
+  // UI PERSISTENCE
+  const [isDark, setIsDark] = useState<boolean>(() => localStorage.getItem('theme') === 'dark');
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
   const [activeView, setActiveView] = useState<'home' | 'dashboard'>('home');
 
   /**
-   * Effect to persist theme preference and apply global styles
+   * Effect to synchronize theme and language settings
    */
   useEffect(() => {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
@@ -53,6 +61,7 @@ const App: React.FC = () => {
     }
   }, [isDark]);
 
+  // FETCH TASKS: Only if token exists
   const { data: tasks, isLoading, isError, error, refetch } = useQuery<Task[]>({
     queryKey: ['tasks'],
     queryFn: async () => {
@@ -60,28 +69,31 @@ const App: React.FC = () => {
       return response.data;
     },
     enabled: !!token,
-    meta: {
-      onError: (err: unknown) => {
-        const axiosErr = err as AxiosErrorResponse;
-        if (axiosErr.response?.status === 401) {
-          handleLogout();
-        } else {
-          AppToaster.show({
-            message: `${t('errorLoadingTasks')}: ${axiosErr.message}`,
-            intent: Intent.DANGER, 
-            icon: "error"
-          });
-        }
-      }
-    }
   });
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userAvatar');
     setToken(null);
+    setUserEmail(null);
+    setUserName(null);
+    setUserAvatar(null);
     queryClient.clear();
     AppToaster.show({ message: "Logged out", intent: Intent.WARNING, icon: "log-out" });
+  };
+
+  const handleLoginSuccess = (newToken: string, profile: UserProfile) => {
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('userEmail', profile.email);
+    localStorage.setItem('userName', profile.name || '');
+    localStorage.setItem('userAvatar', profile.avatar_url || '');
+    
+    setToken(newToken);
+    setUserEmail(profile.email);
+    setUserName(profile.name);
+    setUserAvatar(profile.avatar_url);
   };
 
   const toggleLanguage = () => {
@@ -104,65 +116,50 @@ const App: React.FC = () => {
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
     return tasks.filter(task => {
-      const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           task.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'ALL' || task.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [tasks, searchTerm, statusFilter]);
 
-  // LOGIN SCREEN RENDER: Added top toolbar for settings access
   if (!token) {
     return (
       <div className={isDark ? "bp4-dark" : ""} style={{ 
         minHeight: '100vh', display: 'flex', flexDirection: 'column',
         backgroundColor: isDark ? '#202b33' : '#f5f8fa'
       }}>
-        {/* SETTINGS TOOLBAR FOR LOGIN SCREEN */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '20px', gap: '10px' }}>
-          <Button 
-            className="bp4-minimal" 
-            icon="translate" 
-            text={i18n.language.startsWith('es') ? 'EN' : 'ES'} 
-            onClick={toggleLanguage} 
-            large 
-          />
-          <Button 
-            className="bp4-minimal" 
-            icon={isDark ? "flash" : "moon"} 
-            onClick={() => setIsDark(!isDark)} 
-            large 
-          />
+          <Button className="bp4-minimal" icon="translate" text={i18n.language.toUpperCase()} onClick={toggleLanguage} large />
+          <Button className="bp4-minimal" icon={isDark ? "flash" : "moon"} onClick={() => setIsDark(!isDark)} large />
         </div>
-
-        {/* CENTERED LOGIN CARD */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <LoginView onLoginSuccess={(newToken) => setToken(newToken)} />
+          <LoginView onLoginSuccess={handleLoginSuccess} />
         </div>
-        
         <Footer isDark={isDark} />
       </div>
     );
   }
 
   return (
-    <div className={isDark ? "bp4-dark" : ""} style={{ minHeight: '100vh', color: isDark ? '#f5f8fa' : '#182026' }}>
+    <div className={isDark ? "bp4-dark" : ""} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header 
         progress={progress} 
         isDark={isDark} 
         toggleDark={() => setIsDark(!isDark)} 
         activeView={activeView}
         setActiveView={setActiveView}
-        userEmail={localStorage.getItem('userEmail') || ''}
+        userEmail={userEmail || ''}
+        userName={userName}
+        userAvatar={userAvatar}
       />
       
-      <div style={{ maxWidth: '1400px', margin: '10px auto', padding: '0 20px', textAlign: 'right' }}>
+      <div style={{ maxWidth: '1400px', margin: '10px auto', padding: '0 20px', width: '100%', textAlign: 'right' }}>
          <Button icon="log-out" minimal text={t('logout')} onClick={handleLogout} intent={Intent.DANGER} />
       </div>
 
-      <main style={{ maxWidth: '1400px', margin: '0 auto 20px auto', padding: '0 20px' }}>
+      <main style={{ flex: 1, padding: '20px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
         {isError && (
-          <div style={{ marginTop: '40px', padding: '40px', border: `1px solid ${isDark ? '#5c2526' : '#f5e0e0'}`, borderRadius: '12px', backgroundColor: isDark ? '#29333a' : '#fff1f1' }}>
+          <div style={{ padding: '40px', border: `1px solid ${isDark ? '#5c2526' : '#f5e0e0'}`, borderRadius: '12px', backgroundColor: isDark ? '#29333a' : '#fff1f1' }}>
             <NonIdealState
               icon={<Icon icon="warning-sign" size={60} intent={Intent.DANGER} />} 
               title={t('errorTitle')} 
@@ -174,27 +171,13 @@ const App: React.FC = () => {
 
         {activeView === 'home' && !isError && (
           <>
-            <div style={{ marginTop: '20px' }}>
-              <TaskFilters searchTerm={searchTerm} setSearchTerm={setSearchTerm} statusFilter={statusFilter} setStatusFilter={setStatusFilter} isDark={isDark} />
-              <TaskForm isDark={isDark} />
-            </div>
-            {isLoading ? (
-              <div style={{ textAlign: 'center', marginTop: '100px' }}>
-                <Spinner size={50} intent={Intent.PRIMARY} /><div style={{ marginTop: '15px' }}>{t('syncing')}</div>
-              </div>
-            ) : (
-              <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} isDark={isDark} />
-            )}
+            <TaskFilters searchTerm={searchTerm} setSearchTerm={setSearchTerm} statusFilter={statusFilter} setStatusFilter={setStatusFilter} isDark={isDark} />
+            <TaskForm isDark={isDark} />
+            {isLoading ? <Spinner size={50} intent={Intent.PRIMARY} /> : <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} isDark={isDark} />}
           </>
         )}
-        
-        {activeView === 'dashboard' && !isError && (
-          <DashboardView 
-            tasks={tasks || []} 
-            isDark={isDark} 
-            onChartClick={handleDashboardClick} 
-          />
-        )}
+
+        {activeView === 'dashboard' && !isError && <DashboardView tasks={tasks || []} isDark={isDark} onChartClick={handleDashboardClick} />}
       </main>
       <Footer isDark={isDark} />
     </div>

@@ -5,8 +5,15 @@ import { useTranslation } from 'react-i18next';
 import { AppToaster } from '../utils/toaster';
 
 /**
- * Interface for API Error responses (Strict Typing)
+ * Interface for the user profile returned by the Backend
  */
+interface UserProfile {
+  email: string;
+  name: string | null;
+  avatar_url: string | null;
+  role: string;
+}
+
 interface AuthError {
   response?: {
     data?: {
@@ -16,19 +23,21 @@ interface AuthError {
 }
 
 interface LoginViewProps {
-  onLoginSuccess: (token: string) => void;
+  // Now passes token and the profile object
+  onLoginSuccess: (token: string, user: UserProfile) => void;
 }
 
 /**
  * LoginView Component
- * Phase 4: Manages Login and Registration with password confirmation.
+ * Phase 4: Manages Login and Registration with Name support and Password confirmation.
  */
 export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   const { t } = useTranslation();
   
-  // States
+  // Form States
   const [isRegistering, setIsRegistering] = useState<boolean>(false);
   const [email, setEmail] = useState<string>('');
+  const [name, setName] = useState<string>(''); // New field for Phase 4
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -50,18 +59,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     setLoading(true);
     try {
       if (isRegistering) {
-        await api.post('/auth/register', { email, password });
+        // Send email, password and the new name field
+        await api.post('/auth/register', { email, password, name });
         AppToaster.show({ message: t('registerSuccess'), intent: Intent.SUCCESS, icon: "user" });
         setIsRegistering(false);
         setConfirmPassword('');
       } else {
         const response = await api.post('/auth/login', { email, password });
-        const { token } = response.data;
+        // Backend now returns { token: string, user: UserProfile }
+        const { token, user } = response.data;
         
-        localStorage.setItem('token', token);
-        localStorage.setItem('userEmail', email); 
-        onLoginSuccess(token);
-        
+        onLoginSuccess(token, user);
         AppToaster.show({ message: "Welcome back!", intent: Intent.SUCCESS, icon: "log-in" });
       }
     } catch (err: unknown) {
@@ -81,6 +89,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
       </div>
 
       <form onSubmit={handleAuth}>
+        {/* Full Name field: Only visible during registration */}
+        {isRegistering && (
+          <FormGroup label={t('fullName')} labelFor="name">
+            <InputGroup id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} required large leftIcon="person" />
+          </FormGroup>
+        )}
+
         <FormGroup label={t('email')} labelFor="email">
           <InputGroup id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required large leftIcon="envelope" />
         </FormGroup>

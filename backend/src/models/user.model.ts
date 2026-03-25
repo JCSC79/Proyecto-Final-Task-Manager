@@ -11,12 +11,14 @@ export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 /**
  * Main User Interface.
- * Note: password is optional here because we often exclude it from API responses.
+ * Phase 4 Update: Added name and avatar_url for professional profile management.
  */
 export interface IUser {
     id: string;
     email: string;
     password?: string; 
+    name: string | null;  // Full name for UI personalization
+    avatar_url: string;  // URL for profile picture
     role: UserRole;
     createdAt: Date;
 }

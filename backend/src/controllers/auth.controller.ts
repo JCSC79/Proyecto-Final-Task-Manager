@@ -3,22 +3,24 @@ import { authService } from '../services/auth.service.ts';
 
 /**
  * Controller to handle Authentication HTTP requests.
- * Connects the API endpoints with the AuthService logic.
+ * Phase 4: Updated to handle user names during registration.
  */
 class AuthController {
 
     /**
      * Handles user registration.
-     * Expected body: { email, password }
+     * Expected body: { email, password, name? }
      */
     async register(req: Request, res: Response): Promise<Response | void> {
-        const { email, password } = req.body;
+        // We now extract 'name' from the request body
+        const { email, password, name } = req.body;
 
         if (!email || !password) {
             return res.status(400).json({ error: "Email and password are required" });
         }
 
-        const result = await authService.register(email, password);
+        // We pass 'name' to the service
+        const result = await authService.register(email, password, name);
 
         if (result.isFailure) {
             return res.status(400).json({ error: result.error });
@@ -28,8 +30,7 @@ class AuthController {
     }
 
     /**
-     * Handles user login and returns a JWT token.
-     * Expected body: { email, password }
+     * Handles user login and returns JWT + User Profile.
      */
     async login(req: Request, res: Response): Promise<Response | void> {
         const { email, password } = req.body;
@@ -41,11 +42,11 @@ class AuthController {
         const result = await authService.login(email, password);
 
         if (result.isFailure) {
-            // We return 401 Unauthorized for login failures
             return res.status(401).json({ error: result.error });
         }
 
-        return res.json({ token: result.getValue() });
+        // Now returns { token, user: { email, name, avatar_url, role } }
+        return res.json(result.getValue());
     }
 }
 
