@@ -1,48 +1,48 @@
 import React from 'react';
-import { 
-  Navbar, 
-  ProgressBar, 
-  Button, 
-  Alignment, 
-  Tag, 
-  Intent, 
-  Popover, 
-  Menu, 
-  MenuItem,      
-  MenuDivider    
+import {
+  Navbar,
+  ProgressBar,
+  Button,
+  Alignment,
+  Tag,
+  Intent,
+  Popover,
+  Menu,
+  MenuItem,
+  MenuDivider
 } from "@blueprintjs/core";
 import { useTranslation } from 'react-i18next';
 import logoImg from '../../assets/logo.png';
 
-type ViewMode = 'home' | 'dashboard';
-
 /**
- * Header Component
- * Phase 4-5 Update: Displays User Identity and App Progress.
- * Added: onEditProfile prop to trigger the modal from App.tsx.
+ * Header Component - Phase 6 Hardened Version
+ * Provides Role-Based UI elements. 
+ * The Admin tab and specific branding (Crown) are strictly tied to the verified userRole.
  */
 interface HeaderProps {
   progress: number;
   isDark: boolean;
   toggleDark: () => void;
-  activeView: ViewMode;
-  setActiveView: (view: ViewMode) => void;
+  activeView: string;
+  setActiveView: (view: any) => void;
   userEmail: string;
   userName: string | null;
   userAvatar: string | null;
-  onLogout: () => void; 
-  onEditProfile: () => void; // NEW: Added for Phase 5
+  userRole: string;
+  onLogout: () => void;
+  onEditProfile: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ 
-  progress, 
-  isDark, 
-  toggleDark, 
-  activeView, 
-  setActiveView, 
+export const Header: React.FC<HeaderProps> = ({
+  progress,
+  isDark,
+  toggleDark,
+  activeView,
+  setActiveView,
   userEmail,
   userName,
   userAvatar,
+  userRole,
   onLogout,
   onEditProfile
 }) => {
@@ -56,28 +56,34 @@ export const Header: React.FC<HeaderProps> = ({
 
   const displayIdentifier = userName || userEmail;
 
+  /**
+   * RBAC CHECK:
+   * We use strict equality to ensure 'isAdmin' is only true for the ADMIN role.
+   */
+  const isAdmin = userRole === 'ADMIN';
+
   const userMenu = (
     <Menu>
-      <MenuItem 
-        icon="user" 
-        text={t('editProfile') || 'Edit Profile'} 
-        onClick={onEditProfile} // FIXED: Now triggers the modal
+      <MenuItem
+        icon="user"
+        text={t('editProfile') || 'Edit Profile'}
+        onClick={onEditProfile}
       />
-      <MenuDivider /> 
-      <MenuItem 
-        icon="log-out" 
-        text={t('logout')} 
-        intent={Intent.DANGER} 
-        onClick={onLogout} 
+      <MenuDivider />
+      <MenuItem
+        icon="log-out"
+        text={t('logout')}
+        intent={Intent.DANGER}
+        onClick={onLogout}
       />
     </Menu>
   );
 
   return (
-    <Navbar 
-      className={isDark ? "bp4-dark" : ""} 
-      style={{ 
-        height: '75px', 
+    <Navbar
+      className={isDark ? "bp4-dark" : ""}
+      style={{
+        height: '75px',
         padding: '10px 20px',
         backgroundColor: isDark ? '#293742' : '#ffffff',
         transition: 'background-color 0.3s ease',
@@ -93,26 +99,63 @@ export const Header: React.FC<HeaderProps> = ({
             <strong style={{ color: isDark ? '#ffffff' : '#182026' }}>{t('appName')}</strong>
           </Navbar.Heading>
         </div>
-        
+
         <Navbar.Divider />
-        
+
         <div style={{ marginLeft: '10px', display: 'flex', gap: '8px' }}>
           <Button className="bp4-minimal" icon="home" text={t('home')} active={activeView === 'home'} onClick={() => setActiveView('home')} large />
           <Button className="bp4-minimal" icon="dashboard" text={t('dashboard')} active={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} large />
+
+          {/* RBAC: 
+              The Admin Tab is only rendered if the user session is verified as ADMIN.
+          */}
+          {isAdmin && (
+            <Button
+              className="bp4-minimal"
+              icon="shield"
+              text="Admin"
+              active={activeView === 'admin'}
+              onClick={() => setActiveView('admin')}
+              intent={Intent.WARNING}
+              large
+            />
+          )}
         </div>
 
         <div style={{ marginLeft: 'auto', marginRight: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ textAlign: 'right', lineHeight: '1.2' }}>
             <div style={{ fontWeight: 'bold', fontSize: '0.95em', color: isDark ? '#f5f8fa' : '#182026' }}>{displayIdentifier}</div>
-            <Tag minimal intent={Intent.PRIMARY} round style={{ fontSize: '0.75em', padding: '0 8px' }}>{userName ? userEmail : t('user')}</Tag>
+
+            {/* Dynamic Status Tag */}
+            <Tag
+              minimal
+              intent={isAdmin ? Intent.WARNING : Intent.PRIMARY}
+              round
+              icon={isAdmin ? "crown" : "user"}
+              style={{ fontSize: '0.75em', padding: '0 8px' }}
+            >
+              {isAdmin ? 'ADMIN' : (userName ? userEmail : t('user'))}
+            </Tag>
           </div>
 
           <div style={{ position: 'relative', display: 'inline-block', width: '38px', height: '38px' }}>
-            <Popover content={userMenu} placement="bottom-end" minimal={true} usePortal={false}>
-              <img 
-                src={userAvatar || `https://ui-avatars.com/api/?name=${displayIdentifier}&background=random`} 
-                alt="Profile" 
-                style={{ width: '38px', height: '38px', borderRadius: '50%', border: `2px solid ${isDark ? '#5c7080' : '#dbe3e8'}`, objectFit: 'cover', cursor: 'pointer', display: 'block' }} 
+            <Popover
+              content={userMenu}
+              placement="bottom-end"
+              minimal={true}
+              usePortal={false}>
+              <img
+                src={userAvatar || `https://ui-avatars.com/api/?name=${displayIdentifier}&background=random`}
+                alt="Profile"
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  border: `2px solid ${isAdmin ? '#D9822B' : (isDark ? '#5c7080' : '#dbe3e8')}`,
+                  objectFit: 'cover',
+                  cursor: 'pointer',
+                  display: 'block'
+                }}
               />
             </Popover>
           </div>
@@ -124,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <Navbar.Divider />
-        
+
         <div style={{ display: 'flex', alignItems: 'center', marginLeft: '10px', gap: '10px' }}>
           <Button className="bp4-minimal" icon={isDark ? "flash" : "moon"} onClick={toggleDark} large />
           <Button className="bp4-minimal" icon="translate" text={i18n.language.toUpperCase()} onClick={toggleLanguage} large />

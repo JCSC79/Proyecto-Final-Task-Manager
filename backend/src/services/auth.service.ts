@@ -11,12 +11,13 @@ const SALT_ROUNDS = 10;
 
 /**
  * Service handling Authentication logic: Registration and Login.
- * Updated Phase 5: Now supports profile information updates.
+ * Updated Phase 6: Implements role-based profile updates and strict security.
  */
 export class AuthService {
     
     /**
      * Registers a new user with password hashing and automatic avatar.
+     * SHIELD: Every new user is forced to UserRole.USER.
      */
     async register(email: string, password: string, name?: string): Promise<Result<IUser>> {
         const existingUser = await userDAO.getByEmail(email);
@@ -25,7 +26,6 @@ export class AuthService {
         }
 
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-
         const emailHash = crypto.createHash('md5').update(email.toLowerCase().trim()).digest('hex');
 
         const newUser: IUser = {
@@ -34,7 +34,7 @@ export class AuthService {
             password: hashedPassword,
             name: name ?? null,
             avatar_url: `https://www.gravatar.com/avatar/${emailHash}?d=identicon`,
-            role: UserRole.USER,
+            role: UserRole.USER, // FIXED: Force standard user on registration
             createdAt: new Date()
         };
 
@@ -43,9 +43,6 @@ export class AuthService {
         return Result.ok(userWithoutPassword as IUser);
     }
 
-    /**
-     * Validates credentials and returns both token and detailed profile.
-     */
     async login(email: string, password: string): Promise<Result<{ token: string, user: Partial<IUser> }>> {
         const user = await userDAO.getByEmail(email);
         if (!user || !user.password) {
@@ -75,11 +72,20 @@ export class AuthService {
 
     /**
      * Updates user profile information.
-     * Phase 5: Logic to handle name updates and return fresh user data.
+     * FIXED: Added 'role' parameter to match the controller call.
      */
-    async updateProfile(userId: string, name: string): Promise<Result<IUser>> {
+    async updateProfile(userId: string, name: string, role?: string): Promise<Result<IUser>> {
         try {
-            const updatedUser = await userDAO.update(userId, { name });
+            // Prepare update object dynamically
+            const updateData: any = { name };
+            
+            // Only update role if it's explicitly passed (validated by controller)
+            if (role) {
+                updateData.role = role;
+            }
+
+            const updatedUser = await userDAO.update(userId, updateData);
+            
             if (!updatedUser) {
                 return Result.fail<IUser>("User not found");
             }

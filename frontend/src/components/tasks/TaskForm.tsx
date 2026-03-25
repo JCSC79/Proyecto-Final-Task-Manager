@@ -72,6 +72,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({ isDark }) => {
     mutation.mutate({ title, description });
   };
 
+  const labelStyle = { color: isDark ? '#f5f8fa' : 'inherit' };
+
   return (
     <Card 
       className={isDark ? "bp4-dark" : ""}
@@ -86,7 +88,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({ isDark }) => {
       <H4 style={{ marginBottom: '20px', color: isDark ? '#f5f8fa' : 'inherit' }}>{t('createTask')}</H4>
       
       <form onSubmit={handleSubmit}>
-        <FormGroup label={t('title')} labelFor="title-input" labelInfo={`(${t('required')})`}>
+        <FormGroup 
+          label={<span style={labelStyle}>{t('title')}</span>} 
+          labelFor="title-input" 
+          labelInfo={`(${t('required')})`}
+        >
           <InputGroup 
             id="title-input" 
             large 
@@ -96,7 +102,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({ isDark }) => {
           />
         </FormGroup>
 
-        <FormGroup label={t('description')} labelFor="description-input" labelInfo={`(${t('required')})`}>
+       <FormGroup 
+          label={<span style={labelStyle}>{t('description')}</span>} 
+          labelFor="description-input" 
+          labelInfo={`(${t('required')})`}
+        >
           <TextArea 
             fill={true} 
             large 

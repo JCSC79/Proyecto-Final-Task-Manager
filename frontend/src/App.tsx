@@ -1,27 +1,21 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from './api/axiosInstance';
+import { useAuth } from './hooks/useAuth';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { TaskFilters } from './components/tasks/TaskFilters';
 import { TaskForm } from './components/tasks/TaskForm';
 import { TaskBoard } from './components/tasks/TaskBoard';
 import { DashboardView } from './components/dashboard/DashboardView';
-import { ProfileModal } from './components/profile/ProfileModal'; // NEW
+import { AdminView } from './views/AdminView';
+import { ProfileModal } from './components/profile/ProfileModal';
 import { LoginView } from './views/LoginView'; 
 import type { Task, TaskStatus } from './types/task';
 import { useTranslation } from 'react-i18next';
 
 // BLUEPRINT COMPONENTS
 import { Spinner, NonIdealState, Button, Intent, Icon } from '@blueprintjs/core';
-import { AppToaster } from './utils/toaster'; 
-
-interface UserProfile {
-  email: string;
-  name: string | null;
-  avatar_url: string | null;
-  role: string;
-}
 
 interface AxiosErrorResponse {
   response?: {
@@ -31,40 +25,26 @@ interface AxiosErrorResponse {
   message: string;
 }
 
+/**
+ * Main Application Component - Phase 6 Hardened Version
+ */
 const App: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const queryClient = useQueryClient();
+  const { user, isAuthenticated, login, logout, updateProfile } = useAuth();
 
-  // AUTH & PROFILE STATE
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [userEmail, setUserEmail] = useState<string | null>(localStorage.getItem('userEmail'));
-  const [userName, setUserName] = useState<string | null>(localStorage.getItem('userName'));
-  const [userAvatar, setUserAvatar] = useState<string | null>(localStorage.getItem('userAvatar'));
-  
   // UI PERSISTENCE
   const [isDark, setIsDark] = useState<boolean>(() => localStorage.getItem('theme') === 'dark');
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false); // NEW Phase 5
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [activeView, setActiveView] = useState<'home' | 'dashboard' | 'admin'>('home');
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
-  const [activeView, setActiveView] = useState<'home' | 'dashboard'>('home');
 
   useEffect(() => {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    if (isDark) {
-      document.body.classList.add('bp4-dark');
-      document.body.style.backgroundColor = '#202b33'; 
-    } else {
-      document.body.classList.remove('bp4-dark');
-      document.body.style.backgroundColor = '#f5f8fa'; 
-    }
+    document.body.className = isDark ? 'bp4-dark' : '';
+    document.body.style.backgroundColor = isDark ? '#202b33' : '#f5f8fa';
   }, [isDark]);
-
-  useEffect(() => {
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    }
-  }, [token]);
 
   const { data: tasks, isLoading, isError, error, refetch } = useQuery<Task[]>({
     queryKey: ['tasks'],
@@ -72,56 +52,14 @@ const App: React.FC = () => {
       const response = await api.get('/tasks');
       return response.data;
     },
-    enabled: !!token,
+    enabled: isAuthenticated,
   });
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userAvatar');
-    setToken(null);
-    setUserEmail(null);
-    setUserName(null);
-    setUserAvatar(null);
-    queryClient.clear();
-    AppToaster.show({ message: "Logged out", intent: Intent.WARNING, icon: "log-out" });
-  };
-
-  const handleLoginSuccess = (newToken: string, profile: UserProfile) => {
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('userEmail', profile.email);
-    localStorage.setItem('userName', profile.name || '');
-    localStorage.setItem('userAvatar', profile.avatar_url || '');
-    
-    setToken(newToken);
-    setUserEmail(profile.email);
-    setUserName(profile.name);
-    setUserAvatar(profile.avatar_url);
-  };
-
-  // Phase 5: Handler for successful profile update
-  const handleUpdateName = (newName: string) => {
-    localStorage.setItem('userName', newName);
-    setUserName(newName);
-  };
-
-  const toggleLanguage = () => {
-    const newLang = i18n.language.startsWith('es') ? 'en' : 'es';
-    i18n.changeLanguage(newLang);
-  };
 
   const progress = useMemo(() => {
     if (!tasks || tasks.length === 0) return 0;
     const completed = tasks.filter(t => t.status === 'COMPLETED').length;
     return completed / tasks.length;
   }, [tasks]);
-
-  const handleDashboardClick = (status: TaskStatus) => {
-    setSearchTerm('');
-    setStatusFilter(status);
-    setActiveView('home');
-  };
 
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
@@ -132,18 +70,21 @@ const App: React.FC = () => {
     });
   }, [tasks, searchTerm, statusFilter]);
 
-  if (!token) {
+  const handleDashboardClick = (status: TaskStatus) => {
+    setSearchTerm('');
+    setStatusFilter(status);
+    setActiveView('home');
+  };
+
+  if (!isAuthenticated) {
     return (
-      <div className={isDark ? "bp4-dark" : ""} style={{ 
-        minHeight: '100vh', display: 'flex', flexDirection: 'column',
-        backgroundColor: isDark ? '#202b33' : '#f5f8fa'
-      }}>
+      <div className={isDark ? "bp4-dark" : ""} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: isDark ? '#202b33' : '#f5f8fa' }}>
         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '20px', gap: '10px' }}>
-          <Button className="bp4-minimal" icon="translate" text={i18n.language.toUpperCase()} onClick={toggleLanguage} large />
+          <Button className="bp4-minimal" icon="translate" text={i18n.language.toUpperCase()} onClick={() => i18n.changeLanguage(i18n.language.startsWith('es') ? 'en' : 'es')} large />
           <Button className="bp4-minimal" icon={isDark ? "flash" : "moon"} onClick={() => setIsDark(!isDark)} large />
         </div>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <LoginView onLoginSuccess={handleLoginSuccess} />
+          <LoginView onLoginSuccess={login} />
         </div>
         <Footer isDark={isDark} />
       </div>
@@ -156,50 +97,57 @@ const App: React.FC = () => {
         progress={progress} 
         isDark={isDark} 
         toggleDark={() => setIsDark(!isDark)} 
-        activeView={activeView}
+        activeView={activeView === 'admin' ? 'dashboard' : activeView}
         setActiveView={setActiveView}
-        userEmail={userEmail || ''}
-        userName={userName}
-        userAvatar={userAvatar}
-        onLogout={handleLogout}
-        onEditProfile={() => setIsProfileModalOpen(true)} // NEW
+        userEmail={user?.email || ''}
+        userName={user?.name || null}
+        userAvatar={user?.avatar_url || null}
+        userRole={user?.role || 'USER'}
+        onLogout={logout}
+        onEditProfile={() => setIsProfileModalOpen(true)}
       />
       
       <main style={{ flex: 1, padding: '20px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
         {isError && (
-          <div style={{ padding: '40px', border: `1px solid ${isDark ? '#5c2526' : '#f5e0e0'}`, borderRadius: '12px', backgroundColor: isDark ? '#29333a' : '#fff1f1' }}>
-            <NonIdealState
-              icon={<Icon icon="warning-sign" size={60} intent={Intent.DANGER} />} 
-              title={t('errorTitle')} 
-              description={(error as AxiosErrorResponse)?.message || t('errorMessage')}
-              action={<Button intent={Intent.PRIMARY} icon="refresh" onClick={() => refetch()} text={t('retry')} />}
+          <NonIdealState
+            icon={<Icon icon="warning-sign" size={60} intent={Intent.DANGER} />} 
+            title={t('errorTitle')} 
+            description={(error as AxiosErrorResponse)?.message || t('errorMessage')}
+            action={<Button intent={Intent.PRIMARY} icon="refresh" onClick={() => refetch()} text={t('retry')} />}
+          />
+        )}
+
+        {/* 🛡️ PHASE 6 SECURITY GATE: HARDENED RENDER */}
+        {activeView === 'admin' && (
+          user?.role === 'ADMIN' ? (
+            <AdminView />
+          ) : (
+            <NonIdealState 
+              icon={<Icon icon="shield" intent={Intent.DANGER} size={60} />}
+              title="Acceso Restringido"
+              description="No tienes permisos de administrador verificados."
+              action={<Button intent={Intent.PRIMARY} text="Volver al Inicio" onClick={() => setActiveView('home')} />}
             />
-          </div>
+          )
         )}
 
         {activeView === 'home' && !isError && (
           <>
             <TaskFilters searchTerm={searchTerm} setSearchTerm={setSearchTerm} statusFilter={statusFilter} setStatusFilter={setStatusFilter} isDark={isDark} />
             <TaskForm isDark={isDark} />
-            {isLoading ? (
-              <div style={{ textAlign: 'center', marginTop: '50px' }}>
-                <Spinner size={50} intent={Intent.PRIMARY} />
-              </div>
-            ) : (
-              <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} isDark={isDark} />
-            )}
+            {isLoading ? <Spinner size={50} /> : <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} isDark={isDark} />}
           </>
         )}
 
         {activeView === 'dashboard' && !isError && <DashboardView tasks={tasks || []} isDark={isDark} onChartClick={handleDashboardClick} />}
       </main>
 
-      {/* Phase 5: Profile Editing Modal */}
       <ProfileModal 
         isOpen={isProfileModalOpen} 
         onClose={() => setIsProfileModalOpen(false)}
-        currentName={userName || ''}
-        onUpdateSuccess={handleUpdateName}
+        currentName={user?.name || ''}
+        currentRole={user?.role || 'USER'}
+        onUpdateSuccess={updateProfile}
         isDark={isDark}
       />
 

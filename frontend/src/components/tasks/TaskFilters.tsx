@@ -27,7 +27,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
 
   // MUTATION: Delete all tasks (Bulk delete)
   const clearMutation = useMutation({
-    mutationFn: () => api.delete('/tasks'),
+    mutationFn: () => api.delete('/tasks/cleanup'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       AppToaster.show({

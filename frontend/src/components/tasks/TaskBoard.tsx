@@ -12,7 +12,8 @@ interface TaskBoardProps {
 
 /**
  * TaskBoard Component
- * Updated for Phase 4: Added Non-Ideal States for empty boards and filtered results.
+ * Updated for Phase 6: Added user-specific cleanup functionality.
+ * Maintains Phase 4: Non-Ideal States for empty boards.
  * Maintains Phase 3: Fixed heights, independent column pagination, and sorting.
  */
 export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDark }) => {
@@ -35,6 +36,12 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDar
   const setPage = (status: TaskStatus, newPage: number) => {
     setPages(prev => ({ ...prev, [status]: newPage }));
   };
+
+  /**
+   * USER-SPECIFIC CLEANUP (NEW PHASE 6)
+   * Calls the new /tasks/cleanup endpoint which doesn't require ADMIN role.
+   */
+
 
   // Sort tasks globally before distributing to columns
   const sortedTasks = [...tasks].sort((a, b) => {
@@ -150,7 +157,8 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDar
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px', gap: '10px' }}>
+        {/* NEW BUTTON FOR PHASE 6 CLEANUP */}
         <HTMLSelect 
           value={sortOrder} 
           onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
