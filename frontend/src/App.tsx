@@ -7,6 +7,7 @@ import { TaskFilters } from './components/tasks/TaskFilters';
 import { TaskForm } from './components/tasks/TaskForm';
 import { TaskBoard } from './components/tasks/TaskBoard';
 import { DashboardView } from './components/dashboard/DashboardView';
+import { ProfileModal } from './components/profile/ProfileModal'; // NEW
 import { LoginView } from './views/LoginView'; 
 import type { Task, TaskStatus } from './types/task';
 import { useTranslation } from 'react-i18next';
@@ -34,7 +35,7 @@ const App: React.FC = () => {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
 
-  // AUTH & PROFILE STATE: Persisted in localStorage
+  // AUTH & PROFILE STATE
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [userEmail, setUserEmail] = useState<string | null>(localStorage.getItem('userEmail'));
   const [userName, setUserName] = useState<string | null>(localStorage.getItem('userName'));
@@ -42,14 +43,12 @@ const App: React.FC = () => {
   
   // UI PERSISTENCE
   const [isDark, setIsDark] = useState<boolean>(() => localStorage.getItem('theme') === 'dark');
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false); // NEW Phase 5
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
   const [activeView, setActiveView] = useState<'home' | 'dashboard'>('home');
 
-  /**
-   * Effect to synchronize theme and language settings
-   */
   useEffect(() => {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
     if (isDark) {
@@ -61,7 +60,12 @@ const App: React.FC = () => {
     }
   }, [isDark]);
 
-  // FETCH TASKS: Only if token exists
+  useEffect(() => {
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
+  }, [token]);
+
   const { data: tasks, isLoading, isError, error, refetch } = useQuery<Task[]>({
     queryKey: ['tasks'],
     queryFn: async () => {
@@ -94,6 +98,12 @@ const App: React.FC = () => {
     setUserEmail(profile.email);
     setUserName(profile.name);
     setUserAvatar(profile.avatar_url);
+  };
+
+  // Phase 5: Handler for successful profile update
+  const handleUpdateName = (newName: string) => {
+    localStorage.setItem('userName', newName);
+    setUserName(newName);
   };
 
   const toggleLanguage = () => {
@@ -151,12 +161,10 @@ const App: React.FC = () => {
         userEmail={userEmail || ''}
         userName={userName}
         userAvatar={userAvatar}
+        onLogout={handleLogout}
+        onEditProfile={() => setIsProfileModalOpen(true)} // NEW
       />
       
-      <div style={{ maxWidth: '1400px', margin: '10px auto', padding: '0 20px', width: '100%', textAlign: 'right' }}>
-         <Button icon="log-out" minimal text={t('logout')} onClick={handleLogout} intent={Intent.DANGER} />
-      </div>
-
       <main style={{ flex: 1, padding: '20px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
         {isError && (
           <div style={{ padding: '40px', border: `1px solid ${isDark ? '#5c2526' : '#f5e0e0'}`, borderRadius: '12px', backgroundColor: isDark ? '#29333a' : '#fff1f1' }}>
@@ -173,12 +181,28 @@ const App: React.FC = () => {
           <>
             <TaskFilters searchTerm={searchTerm} setSearchTerm={setSearchTerm} statusFilter={statusFilter} setStatusFilter={setStatusFilter} isDark={isDark} />
             <TaskForm isDark={isDark} />
-            {isLoading ? <Spinner size={50} intent={Intent.PRIMARY} /> : <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} isDark={isDark} />}
+            {isLoading ? (
+              <div style={{ textAlign: 'center', marginTop: '50px' }}>
+                <Spinner size={50} intent={Intent.PRIMARY} />
+              </div>
+            ) : (
+              <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} isDark={isDark} />
+            )}
           </>
         )}
 
         {activeView === 'dashboard' && !isError && <DashboardView tasks={tasks || []} isDark={isDark} onChartClick={handleDashboardClick} />}
       </main>
+
+      {/* Phase 5: Profile Editing Modal */}
+      <ProfileModal 
+        isOpen={isProfileModalOpen} 
+        onClose={() => setIsProfileModalOpen(false)}
+        currentName={userName || ''}
+        onUpdateSuccess={handleUpdateName}
+        isDark={isDark}
+      />
+
       <Footer isDark={isDark} />
     </div>
   );

@@ -4,7 +4,7 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger.ts';
 import { taskController } from './controllers/task.controller.ts';
 import { authController } from './controllers/auth.controller.ts';
-import { authenticate } from './middlewares/auth.middleware.ts'; // NEW: Security shield
+import { authenticate } from './middlewares/auth.middleware.ts'; // Security shield
 import { messagingService } from './services/messaging.service.ts';
 
 const app = express();
@@ -23,17 +23,23 @@ app.use((req, _res, next) => {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 /**
- * AUTHENTICATION ROUTES (Phase 4)
- * Public endpoints: No token required to create an account or login.
+ * PUBLIC AUTHENTICATION ROUTES
+ * No token required to create an account or login.
  */
 app.post('/auth/register', (req, res) => authController.register(req, res));
 app.post('/auth/login', (req, res) => authController.login(req, res));
 
 /**
- * TASK ROUTES (Protected)
- * All routes below this line require a valid JWT token.
+ * PROTECTED AUTHENTICATION ROUTES
+ * We use 'authenticate' middleware so only logged-in users can update their profile.
  */
-app.use('/tasks', authenticate); // Apply the shield to all /tasks/* routes
+app.put('/auth/profile', authenticate, (req, res) => authController.updateProfile(req, res));
+
+/**
+ * TASK ROUTES (Protected)
+ * We apply the 'authenticate' shield to all /tasks/* routes.
+ */
+app.use('/tasks', authenticate); 
 
 app.get('/tasks', (req, res) => taskController.getAll(req, res));
 app.post('/tasks', (req, res) => taskController.create(req, res));
@@ -50,5 +56,5 @@ app.listen(PORT, async () => {
     await messagingService.init();
     console.log(`Server running at http://localhost:${PORT}`);
     console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
-    console.log('Endpoints ready: AUTH (Public), TASKS (Protected by JWT)');
+    console.log('Endpoints ready: AUTH (Public & Protected), TASKS (Protected by JWT)');
 });

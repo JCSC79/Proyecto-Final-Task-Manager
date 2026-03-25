@@ -1,16 +1,25 @@
 import React from 'react';
-import { Navbar, ProgressBar, Button, Alignment, Tag, Intent, Tooltip } from "@blueprintjs/core";
+import { 
+  Navbar, 
+  ProgressBar, 
+  Button, 
+  Alignment, 
+  Tag, 
+  Intent, 
+  Popover, 
+  Menu, 
+  MenuItem,      
+  MenuDivider    
+} from "@blueprintjs/core";
 import { useTranslation } from 'react-i18next';
-// NEW: Import the custom logo from assets for Vite processing
 import logoImg from '../../assets/logo.png';
 
-// Define the available view modes
 type ViewMode = 'home' | 'dashboard';
 
 /**
  * Header Component
- * Phase 4 Update: Displays User Identity (Avatar & Name) and App Progress.
- * Manages view switching between Home and Dashboard.
+ * Phase 4-5 Update: Displays User Identity and App Progress.
+ * Added: onEditProfile prop to trigger the modal from App.tsx.
  */
 interface HeaderProps {
   progress: number;
@@ -19,8 +28,10 @@ interface HeaderProps {
   activeView: ViewMode;
   setActiveView: (view: ViewMode) => void;
   userEmail: string;
-  userName: string | null;   // Added Phase 4
-  userAvatar: string | null; // Added Phase 4
+  userName: string | null;
+  userAvatar: string | null;
+  onLogout: () => void; 
+  onEditProfile: () => void; // NEW: Added for Phase 5
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -31,7 +42,9 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveView, 
   userEmail,
   userName,
-  userAvatar
+  userAvatar,
+  onLogout,
+  onEditProfile
 }) => {
   const { t, i18n } = useTranslation();
   const percentage = Math.round(progress * 100);
@@ -41,8 +54,24 @@ export const Header: React.FC<HeaderProps> = ({
     i18n.changeLanguage(newLang);
   };
 
-  // Determine what name to show (Real Name or Email as fallback)
   const displayIdentifier = userName || userEmail;
+
+  const userMenu = (
+    <Menu>
+      <MenuItem 
+        icon="user" 
+        text={t('editProfile') || 'Edit Profile'} 
+        onClick={onEditProfile} // FIXED: Now triggers the modal
+      />
+      <MenuDivider /> 
+      <MenuItem 
+        icon="log-out" 
+        text={t('logout')} 
+        intent={Intent.DANGER} 
+        onClick={onLogout} 
+      />
+    </Menu>
+  );
 
   return (
     <Navbar 
@@ -58,13 +87,8 @@ export const Header: React.FC<HeaderProps> = ({
       }}
     >
       <Navbar.Group align={Alignment.LEFT} style={{ width: '100%' }}>
-        {/* BRANDING SECTION */}
         <div style={{ display: 'flex', alignItems: 'center', marginRight: '15px' }}>
-          <img 
-            src={logoImg} 
-            alt="App Logo" 
-            style={{ height: '45px', width: 'auto', marginRight: '12px' }} 
-          />
+          <img src={logoImg} alt="App Logo" style={{ height: '45px', width: 'auto', marginRight: '12px' }} />
           <Navbar.Heading style={{ fontSize: '18px', display: 'flex', alignItems: 'center' }}>
             <strong style={{ color: isDark ? '#ffffff' : '#182026' }}>{t('appName')}</strong>
           </Navbar.Heading>
@@ -72,82 +96,38 @@ export const Header: React.FC<HeaderProps> = ({
         
         <Navbar.Divider />
         
-        {/* VIEW SWITCHER SECTION */}
         <div style={{ marginLeft: '10px', display: 'flex', gap: '8px' }}>
-          <Button 
-            className="bp4-minimal" 
-            icon="home" 
-            text={t('home')} 
-            active={activeView === 'home'} 
-            onClick={() => setActiveView('home')} 
-            large 
-          />
-          <Button 
-            className="bp4-minimal" 
-            icon="dashboard" 
-            text={t('dashboard')} 
-            active={activeView === 'dashboard'} 
-            onClick={() => setActiveView('dashboard')} 
-            large 
-          />
+          <Button className="bp4-minimal" icon="home" text={t('home')} active={activeView === 'home'} onClick={() => setActiveView('home')} large />
+          <Button className="bp4-minimal" icon="dashboard" text={t('dashboard')} active={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} large />
         </div>
 
-        {/* PHASE 4: USER IDENTITY - Profile Info & Avatar */}
         <div style={{ marginLeft: 'auto', marginRight: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ textAlign: 'right', lineHeight: '1.2' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '0.95em', color: isDark ? '#f5f8fa' : '#182026' }}>
-              {displayIdentifier}
-            </div>
-            <Tag minimal intent={Intent.PRIMARY} round style={{ fontSize: '0.75em', padding: '0 8px' }}>
-              {userName ? userEmail : t('user')}
-            </Tag>
+            <div style={{ fontWeight: 'bold', fontSize: '0.95em', color: isDark ? '#f5f8fa' : '#182026' }}>{displayIdentifier}</div>
+            <Tag minimal intent={Intent.PRIMARY} round style={{ fontSize: '0.75em', padding: '0 8px' }}>{userName ? userEmail : t('user')}</Tag>
           </div>
 
-          <Tooltip content={displayIdentifier}>
-            <img 
-              src={userAvatar || `https://ui-avatars.com/api/?name=${displayIdentifier}&background=random`} 
-              alt="Profile" 
-              style={{ 
-                width: '38px', 
-                height: '38px', 
-                borderRadius: '50%', 
-                border: `2px solid ${isDark ? '#5c7080' : '#dbe3e8'}`,
-                objectFit: 'cover'
-              }} 
-            />
-          </Tooltip>
+          <div style={{ position: 'relative', display: 'inline-block', width: '38px', height: '38px' }}>
+            <Popover content={userMenu} placement="bottom-end" minimal={true} usePortal={false}>
+              <img 
+                src={userAvatar || `https://ui-avatars.com/api/?name=${displayIdentifier}&background=random`} 
+                alt="Profile" 
+                style={{ width: '38px', height: '38px', borderRadius: '50%', border: `2px solid ${isDark ? '#5c7080' : '#dbe3e8'}`, objectFit: 'cover', cursor: 'pointer', display: 'block' }} 
+              />
+            </Popover>
+          </div>
         </div>
 
-        {/* PROGRESS SECTION */}
         <div style={{ display: 'flex', alignItems: 'center', marginRight: '20px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 600, marginRight: '10px', color: isDark ? '#a7b6c2' : '#5c7080', whiteSpace: 'nowrap' }}>
-            {percentage}%
-          </span>
-          <ProgressBar 
-            intent={percentage === 100 ? "success" : "primary"} 
-            value={progress} 
-            style={{ width: '100px', height: '6px' }} 
-            stripes={percentage < 100} 
-          />
+          <span style={{ fontSize: '11px', fontWeight: 600, marginRight: '10px', color: isDark ? '#a7b6c2' : '#5c7080', whiteSpace: 'nowrap' }}>{percentage}%</span>
+          <ProgressBar intent={percentage === 100 ? "success" : "primary"} value={progress} style={{ width: '100px', height: '6px' }} stripes={percentage < 100} />
         </div>
 
         <Navbar.Divider />
         
-        {/* SETTINGS SECTION */}
-        <div style={{ display: 'flex', alignItems: 'center', marginLeft: '10px' }}>
-          <Button 
-            className="bp4-minimal" 
-            icon={isDark ? "flash" : "moon"} 
-            onClick={toggleDark}             
-            large 
-          />
-          <Button 
-            className="bp4-minimal" 
-            icon="translate" 
-            text={i18n.language.toUpperCase()} 
-            onClick={toggleLanguage} 
-            large 
-          />
+        <div style={{ display: 'flex', alignItems: 'center', marginLeft: '10px', gap: '10px' }}>
+          <Button className="bp4-minimal" icon={isDark ? "flash" : "moon"} onClick={toggleDark} large />
+          <Button className="bp4-minimal" icon="translate" text={i18n.language.toUpperCase()} onClick={toggleLanguage} large />
         </div>
       </Navbar.Group>
     </Navbar>

@@ -11,7 +11,7 @@ const SALT_ROUNDS = 10;
 
 /**
  * Service handling Authentication logic: Registration and Login.
- * Updated Phase 4: Supports user names and automatic Gravatar generation.
+ * Updated Phase 5: Now supports profile information updates.
  */
 export class AuthService {
     
@@ -26,14 +26,13 @@ export class AuthService {
 
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-        // MD5 hash for Gravatar
         const emailHash = crypto.createHash('md5').update(email.toLowerCase().trim()).digest('hex');
 
         const newUser: IUser = {
             id: crypto.randomUUID(),
             email,
             password: hashedPassword,
-            name: name ?? null, // Ensures undefined becomes null
+            name: name ?? null,
             avatar_url: `https://www.gravatar.com/avatar/${emailHash}?d=identicon`,
             role: UserRole.USER,
             createdAt: new Date()
@@ -46,9 +45,8 @@ export class AuthService {
 
     /**
      * Validates credentials and returns both token and detailed profile.
-     * Fixed: Added null-coalescing to match IUser interface types.
      */
-async login(email: string, password: string): Promise<Result<{ token: string, user: Partial<IUser> }>> {
+    async login(email: string, password: string): Promise<Result<{ token: string, user: Partial<IUser> }>> {
         const user = await userDAO.getByEmail(email);
         if (!user || !user.password) {
             return Result.fail<{ token: string, user: Partial<IUser> }>("Invalid credentials");
@@ -65,7 +63,6 @@ async login(email: string, password: string): Promise<Result<{ token: string, us
             { expiresIn: '2h' }
         );
 
-        // Map explicitly to satisfy the Partial<IUser> requirement
         const userProfile: Partial<IUser> = {
             email: user.email,
             name: user.name ?? null,
@@ -74,6 +71,26 @@ async login(email: string, password: string): Promise<Result<{ token: string, us
         };
 
         return Result.ok({ token, user: userProfile });
+    }
+
+    /**
+     * Updates user profile information.
+     * Phase 5: Logic to handle name updates and return fresh user data.
+     */
+    async updateProfile(userId: string, name: string): Promise<Result<IUser>> {
+        try {
+            const updatedUser = await userDAO.update(userId, { name });
+            if (!updatedUser) {
+                return Result.fail<IUser>("User not found");
+            }
+
+            // Security: Remove password before returning user data
+            const { password, ...userWithoutPassword } = updatedUser;
+            return Result.ok(userWithoutPassword as IUser);
+        } catch (error) {
+            console.error("Update Profile Error:", error);
+            return Result.fail<IUser>("Error updating profile information");
+        }
     }
 }
 
