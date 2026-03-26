@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosInstance';
 
@@ -13,13 +13,13 @@ interface UserProfile {
 export const useAuth = () => {
   const queryClient = useQueryClient();
   
-  // 🔐 SECURITY FIX: Store token in sessionStorage (not localStorage) to prevent persistent XSS
+  // SECURITY FIX: Store token in sessionStorage (not localStorage) to prevent persistent XSS
   const [token, setToken] = useState<string | null>(sessionStorage.getItem('token'));
   
   const [user, setUser] = useState<UserProfile | null>(null);
 
   /**
-   * 🔐 CRITICAL: Fetch the user's REAL role from the server, not localStorage.
+   * CRITICAL: Fetch the user's REAL role from the server, not localStorage.
    * This prevents privilege escalation where a user changes their role in localStorage.
    * The role in the JWT payload is the SOURCE OF TRUTH.
    */
@@ -44,7 +44,7 @@ export const useAuth = () => {
           email: serverUser.email,
           name: localStorage.getItem('userName'),
           avatar_url: localStorage.getItem('userAvatar'),
-          role: serverUser.role  // ✅ This comes from JWT, not localStorage
+          role: serverUser.role  // This comes from JWT, not localStorage
         });
 
         setToken(storedToken);
@@ -69,21 +69,21 @@ export const useAuth = () => {
   }, [token]);
 
   const login = (newToken: string, profile: UserProfile) => {
-    // 🔐 SECURITY: Store token in sessionStorage (cleared on browser close)
+    // SECURITY: Store token in sessionStorage (cleared on browser close)
     sessionStorage.setItem('token', newToken);
     
     // Store only non-sensitive data in localStorage
     localStorage.setItem('userEmail', profile.email);
     localStorage.setItem('userName', profile.name || '');
     localStorage.setItem('userAvatar', profile.avatar_url || '');
-    // ❌ DO NOT store role in localStorage - fetch it from /auth/me instead
+    // DO NOT store role in localStorage - fetch it from /auth/me instead
     
     setToken(newToken);
     // Set initial user data, but it will be verified by /auth/me call
     setUser(profile);
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     sessionStorage.clear();
     localStorage.removeItem('userEmail');
     localStorage.removeItem('userName');
@@ -92,21 +92,9 @@ export const useAuth = () => {
     setUser(null);
     queryClient.clear();
     window.location.href = '/'; 
-  };
+  }, [queryClient]);
 
-  const updateProfile = (newName: string) => {
-    if (!user) return;
-    localStorage.setItem('userName', newName);
-    setUser({ ...user, name: newName });
-    // After updating profile, verify role again with server
-    verifyUserFromServer();
-  };
-
-  /**
-   * Refetch the user's data from the server to ensure role integrity.
-   * This should be called after any profile update or when switching views.
-   */
-  const verifyUserFromServer = async () => {
+  const verifyUserFromServer = useCallback(async () => {
     try {
       const response = await api.get('/auth/me');
       const serverUser = response.data;
@@ -115,7 +103,15 @@ export const useAuth = () => {
       // If verification fails, logout immediately
       logout();
     }
-  };
+  }, [logout]);
+
+  const updateProfile = useCallback((newName: string) => {
+    if (!user) return;
+    localStorage.setItem('userName', newName);
+    setUser({ ...user, name: newName });
+    // After updating profile, verify role again with server
+    verifyUserFromServer();
+  }, [user, verifyUserFromServer]);
 
   return {
     token,
@@ -125,6 +121,6 @@ export const useAuth = () => {
     login,
     logout,
     updateProfile,
-    verifyUserFromServer  // 🔐 Expose this to verify role before sensitive operations
+    verifyUserFromServer  // Expose this to verify role before sensitive operations
   };
 };

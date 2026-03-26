@@ -6,7 +6,7 @@ async function listUsers() {
   try {
     const users = await db('users').select('id', 'email', 'role', 'createdAt');
     
-    console.log('\n📊 Users in Database:\n');
+    console.log('\nUsers in Database:\n');
     console.log('┌────────────────────┬────────────────┬──────────────────────────────────────┐');
     console.log('│ Email              │ Role           │ ID                                   │');
     console.log('├────────────────────┼────────────────┼──────────────────────────────────────┤');
@@ -18,7 +18,7 @@ async function listUsers() {
     console.log('└────────────────────┴────────────────┴──────────────────────────────────────┘\n');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('Error:', error.message);
     process.exit(1);
   }
 }

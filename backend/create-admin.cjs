@@ -17,7 +17,7 @@ const db = knex(config.development);
 
 async function createAdminUser() {
   try {
-    console.log('🔧 Creating ADMIN user...\n');
+    console.log('Creating ADMIN user...\n');
 
     const adminEmail = 'admin@test.com';
     const adminPassword = 'AdminPassword123!';
@@ -26,9 +26,9 @@ async function createAdminUser() {
     // Check if admin already exists
     const existingAdmin = await db('users').where({ email: adminEmail }).first();
     if (existingAdmin) {
-      console.log('⚠️  Admin user already exists!');
-      console.log(`   Email: ${existingAdmin.email}`);
-      console.log(`   Role: ${existingAdmin.role}`);
+      console.log('Admin user already exists!');
+      console.log(`Email: ${existingAdmin.email}`);
+      console.log(`Role: ${existingAdmin.role}`);
       process.exit(0);
     }
 
@@ -46,16 +46,16 @@ async function createAdminUser() {
 
     await db('users').insert(adminUser);
 
-    console.log('✅ ADMIN user created successfully!\n');
-    console.log('📋 Credentials:');
-    console.log(`   Email:    ${adminEmail}`);
-    console.log(`   Password: ${adminPassword}`);
-    console.log(`   Role:     ${adminRole}\n`);
-    console.log('💡 You can now login with these credentials and access the Admin Panel.\n');
+    console.log('ADMIN user created successfully!\n');
+    console.log('Credentials:');
+    console.log(`Email:    ${adminEmail}`);
+    console.log(`Password: ${adminPassword}`);
+    console.log(`Role:     ${adminRole}\n`);
+    console.log('You can now login with these credentials and access the Admin Panel.\n');
 
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error creating admin user:', error.message);
+    console.error('Error creating admin user:', error.message);
     process.exit(1);
   }
 }

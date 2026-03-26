@@ -11,7 +11,7 @@ export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 /**
  * Main User Interface.
- * Phase 4 Update: Added name and avatar_url for professional profile management.
+ * Update: Added name and avatar_url for professional profile management.
  */
 export interface IUser {
     id: string;

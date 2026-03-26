@@ -7,6 +7,7 @@ import { messagingService } from './services/messaging.service.ts';
 // Import our new modular routes 
 import authRoutes from './routes/auth.routes.ts';
 import taskRoutes from './routes/task.routes.ts';
+import adminRoutes from './routes/admin.routes.ts';
 
 const app = express();
 const PORT = 3000;
@@ -32,6 +33,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  */
 app.use('/auth', authRoutes);
 app.use('/tasks', taskRoutes);
+app.use('/admin', adminRoutes);
 
 app.listen(PORT, async () => {
     // Async service initialization (RabbitMQ)

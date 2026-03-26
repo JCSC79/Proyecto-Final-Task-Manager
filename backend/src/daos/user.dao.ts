@@ -46,6 +46,21 @@ class UserDAO {
             .returning('*');
         return updatedUser;
     }
+
+    /**
+     * Admin: Retrieve all users.
+     */
+    async getAll(): Promise<IUser[]> {
+        return await db<IUser>('users').select('*');
+    }
+
+    /**
+     * Admin: Delete user by ID.
+     */
+    async delete(id: string): Promise<boolean> {
+        const deletedRows = await db<IUser>('users').where({ id }).del();
+        return deletedRows > 0;
+    }
 }
 
 export const userDAO = new UserDAO();

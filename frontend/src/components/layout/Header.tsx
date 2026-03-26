@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import logoImg from '../../assets/logo.png';
 
 /**
- * Header Component - Phase 6 Hardened Version
+ * Header Component - Hardened Version
  * Provides Role-Based UI elements. 
  * The Admin tab and specific branding (Crown) are strictly tied to the verified userRole.
  */

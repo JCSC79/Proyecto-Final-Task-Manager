@@ -1,5 +1,5 @@
 /**
- * Phase 4: Expanding User identity.
+ * Expanding User identity.
  * Adds personal name, avatar URL for Gravatar, and Role-Based Access Control (RBAC).
  * @param { import("knex").Knex } knex
  */

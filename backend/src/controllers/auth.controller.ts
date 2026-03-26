@@ -107,7 +107,7 @@ class AuthController {
         return res.json({
             id: user.id,
             email: user.email,
-            role: user.role  // ✅ This role comes from the JWT, not the client
+            role: user.role  // This role comes from the JWT, not the client
         });
     }
 }

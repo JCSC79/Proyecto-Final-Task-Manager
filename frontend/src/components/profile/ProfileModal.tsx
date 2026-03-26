@@ -15,9 +15,8 @@ interface ProfileModalProps {
 
 /**
  * ProfileModal Component
- * Phase 6 Update: Role-Based Display.
- * Users can update their profile information, but administrative status
- * is managed exclusively by the backend for security integrity.
+ * Role-Based Display.
+ * Users can update their profile information, but administrative status is managed exclusively by the backend for security integrity.
  */
 export const ProfileModal: React.FC<ProfileModalProps> = ({ 
   isOpen, onClose, currentName, currentRole, onUpdateSuccess, isDark 
@@ -38,7 +37,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
     setLoading(true);
     try {
-      // Phase 6: Call hardened endpoint. Role change via body is ignored by server
+      // Call hardened endpoint. Role change via body is ignored by server
       // unless requester is already an authorized admin.
       const response = await api.put('/auth/profile', { name: name.trim() });
       

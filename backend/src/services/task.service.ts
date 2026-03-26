@@ -25,7 +25,7 @@ export class TaskService {
     }
 
     /**
-     * Phase 4: Retrieves a task only if it belongs to the requester.
+     * Retrieves a task only if it belongs to the requester.
      */
     async getTaskById(id: string, userId: string): Promise<Result<ITask>> {
         const task = await this.dao.getById(id);
@@ -61,7 +61,7 @@ export class TaskService {
     }
 
     /**
-     * Phase 4: Deletes a task only if the user is the owner.
+     * Deletes a task only if the user is the owner.
      */
     async deleteTask(id: string, userId: string): Promise<Result<boolean>> {
         const task = await this.dao.getById(id);

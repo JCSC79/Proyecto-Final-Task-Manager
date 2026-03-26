@@ -174,8 +174,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], isDark
         {/* Status Breakdown (Donut Chart) */}
         <Card elevation={Elevation.ONE} style={{ ...cardStyle, padding: '30px' }}>
           <H3 style={{ color: isDark ? '#f5f8fa' : '#182026' }}>{t('statusDistribution')}</H3>
-          <div style={{ width: '100%', height: '300px' }}>
-            <ResponsiveContainer>
+          <div style={{ width: '100%', height: '300px', minHeight: '300px' }}>
+            <ResponsiveContainer width="100%" height="100%" minHeight={250}>
               <PieChart>
                 <Pie
                   data={chartData.filter(d => d.value > 0)}
@@ -196,8 +196,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], isDark
         {/* Workload Bar Chart */}
         <Card elevation={Elevation.ONE} style={{ ...cardStyle, padding: '30px' }}>
           <H3 style={{ color: isDark ? '#f5f8fa' : '#182026' }}>{t('workloadTitle')}</H3>
-          <div style={{ width: '100%', height: '300px' }}>
-            <ResponsiveContainer>
+          <div style={{ width: '100%', height: '300px', minHeight: '300px' }}>
+            <ResponsiveContainer width="100%" height="100%" minHeight={250}>
               <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#394b59" : "#dbe3e8"} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: labelColor, fontSize: 12 }} />
@@ -224,8 +224,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], isDark
           <H3 style={{ color: isDark ? '#f5f8fa' : '#182026', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Icon icon="timeline-events" /> {t('recentActivity')}
           </H3>
-          <div style={{ width: '100%', height: '250px' }}>
-            <ResponsiveContainer>
+          <div style={{ width: '100%', height: '250px', minHeight: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%" minHeight={250}>
               <LineChart data={last7Days}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#394b59" : "#dbe3e8"} />
                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: labelColor }} />

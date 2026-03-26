@@ -48,11 +48,34 @@ class TaskDAO {
     }
 
     /**
-     * Phase 4: Removes all tasks ONLY for a specific user.
+     * Removes all tasks ONLY for a specific user.
      * Prevents one user from clearing the entire database.
      */
     async deleteAll(userId: string): Promise<void> {
         await db('tasks').where({ userId }).del();
+    }
+
+    /**
+     * Admin: Retrieve all tasks, including the owner's email.
+     */
+    async getAllAdmin(userId?: string): Promise<Array<ITask & { userEmail?: string }>> {
+        const query = db('tasks')
+            .select('tasks.*', 'users.email as userEmail')
+            .leftJoin('users', 'tasks.userId', 'users.id');
+
+        if (userId) {
+            query.where('tasks.userId', userId);
+        }
+
+        return await query;
+    }
+
+    /**
+     * Admin: Delete task by id.
+     */
+    async deleteAny(id: string): Promise<boolean> {
+        const deletedRows = await db<ITask>('tasks').where({ id }).del();
+        return deletedRows > 0;
     }
 }
 

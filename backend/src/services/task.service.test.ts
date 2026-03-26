@@ -11,7 +11,7 @@ test('TaskService should validate mandatory fields', async () => {
     
     const service = new TaskService(mockDao, mockMessaging);
 
-    // 🔐 SECURITY FIX: createTask now requires userId for ownership tracking
+    // SECURITY FIX: createTask now requires userId for ownership tracking
     const result = await service.createTask('', 'No title provided', 'user-123');
 
     assert.strictEqual(result.isFailure, true);

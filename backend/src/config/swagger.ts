@@ -51,7 +51,7 @@ const options: swaggerJSDoc.Options = {
       }
     },
     paths: {
-      // --- AUTHENTICATION ENDPOINTS ---
+      //  AUTHENTICATION ENDPOINTS
       '/auth/register': {
         post: {
           summary: 'Register a new user',
@@ -105,7 +105,7 @@ const options: swaggerJSDoc.Options = {
           }
         }
       },
-      // --- TASK ENDPOINTS (Now Protected) ---
+      // TASK ENDPOINTS (Now Protected)
       '/tasks': {
         get: {
           summary: 'Retrieve all tasks',

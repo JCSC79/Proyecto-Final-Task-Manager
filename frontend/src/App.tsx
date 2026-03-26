@@ -26,7 +26,7 @@ interface AxiosErrorResponse {
 }
 
 /**
- * Main Application Component - Phase 6 Hardened Version
+ * Main Application Component - Hardened Version
  */
 const App: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -117,7 +117,7 @@ const App: React.FC = () => {
           />
         )}
 
-        {/* 🛡️ PHASE 6 SECURITY GATE: HARDENED RENDER */}
+        {/* SECURITY GATE: HARDENED RENDER */}
         {activeView === 'admin' && (
           user?.role === 'ADMIN' ? (
             <AdminView />

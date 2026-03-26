@@ -12,9 +12,9 @@ interface TaskBoardProps {
 
 /**
  * TaskBoard Component
- * Updated for Phase 6: Added user-specific cleanup functionality.
- * Maintains Phase 4: Non-Ideal States for empty boards.
- * Maintains Phase 3: Fixed heights, independent column pagination, and sorting.
+ * Updated: Added user-specific cleanup functionality.
+ * Maintains: Non-Ideal States for empty boards.
+ * Maintains: Fixed heights, independent column pagination, and sorting.
  */
 export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDark }) => {
   const { t } = useTranslation();
@@ -38,7 +38,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDar
   };
 
   /**
-   * USER-SPECIFIC CLEANUP (NEW PHASE 6)
+   * USER-SPECIFIC CLEANUP
    * Calls the new /tasks/cleanup endpoint which doesn't require ADMIN role.
    */
 
@@ -50,7 +50,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDar
     return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
   });
 
-  // --- NEW UX LOGIC: EMPTY STATES ---
+  // NEW UX LOGIC: EMPTY STATES
   
   // 1. Check if the board is completely empty for this user (at 'ALL' filter level)
   if (tasks.length === 0 && statusFilter === 'ALL') {
@@ -158,7 +158,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, isDar
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px', gap: '10px' }}>
-        {/* NEW BUTTON FOR PHASE 6 CLEANUP */}
+        {/* NEW BUTTON FOR CLEANUP */}
         <HTMLSelect 
           value={sortOrder} 
           onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}

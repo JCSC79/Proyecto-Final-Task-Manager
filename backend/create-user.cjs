@@ -17,7 +17,7 @@ const db = knex(config.development);
 
 async function createRegularUser() {
   try {
-    console.log('🔧 Creating regular USER...\n');
+    console.log('Creating regular USER...\n');
 
     const userEmail = 'user@test.com';
     const userPassword = 'UserPassword123!';
@@ -26,9 +26,9 @@ async function createRegularUser() {
     // Check if user already exists
     const existingUser = await db('users').where({ email: userEmail }).first();
     if (existingUser) {
-      console.log('⚠️  User already exists!');
-      console.log(`   Email: ${existingUser.email}`);
-      console.log(`   Role: ${existingUser.role}`);
+      console.log('User already exists!');
+      console.log(`Email: ${existingUser.email}`);
+      console.log(`Role: ${existingUser.role}`);
       process.exit(0);
     }
 
@@ -46,16 +46,16 @@ async function createRegularUser() {
 
     await db('users').insert(regularUser);
 
-    console.log('✅ Regular USER created successfully!\n');
-    console.log('📋 Credentials:');
-    console.log(`   Email:    ${userEmail}`);
-    console.log(`   Password: ${userPassword}`);
-    console.log(`   Role:     ${userRole}\n`);
-    console.log('💡 Use this account to test privilege escalation protection.\n');
+    console.log('Regular USER created successfully!\n');
+    console.log('Credentials:');
+    console.log(`Email:    ${userEmail}`);
+    console.log(`Password: ${userPassword}`);
+    console.log(`Role:     ${userRole}\n`);
+    console.log('Use this account to test privilege escalation protection.\n');
 
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error creating user:', error.message);
+    console.error('Error creating user:', error.message);
     process.exit(1);
   }
 }

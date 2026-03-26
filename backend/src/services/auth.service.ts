@@ -11,7 +11,7 @@ const SALT_ROUNDS = 10;
 
 /**
  * Service handling Authentication logic: Registration and Login.
- * Updated Phase 6: Implements role-based profile updates and strict security.
+ * Implements role-based profile updates and strict security.
  */
 export class AuthService {
     
