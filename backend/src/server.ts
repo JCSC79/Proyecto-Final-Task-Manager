@@ -4,6 +4,7 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger.ts';
 import { taskController } from './controllers/task.controller.ts';
 import { messagingService } from './services/messaging.service.ts';
+import authRoutes from './routes/auth.routes.ts';
 
 const app = express();
 const PORT = 3000;
@@ -24,12 +25,15 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  * IMPORTANT: Static routes like DELETE /tasks must be defined BEFORE 
  * parameterized routes like DELETE /tasks/:id to avoid matching conflicts.
  */
+
+// Authentication routes
+app.use('/api/auth', authRoutes);
+
+
+// Task routes
 app.get('/tasks', (req, res) => taskController.getAll(req, res));
 app.post('/tasks', (req, res) => taskController.create(req, res));
-
-// NEW: Endpoint for bulk deletion (Clear Board)
 app.delete('/tasks', (req, res) => taskController.deleteAll(req, res));
-
 app.get('/tasks/:id', (req, res) => taskController.getById(req, res));
 app.delete('/tasks/:id', (req, res) => taskController.delete(req, res));
 app.patch('/tasks/:id', (req, res) => taskController.update(req, res));

@@ -1,15 +1,20 @@
-const crypto = require('crypto'); // Built-in node module for safe UUIDs
+const crypto = require('crypto');
 
 /**
- * SHIELDED SEED: Stress Testing Engine.
- * Adjust the TOTAL_TASKS variable to test board limits (Pagination & Dashboard).
+ * UPDATED SEED: Stress Testing Engine with User Assignment.
+ * Ensures all tasks have a valid owner to comply with NOT NULL constraints.
  */
 exports.seed = async function(knex) {
-  // --- CONFIGURATION ---
-  const TOTAL_TASKS = 500; // <--- CHANGE ONLY THIS NUMBER FOR STRESS TESTING!
-  // ---------------------
+  const TOTAL_TASKS = 500;
 
-  // 1. Clean existing data to ensure a fresh test environment
+  // 1. Fetch available users to assign tasks
+  const users = await knex('users').select('id');
+  
+  if (users.length === 0) {
+    throw new Error('[-] No users found. Please run seed_users.cjs first.');
+  }
+
+  // 2. Clean existing tasks
   await knex('tasks').del();
   
   const tasks = [];
@@ -17,26 +22,28 @@ exports.seed = async function(knex) {
   
   console.log(`[!] Generating ${TOTAL_TASKS} tasks for stress testing...`);
 
-  // 2. Dynamic task generator
+  // 3. Dynamic task generator with owner assignment
   for (let i = 1; i <= TOTAL_TASKS; i++) {
-    const status = statuses[i % 3]; // Balanced distribution across columns
+    const status = statuses[i % 3];
     const date = new Date();
-    // Spreads creation dates over the last 15 days for a realistic Line Chart
     date.setDate(date.getDate() - (i % 15)); 
 
+    // Assign tasks to users in a round-robin fashion
+    const owner = users[i % users.length];
+
     tasks.push({
-      id: crypto.randomUUID(), // SHIELDED: Always unique, no DB collisions
-      title: `Task #${i}: ${i % 2 === 0 ? 'System Optimization' : 'UI Refinement'}`,
-      description: `Stress test iteration ${i}. Validating Phase 3 stability and TanStack Query performance.`,
+      id: crypto.randomUUID(),
+      title: `Task #${i}: Stress Test Data`,
+      description: `Iteration ${i}. Validating clean architecture and foreign key constraints.`,
       status: status,
+      userId: owner.id, // <--- THE FIX: Assigning a real owner
       createdAt: date,
-      // For COMPLETED tasks, add updatedAt to trigger Dashboard KPIs
       updatedAt: status === 'COMPLETED' ? new Date() : null
     });
   }
 
-  // 3. Batch insert for high performance
+  // 4. Perform batch insert
   await knex('tasks').insert(tasks);
   
-  console.log(`[+] Success! ${TOTAL_TASKS} tasks "planted" in PostgreSQL.`);
+  console.log(`[+] Success! ${TOTAL_TASKS} tasks correctly assigned and planted.`);
 };
