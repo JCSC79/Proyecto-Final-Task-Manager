@@ -1,0 +1,82 @@
+.card {
+  margin-bottom: var(--space-sm);
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  background-color: var(--bg-surface);
+  border-left: 6px solid var(--border);
+  transition: var(--transition);
+}
+
+/* Status accent borders */
+.statusPending   { border-left-color: var(--status-pending); }
+.statusProgress  { border-left-color: var(--status-progress); }
+.statusDone      { border-left-color: var(--status-done); }
+
+.content {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.title {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-main);
+}
+
+.titleDone {
+  text-decoration: line-through;
+}
+
+.description {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-bottom: var(--space-xs);
+}
+
+.dateRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--text-subtle);
+  font-size: 10px;
+}
+
+.actions {
+  flex-shrink: 0;
+}
+
+/* Dialog detail body */
+.detailHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.detailBody {
+  padding: var(--space-md);
+  background-color: var(--bg-surface-alt);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  white-space: pre-wrap;
+  min-height: 100px;
+}
+
+.detailDate {
+  margin-top: var(--space-md);
+  color: var(--text-subtle);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.editTextarea {
+  min-height: 120px;
+  resize: vertical;
+}

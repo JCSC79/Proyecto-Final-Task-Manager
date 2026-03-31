@@ -1,0 +1,22 @@
+.wrapper {
+  background: transparent;
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.searchWrapper {
+  flex: 1;
+}
+
+.controls {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+}

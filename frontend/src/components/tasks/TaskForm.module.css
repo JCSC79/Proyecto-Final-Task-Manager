@@ -1,0 +1,23 @@
+.card {
+  margin-bottom: var(--space-lg);
+  padding: var(--space-lg);
+  background-color: var(--bg-surface);
+  transition: var(--transition);
+}
+
+.heading {
+  margin-bottom: var(--space-md);
+  color: var(--text-main);
+}
+
+.buttonRow {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.buttonRow > * {
+  flex: 1;
+  min-width: 0;
+}

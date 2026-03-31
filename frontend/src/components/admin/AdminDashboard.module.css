@@ -1,0 +1,185 @@
+.wrapper {
+  margin-top: var(--space-md);
+  padding-bottom: var(--space-xl);
+}
+
+.pageTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  color: var(--text-main);
+}
+
+/*  Global KPI strip */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.kpiCard {
+  background-color: var(--bg-surface);
+  padding: var(--space-md);
+  text-align: center;
+  transition: var(--transition);
+}
+
+.kpiLabel {
+  color: var(--text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.kpiValue {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--text-main);
+}
+
+.kpiValueGreen  { color: var(--status-done);    }
+.kpiValueOrange { color: var(--status-pending);  }
+.kpiValueBlue   { color: var(--status-progress); }
+
+/* Aggregate chart section */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.chartCard {
+  background-color: var(--bg-surface);
+  padding: var(--space-lg);
+  transition: var(--transition);
+}
+
+.chartTitle {
+  color: var(--text-main);
+  margin-bottom: var(--space-md);
+}
+
+.chartContainer {
+  width: 100%;
+  height: 280px;
+}
+
+.tooltip {
+  background-color: var(--bg-surface);
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-main);
+  font-weight: bold;
+}
+
+/* Toolbar: search + filter */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.searchBox {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* User table */
+.tableCard {
+  background-color: var(--bg-surface);
+  padding: var(--space-md);
+  transition: var(--transition);
+}
+
+.tableTitle {
+  color: var(--text-main);
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th {
+  color: var(--text-muted);
+  text-align: left;
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 2px solid var(--border);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-sm);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:hover td {
+  background-color: var(--bg-surface-alt);
+}
+
+/* Mini progress bar inside table */
+.miniBarTrack {
+  height: 6px;
+  border-radius: 3px;
+  background-color: var(--border);
+  overflow: hidden;
+  width: 80px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: var(--space-sm);
+}
+
+.miniBarFill {
+  height: 100%;
+  border-radius: 3px;
+  background-color: var(--status-done);
+  transition: width 0.4s ease;
+}
+
+/* Role badge */
+.roleAdmin {
+  background-color: var(--status-progress);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.roleUser {
+  background-color: var(--border);
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Empty state */
+.emptyRow td {
+  text-align: center;
+  color: var(--text-subtle);
+  font-style: italic;
+  padding: var(--space-lg);
+}

@@ -1,52 +1,168 @@
-# Task Manager Backend
+# Task Manager — Backend
 
-This project is a high-performance **Distributed API** focused on **Separation of Concerns (SoC)**, **SOLID principles**, and **Asynchronous Messaging**. Built with **Node.js (v24)**, **Express**, and **RabbitMQ** using a strict **Zero-Any TypeScript** policy.
-
-## New in Phase 3: Mass Operations & Stress Testing
-
-- **Bulk Clear Board:** New `DELETE /tasks` endpoint for instant system-wide cleanup.
-- **Enhanced Validation:** Strict **Yup** schemas for task creation and multi-field updates (Title, Description, Status).
-- **Stress Testing Engine:** Integrated seeder capable of planting **500+ tasks** with unique UUIDs and realistic timeframes to validate UI stability.
-- **Automated CLI:** Simplified database management via new `npm run` shortcuts in `package.json`.
-
-## Architecture Overview
-
-- **Controller Layer (`src/controllers/`):** Standardized API responses using the **Result Pattern**.
-- **Service Layer (`src/services/`):** Orchestrates business logic and triggers RabbitMQ events.
-- **Messaging Service (`src/services/messaging.service.ts`):** Encapsulates RabbitMQ producer logic.
-- **DAO Layer (`src/daos/`):** Abstraction for PostgreSQL persistence via Knex.js.
-- **Worker (`src/worker.ts`):** Independent consumer for processing asynchronous task notifications.
-
-## API Capabilities (CRUD)
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| **GET** | `/tasks` | Retrieve all tasks. |
-| **POST** | `/tasks` | Create task with strict Title/Desc validation. |
-| **DELETE** | `/tasks` | **(New)** Clear the entire board. |
-| **PATCH** | `/tasks/:id` | Update title, description, or status. |
-| **DELETE** | `/tasks/:id` | Remove a specific task. |
-
-## Database & Infrastructure
-
-- **Stack:** PostgreSQL 15+ & RabbitMQ (via Docker).
-- **Security:** Parameterized queries (OWASP Option 1) to prevent SQL Injection.
-- **Automation Scripts:**
-  - `npm run db:migrate`: Setup/Update database schema.
-  - `npm run db:seed`: **(New)** Plant massive test data (500 tasks) for dashboard validation.
-  - `npm run db:rollback`: Revert last database changes.
-
-## Interactive Documentation (Swagger)
-
-The API includes an interactive **OpenAPI 3.0** explorer available at:
-[http://localhost:3000/api-docs](http://localhost:3000/api-docs).
-
-## Running the Application
-
-1. **Infrastructure:** `docker compose up -d`.
-2. **Setup:** `npm install` && `npm run db:migrate`.
-3. **API Server:** `npm run dev`.
-4. **Worker:** `npx tsx src/worker.ts`.
+REST API built with **Node.js 24**, **Express 5**, **TypeScript** (strict / zero-any), **PostgreSQL 15**, and **RabbitMQ**. Implements JWT authentication, role-based access control (RBAC), and the Result Pattern throughout.
 
 ---
-*Developed as part of the Backend Intensive Training (2026).*
+
+## Architecture
+
+```src/
+├── server.ts             Express app entry point, route mounting
+├── worker.ts             RabbitMQ consumer (runs separately)
+├── config/
+│   └── swagger.ts        OpenAPI 3.0 spec
+├── controllers/          HTTP layer — validates input, delegates to services
+│   ├── auth.controller.ts
+│   ├── task.controller.ts
+│   └── admin.controller.ts
+├── services/             Business logic
+│   ├── auth.service.ts   JWT generation, bcrypt, user registration
+│   ├── task.service.ts
+│   └── messaging.service.ts  RabbitMQ producer
+├── daos/                 Database access objects (Knex queries)
+│   ├── user.dao.ts
+│   └── task.dao.ts
+├── middlewares/
+│   ├── auth.middleware.ts    authenticateToken (JWT guard)
+│   └── admin.middleware.ts   requireAdmin (RBAC guard)
+├── models/               TypeScript interfaces
+├── routes/               Express Router definitions
+│   ├── auth.routes.ts
+│   └── admin.routes.ts
+├── schemas/              Yup validation schemas
+├── db/
+│   ├── migrations/       Knex migration files
+│   └── seeds/            Seed data (users + tasks)
+└── utils/
+    └── result.ts         Result<T> pattern
+```
+
+---
+
+## API Endpoints
+
+### Auth — `/api/auth`  *(public)*
+
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/api/auth/login` | Login. Returns `{ token, user }` |
+| POST | `/api/auth/register` | Self-register. Returns `{ token, user }` |
+| PATCH | `/api/auth/me` | Update display name *(requires token)* |
+
+### Tasks — `/tasks`  *(requires token)*
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/tasks` | Get all tasks for the logged-in user |
+| POST | `/tasks` | Create a task |
+| PATCH | `/tasks/:id` | Update title, description, or status |
+| DELETE | `/tasks/:id` | Delete a specific task |
+| DELETE | `/tasks` | Delete all tasks (clear board) |
+
+### Admin — `/api/admin`  *(requires token + ADMIN role)*
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/api/admin/users` | All users with per-user task statistics |
+| PATCH | `/api/admin/users/:id/role` | Promote or demote a user |
+
+---
+
+## Local Development Setup
+
+### 1. Infrastructure (Docker)
+
+From the **project root** (not this folder):
+
+```docker-compose up -d db rabbitmq```
+
+### 2. Environment variables
+
+```cp .env.example .env```
+
+Edit `.env` — at minimum set a strong `JWT_SECRET`:
+
+```env
+JWT_SECRET=any_random_string_at_least_32_chars
+RABBITMQ_URL=amqp://JC:abc123..@localhost:5672
+DB_HOST=127.0.0.1
+DB_USER=postgres
+DB_PASSWORD=abc123..
+DB_NAME=tasks_db
+```
+
+> **Never commit `.env`** — it is in `.gitignore`. Only `.env.example` is tracked.
+
+### 3. Install dependencies
+
+```npm install```
+
+### 4. Run migrations
+
+Creates the `users` and `tasks` tables:
+
+```npm run db:migrate```
+
+### 5. Seed default users
+
+Creates two accounts for testing:
+
+```npm run db:seed```
+
+| Email | Password | Role |
+| --- | --- | --- |
+| `admin@test.com` | AdminPassword123! | ADMIN |
+| `user@test.com` | UserPassword123! | USER |
+
+> Running the seed again is safe — it clears users first to avoid duplicate key errors.  
+> **Change these passwords** before any production deployment.
+
+### 6. Start the API
+
+```npm run dev```
+
+API available at **<http://localhost:3000>**
+
+### 7. (Optional) Start the async worker
+
+In a separate terminal, to process RabbitMQ task notifications:
+
+```npx tsx src/worker.ts```
+
+---
+
+## Database Management Scripts
+
+```npm run db:migrate```    # Apply all pending migrations
+```npm run db:rollback```   # Revert the last migration batch
+```npm run db:seed```       # Re-seed users (clears existing users first)
+
+---
+
+## Running inside Docker (full stack)
+
+From the project root:
+
+```docker-compose build api```       # Build the API image
+```docker-compose up -d```           # Start everything
+```docker exec task_api npm run db:migrate```
+```docker exec task_api npm run db:seed```
+
+After any backend code change, rebuild:
+
+```docker-compose build api && docker-compose up -d api```
+
+---
+
+## Interactive API Docs
+
+Swagger UI: **<http://localhost:3000/api-docs>**
+
+---
+
+## Key Design Decisions
+
+- **Result Pattern** — every service method returns `Result<T>` instead of throwing. Controllers check `result.isFailure` and map to the correct HTTP status code.
+- **exactOptionalPropertyTypes: true** — optional fields must use spread `...(value ? { field: value } : {})` instead of `field: value ?? undefined`.
+- **Express 5** — `app.use()` + `app.get()` mixing on the same path is unreliable; all sub-routes use dedicated `Router` instances.
+- **Rate limiting** — `/api/auth/login` is capped at 10 requests / 15 min via `express-rate-limit`.

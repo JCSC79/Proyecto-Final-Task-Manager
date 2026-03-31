@@ -7,18 +7,30 @@ const config = require('../../knexfile.cjs');
 const db = knex(config.development);
 
 /**
- * Data Access Object.
- * Encapsulates all interactions with the PostgreSQL storage via Knex query builder.
- * Implements security best practices by using parameterized queries (OWASP).
+ * TaskDAO - Data Access Object with strict User Isolation.
+ * Every method ensures that a user can only interact with their own data.
  */
 class TaskDAO {
     
-    async getAll(): Promise<ITask[]> {
+    /**
+     * Retrieves tasks belonging to a specific user.
+     */
+    async getAll(userId: string): Promise<ITask[]> {
+        return await db<ITask>('tasks').where({ userId }).select('*');
+    }
+
+    /**
+     * SPECIAL: Allows ADMIN role to see the entire global task board.
+     */
+    async adminGetAll(): Promise<ITask[]> {
         return await db<ITask>('tasks').select('*');
     }
 
-    async getById(id: string): Promise<ITask | undefined> {
-        return await db<ITask>('tasks').where({ id }).first();
+    /**
+     * Finds a task by ID ensuring it belongs to the requesting user.
+     */
+    async getById(id: string, userId: string): Promise<ITask | undefined> {
+        return await db<ITask>('tasks').where({ id, userId }).first();
     }
 
     async create(task: ITask): Promise<ITask> {
@@ -26,32 +38,36 @@ class TaskDAO {
         return task;
     }
 
-    async update(id: string, updates: Partial<ITask>): Promise<ITask | undefined> {
+    /**
+     * Updates a task only if the ownership (userId) matches.
+     */
+    async update(id: string, userId: string, updates: Partial<ITask>): Promise<ITask | undefined> {
         const updatedRows = await db<ITask>('tasks')
-            .where({ id })
+            .where({ id, userId })
             .update(updates);
 
         if (updatedRows === 0) {
             return undefined;
         }
-        return await this.getById(id);
+        return await this.getById(id, userId);
     }
 
-    async delete(id: string): Promise<boolean> {
+    /**
+     * Deletes a record strictly filtered by ID and Owner.
+     */
+    async delete(id: string, userId: string): Promise<boolean> {
         const deletedRows = await db<ITask>('tasks')
-            .where({ id })
+            .where({ id, userId })
             .del();
             
         return deletedRows > 0;
     }
 
     /**
-     * NEW: Removes all task records from the table.
-     * SQL equivalent: DELETE FROM tasks
-     * Part of Phase 1: Bulk data operations for board maintenance.
+     * Bulk delete limited to the user's own tasks.
      */
-    async deleteAll(): Promise<void> {
-        await db('tasks').del();
+    async deleteAll(userId: string): Promise<void> {
+        await db('tasks').where({ userId }).del();
     }
 }
 

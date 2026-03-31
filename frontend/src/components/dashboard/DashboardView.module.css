@@ -1,0 +1,87 @@
+.wrapper {
+  margin-top: var(--space-md);
+  padding-bottom: var(--space-xl);
+}
+
+.pageTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  color: var(--text-main);
+}
+
+/* KPI grid */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.kpiCard {
+  background-color: var(--bg-surface);
+  text-align: center;
+  padding: var(--space-md);
+  transition: var(--transition);
+}
+
+.kpiLabel {
+  color: var(--text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.kpiValue {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--text-main);
+}
+
+.kpiValueGreen  { color: var(--status-done); }
+.kpiValueOrange { color: var(--status-pending); }
+
+/* Charts grid */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--space-lg);
+}
+
+.chartCard {
+  background-color: var(--bg-surface);
+  padding: var(--space-lg);
+  transition: var(--transition);
+}
+
+.chartCardFull {
+  grid-column: span 2;
+}
+
+.chartTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-main);
+  margin-bottom: var(--space-md);
+}
+
+.chartContainer {
+  width: 100%;
+  height: 300px;
+}
+
+.chartContainerSm {
+  width: 100%;
+  height: 250px;
+}
+
+/* Tooltip */
+.tooltip {
+  background-color: var(--bg-surface);
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-main);
+  font-weight: bold;
+}

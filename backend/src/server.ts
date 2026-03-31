@@ -1,14 +1,26 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger.ts';
 import { taskController } from './controllers/task.controller.ts';
 import { messagingService } from './services/messaging.service.ts';
 import authRoutes from './routes/auth.routes.ts';
-import { authenticateToken } from './middlewares/auth.middleware.ts'; // NEW: Security Middleware
+import adminRoutes from './routes/admin.routes.ts';
+import { authenticateToken } from './middlewares/auth.middleware.ts';
+import { requireAdmin } from './middlewares/admin.middleware.ts';
 
 const app = express();
 const PORT = 3000;
+
+const loginRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many login attempts. Please try again later.' },
+});
 
 app.use(cors());
 app.use(express.json());
@@ -26,6 +38,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  */
 
 // 1. PUBLIC ROUTES (No token required)
+app.use('/api/auth/login', loginRateLimiter);
 app.use('/api/auth', authRoutes);
 
 // 2. PROTECTED ROUTES (Token required for all /tasks endpoints)
@@ -42,12 +55,29 @@ app.get('/tasks/:id', (req, res) => taskController.getById(req, res));
 app.delete('/tasks/:id', (req, res) => taskController.delete(req, res));
 app.patch('/tasks/:id', (req, res) => taskController.update(req, res));
 
+// 3. ADMIN ROUTES (Token + Admin role required)
+app.use('/api/admin', authenticateToken, requireAdmin, adminRoutes);
+
 /**
  * SERVER STARTUP
  */
-app.listen(PORT, async () => {
+const server = app.listen(PORT, async () => {
     await messagingService.init();
     console.log(`[OK] Server running at http://localhost:${PORT}`);
     console.log(`[SECURE] Tasks routes are now protected by JWT middleware`);
     console.log(`[DOCS] Swagger available at http://localhost:${PORT}/api-docs`);
 });
+
+/**
+ * GRACEFUL SHUTDOWN
+ */
+const shutdown = () => {
+    console.log('[*] Shutting down gracefully...');
+    server.close(() => {
+        console.log('[OK] HTTP server closed.');
+        process.exit(0);
+    });
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

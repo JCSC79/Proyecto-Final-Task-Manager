@@ -1,11 +1,16 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'crypto';
 import { userDAO } from '../daos/user.dao.ts';
 import { Result } from '../utils/result.ts';
 import type { IUser } from '../models/user.model.ts';
 
 // Secret key from .env to sign the tokens
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is required');
+}
+const JWT_SECRET_SAFE = JWT_SECRET as string;
 
 /**
  * AuthService - Handles the business logic for authentication and JWT generation.
@@ -31,7 +36,7 @@ class AuthService {
         // Generate the Token (Payload contains ID, Email and Role)
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role },
-            JWT_SECRET,
+            JWT_SECRET_SAFE,
             { expiresIn: '24h' } // Token expires in one day
         );
 
@@ -42,6 +47,42 @@ class AuthService {
             user: userWithoutPassword,
             token: token
         });
+    }
+
+    /**
+     * Registers a new user. Email must be unique.
+     * New users always get the USER role — admins are seeded or promoted via admin panel.
+     */
+    async registerUser(
+        email: string,
+        password: string,
+        name?: string
+    ): Promise<Result<{ user: Omit<IUser, 'password'>; token: string }>> {
+        const existing = await userDAO.getByEmail(email);
+        if (existing) {
+            return Result.fail('Email already in use');
+        }
+
+        const hashed = await bcrypt.hash(password, 10);
+        const newUser: IUser = {
+            id: randomUUID(),
+            email,
+            password: hashed,
+            role: 'USER',
+            ...(name ? { name } : {}),
+            createdAt: new Date(),
+        };
+
+        await userDAO.create(newUser);
+
+        const token = jwt.sign(
+            { id: newUser.id, email: newUser.email, role: newUser.role },
+            JWT_SECRET_SAFE,
+            { expiresIn: '24h' }
+        );
+
+        const { password: _, ...userWithoutPassword } = newUser;
+        return Result.ok({ user: userWithoutPassword, token });
     }
 }
 

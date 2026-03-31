@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
-import { 
-  Card, Elevation, H5, Text, Button, ButtonGroup, 
+import {
+  Card, Elevation, H5, Text, Button, ButtonGroup,
   Alert, Intent, Dialog, Classes, FormGroup, InputGroup, TextArea,
-  Tag, Icon 
-} from "@blueprintjs/core";
+  Tag, Icon
+} from '@blueprintjs/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axiosInstance';
 import type { Task, TaskStatus } from '../../types/task';
 import { useTranslation } from 'react-i18next';
 import { AppToaster } from '../../utils/toaster';
+import clsx from 'clsx';
+import styles from './TaskItem.module.css';
 
 interface TaskItemProps {
   task: Task;
-  isDark: boolean;
 }
 
-export const TaskItem: React.FC<TaskItemProps> = ({ task, isDark }) => {
+export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   
@@ -61,54 +62,41 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDark }) => {
   const prevStatus: TaskStatus | null = isCompleted ? 'IN_PROGRESS' : isInProgress ? 'PENDING' : null;
 
   const getTranslatedStatus = (status: TaskStatus) => {
-    if (status === 'IN_PROGRESS') return t('inProgress');
-    if (status === 'PENDING') return t('pending');
+    if (status === 'IN_PROGRESS') {
+      return t('inProgress');
+    }
+    if (status === 'PENDING') {
+      return t('pending');
+    }
     return t('completed');
   };
 
   return (
     <>
-      <Card 
-        elevation={Elevation.ONE} 
-        interactive={true}
-        style={{ 
-          marginBottom: '12px',
-          padding: '12px',
-          borderLeft: `6px solid ${isCompleted ? '#0F9960' : isInProgress ? '#2B95D9' : '#D9822B'}`,
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '10px',
-          backgroundColor: isDark ? '#30404d' : '#ffffff',
-          transition: 'background-color 0.3s ease'
-        }}
+      <Card
+        elevation={Elevation.ONE}
+        interactive
+        className={clsx(
+          styles.card,
+          isCompleted ? styles.statusDone : isInProgress ? styles.statusProgress : styles.statusPending
+        )}
       >
-        <div onClick={() => setIsDetailsOpen(true)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
-          <H5 style={{ 
-            margin: 0, 
-            textDecoration: isCompleted ? 'line-through' : 'none',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            color: isDark ? '#ffffff' : 'inherit'
-          }}>
+        <div className={styles.content} onClick={() => setIsDetailsOpen(true)}>
+          <H5 className={clsx(styles.title, isCompleted && styles.titleDone)}>
             {task.title}
           </H5>
-          
-          <Text ellipsize style={{ color: isDark ? '#a7b6c2' : '#5c7080', fontSize: '12px', marginBottom: '4px' }}>
+          <Text ellipsize className={styles.description}>
             {task.description || t('noDescription')}
           </Text>
-
           {task.createdAt && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: isDark ? '#8a9ba8' : '#738694', fontSize: '10px' }}>
+            <div className={styles.dateRow}>
               <Icon icon="calendar" size={10} />
               <span>{new Date(task.createdAt).toLocaleDateString()}</span>
             </div>
           )}
         </div>
 
-        <ButtonGroup minimal style={{ flexShrink: 0 }}>
+        <ButtonGroup minimal className={styles.actions}>
           {prevStatus && (
             <Button icon="undo" onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ status: prevStatus }); }} />
           )}
@@ -120,21 +108,25 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDark }) => {
         </ButtonGroup>
       </Card>
 
-      <Dialog className={isDark ? "bp4-dark" : ""} icon="info-sign" onClose={() => setIsDetailsOpen(false)} title={t('taskDetails')} isOpen={isDetailsOpen}>
+      {/* Details Dialog */}
+      <Dialog
+        icon="info-sign"
+        onClose={() => setIsDetailsOpen(false)}
+        title={t('taskDetails')}
+        isOpen={isDetailsOpen}
+      >
         <div className={Classes.DIALOG_BODY}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div className={styles.detailHeader}>
             <H5 style={{ margin: 0 }}>{task.title}</H5>
             <Tag intent={statusIntent} large round style={{ textTransform: 'uppercase' }}>
               {getTranslatedStatus(task.status)}
             </Tag>
           </div>
-          <div style={{ padding: '20px', backgroundColor: isDark ? '#293742' : '#f5f8fa', borderRadius: '8px', border: isDark ? '1px solid #394b59' : '1px solid #dbe3e8', whiteSpace: 'pre-wrap', minHeight: '100px' }}>
-            <Text style={{ fontSize: '14px', lineHeight: '1.5', color: isDark ? '#f5f8fa' : 'inherit' }}>
-              {task.description || t('noDetails')}
-            </Text>
+          <div className={styles.detailBody}>
+            <Text>{task.description || t('noDetails')}</Text>
           </div>
           {task.createdAt && (
-            <div style={{ marginTop: '15px', color: isDark ? '#8a9ba8' : '#738694', fontSize: '12px', fontStyle: 'italic' }}>
+            <div className={styles.detailDate}>
               {t('createdOn')}: {new Date(task.createdAt).toLocaleString()}
             </div>
           )}
@@ -149,26 +141,50 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDark }) => {
         </div>
       </Dialog>
 
-      <Dialog className={isDark ? "bp4-dark" : ""} icon="edit" onClose={() => setIsEditOpen(false)} title={t('editTask')} isOpen={isEditOpen}>
+      {/* Edit Dialog */}
+      <Dialog
+        icon="edit"
+        onClose={() => setIsEditOpen(false)}
+        title={t('editTask')}
+        isOpen={isEditOpen}
+      >
         <div className={Classes.DIALOG_BODY}>
           <FormGroup label={t('title')} labelInfo={`(${t('required')})`}>
             <InputGroup value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
           </FormGroup>
           <FormGroup label={t('description')}>
-            <TextArea fill style={{ minHeight: '120px' }} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+            <TextArea
+              fill
+              className={styles.editTextarea}
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+            />
           </FormGroup>
         </div>
         <div className={Classes.DIALOG_FOOTER}>
           <div className={Classes.DIALOG_FOOTER_ACTIONS}>
             <Button onClick={() => setIsEditOpen(false)}>{t('cancel')}</Button>
-            <Button intent="primary" onClick={() => updateMutation.mutate({ title: editTitle, description: editDescription })} loading={updateMutation.isPending}>
+            <Button
+              intent="primary"
+              onClick={() => updateMutation.mutate({ title: editTitle, description: editDescription })}
+              loading={updateMutation.isPending}
+            >
               {t('saveChanges')}
             </Button>
           </div>
         </div>
       </Dialog>
 
-      <Alert className={isDark ? "bp4-dark" : ""} isOpen={isAlertOpen} icon="trash" intent={Intent.DANGER} confirmButtonText={t('deleteTask')} cancelButtonText={t('cancel')} onCancel={() => setIsAlertOpen(false)} onConfirm={() => deleteMutation.mutate()}>
+      {/* Delete Confirmation */}
+      <Alert
+        isOpen={isAlertOpen}
+        icon="trash"
+        intent={Intent.DANGER}
+        confirmButtonText={t('deleteTask')}
+        cancelButtonText={t('cancel')}
+        onCancel={() => setIsAlertOpen(false)}
+        onConfirm={() => deleteMutation.mutate()}
+      >
         <p>{t('deleteWarning')} <b>{task.title}</b>? {t('deleteAction')}</p>
       </Alert>
     </>

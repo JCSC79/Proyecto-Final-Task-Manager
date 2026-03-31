@@ -1,20 +1,27 @@
 import swaggerJSDoc from 'swagger-jsdoc';
 
 /**
- * Swagger Configuration
- * Carefully updated to include Phase 3 bulk operations and extended update fields.
- * Validated against OpenAPI 3.0.0 standards.
+ * Swagger Configuration - Enterprise Edition
+ * Includes JWT Authentication (Bearer) and Auth endpoints for full testing capability.
  */
 const options: swaggerJSDoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Task Manager API',
-      version: '1.0.0',
-      description: 'Distributed task management API with RabbitMQ and PostgreSQL',
+      title: 'Task Manager API - PRO',
+      version: '1.2.0',
+      description: 'Distributed task management with User Isolation and RabbitMQ.',
     },
     servers: [{ url: 'http://localhost:3000', description: 'Development Server' }],
     components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Login via /api/auth/login to get your token, then paste it here.'
+        },
+      },
       schemas: {
         Task: {
           type: 'object',
@@ -23,8 +30,8 @@ const options: swaggerJSDoc.Options = {
             title: { type: 'string' },
             description: { type: 'string' },
             status: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'] },
-            createdAt: { type: 'string', format: 'date-time' },
-            updatedAt: { type: 'string', format: 'date-time' }
+            userId: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' }
           }
         },
         ErrorResponse: {
@@ -33,92 +40,107 @@ const options: swaggerJSDoc.Options = {
         }
       }
     },
+    // This adds the "Authorize" lock button globally
+    security: [{ bearerAuth: [] }],
     paths: {
-      '/tasks': {
-        get: {
-          summary: 'Retrieve all tasks',
-          tags: ['Tasks'],
-          responses: {
-            200: {
-              description: 'Success',
-              content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Task' } } } }
-            }
-          }
-        },
+      '/api/auth/login': {
         post: {
-          summary: 'Create a new task',
-          tags: ['Tasks'],
+          summary: 'Get JWT Access Token',
+          tags: ['Authentication'],
+          security: [], // Public endpoint (no lock icon here)
           requestBody: {
             required: true,
-            content: { 
-              'application/json': { 
-                schema: { 
-                  type: 'object', 
-                  required: ['title', 'description'], // Reflects strict requirements
-                  properties: { 
-                    title: { type: 'string' }, 
-                    description: { type: 'string' } 
-                  } 
-                } 
-              } 
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['email', 'password'],
+                  properties: {
+                    email: { type: 'string', example: 'admin@test.com' },
+                    password: { type: 'string', example: 'AdminPassword123!' }
+                  }
+                }
+              }
             }
           },
           responses: {
-            201: { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/Task' } } } },
-            400: { description: 'Validation Error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+            200: { description: 'Success - Returns Token and User info' },
+            401: { description: 'Unauthorized - Invalid credentials' }
           }
-        },
-        // NEW: Mass deletion endpoint documentation
-        delete: {
-          summary: 'Delete all tasks (Clear Board)',
+        }
+      },
+      '/tasks': {
+        get: {
+          summary: 'Retrieve my tasks (Isolation Active)',
           tags: ['Tasks'],
           responses: {
-            204: { description: 'All tasks successfully deleted' },
-            500: { description: 'Internal Server Error' }
+            200: {
+              description: 'Array of user-owned tasks',
+              content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Task' } } } }
+            },
+            401: { description: 'Missing or invalid Token' }
           }
+        },
+        post: {
+          summary: 'Create a new task for current user',
+          tags: ['Tasks'],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['title', 'description'],
+                  properties: { title: { type: 'string' }, description: { type: 'string' } }
+                }
+              }
+            }
+          },
+          responses: {
+            201: { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/Task' } } } }
+          }
+        },
+        delete: {
+          summary: 'Clear my board',
+          tags: ['Tasks'],
+          responses: { 204: { description: 'All your tasks deleted' } }
         }
       },
       '/tasks/{id}': {
         get: {
-          summary: 'Get task by ID',
+          summary: 'Get specific task',
           tags: ['Tasks'],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
           responses: {
-            200: { description: 'Success', content: { 'application/json': { schema: { $ref: '#/components/schemas/Task' } } } },
-            404: { description: 'Not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+            200: { $ref: '#/components/schemas/Task' },
+            404: { description: 'Task not found or access denied' }
           }
         },
         patch: {
-          summary: 'Update task details or status', // Updated summary
+          summary: 'Update task details',
           tags: ['Tasks'],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
           requestBody: {
-            content: { 
-              'application/json': { 
-                schema: { 
-                  type: 'object', 
-                  properties: { 
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
                     title: { type: 'string' },
                     description: { type: 'string' },
-                    status: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'] } 
-                  } 
-                } 
-              } 
+                    status: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'] }
+                  }
+                }
+              }
             }
           },
-          responses: {
-            200: { description: 'Updated successfully', content: { 'application/json': { schema: { $ref: '#/components/schemas/Task' } } } },
-            404: { description: 'Task not found' }
-          }
+          responses: { 200: { description: 'Updated' } }
         },
         delete: {
-          summary: 'Delete a specific task',
+          summary: 'Remove task',
           tags: ['Tasks'],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-          responses: { 
-            204: { description: 'Deleted' }, 
-            404: { description: 'Not found' } 
-          }
+          responses: { 204: { description: 'Deleted' } }
         }
       }
     }

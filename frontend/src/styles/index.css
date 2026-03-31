@@ -1,0 +1,8 @@
+/**
+ * STYLES ENTRY POINT
+ * Import order matters: variables first, then base, then overrides.
+ * This file is the only one imported in main.tsx for styles.
+ */
+@import './variables.css';
+@import './globals.css';
+@import './blueprint-overrides.css';

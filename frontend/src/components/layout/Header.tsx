@@ -1,114 +1,195 @@
-import React from 'react';
-import { Navbar, ProgressBar, Button, Alignment } from "@blueprintjs/core";
+import React, { useEffect, useState } from 'react';
+import { Navbar, ProgressBar, Button, Alignment, Dialog, DialogBody, DialogFooter, InputGroup, FormGroup, Intent } from '@blueprintjs/core';
 import { useTranslation } from 'react-i18next';
-// NEW: Import the custom logo from assets for Vite processing
+import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { gravatarUrl } from '../../utils/gravatar';
+import { AppToaster } from '../../utils/toaster';
 import logoImg from '../../assets/logo.png';
+import styles from './Header.module.css';
 
-// Define the available view modes
 type ViewMode = 'home' | 'dashboard';
 
-/**
- * Header Component
- * Updated: Manages view switching between Home and Dashboard.
- * Added: Custom branding logo and improved navigation spacing.
- */
 interface HeaderProps {
   progress: number;
-  isDark: boolean;
-  toggleDark: () => void;
   activeView: ViewMode;
   setActiveView: (view: ViewMode) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ progress, isDark, toggleDark, activeView, setActiveView }) => {
+export const Header: React.FC<HeaderProps> = ({ progress, activeView, setActiveView }) => {
   const { t, i18n } = useTranslation();
+  const { isDark, toggleTheme } = useTheme();
+  const { user, isAdmin, logout, updateName } = useAuth();
+  const navigate = useNavigate();
   const percentage = Math.round(progress * 100);
 
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (user?.email) {
+      gravatarUrl(user.email, 36).then(setAvatarSrc);
+    } else {
+      setAvatarSrc(null);
+    }
+  }, [user?.email]);
+
   const toggleLanguage = () => {
-    const newLang = i18n.language.startsWith('es') ? 'en' : 'es';
-    i18n.changeLanguage(newLang);
+    i18n.changeLanguage(i18n.language.startsWith('es') ? 'en' : 'es');
+  };
+
+  const openEdit = () => {
+    setNameInput(user?.name ?? '');
+    setIsEditOpen(true);
+  };
+
+  const handleSaveName = async () => {
+    if (!nameInput.trim()) { 
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await updateName(nameInput.trim());
+      setIsEditOpen(false);
+      AppToaster.show({ message: t('editProfileSuccess'), intent: Intent.SUCCESS });
+    } catch {
+      AppToaster.show({ message: t('loginError'), intent: Intent.DANGER });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <Navbar 
-      className={isDark ? "bp4-dark" : ""} // Ensures internal elements adapt
-      style={{ 
-        height: '70px', 
-        padding: '10px 20px',
-        backgroundColor: isDark ? '#293742' : '#ffffff',
-        transition: 'background-color 0.3s ease',
-        display: 'flex',
-        alignItems: 'center'
-      }}
-    >
-      <Navbar.Group align={Alignment.LEFT} style={{ width: '100%' }}>
-        {/* BRANDING SECTION */}
-        <div style={{ display: 'flex', alignItems: 'center', marginRight: '15px' }}>
-          <img 
-            src={logoImg} 
-            alt="App Logo" 
-            style={{ height: '50px', width: 'auto', marginRight: '12px' }} 
-          />
-          <Navbar.Heading style={{ fontSize: '20px', display: 'flex', alignItems: 'center' }}>
-            <strong style={{ color: isDark ? '#ffffff' : '#182026' }}>{t('appName')}</strong>
+    <Navbar className={styles.navbar}>
+      <Navbar.Group align={Alignment.LEFT} className={styles.navGroup}>
+
+        {/* Branding */}
+        <div className={styles.branding}>
+          <img src={logoImg} alt="App Logo" className={styles.logo} />
+          <Navbar.Heading>
+            <span className={styles.appName}>{t('appName')}</span>
           </Navbar.Heading>
         </div>
-        
+
         <Navbar.Divider />
-        
-        {/* VIEW SWITCHER SECTION: Added margin-right auto to push progress group to the right */}
-        <div style={{ marginLeft: '10px', display: 'flex', gap: '12px', marginRight: 'auto' }}>
-          <Button 
-            className="bp4-minimal" 
-            icon="home" 
-            text={t('home')} 
-            active={activeView === 'home'} 
-            onClick={() => setActiveView('home')} 
-            large 
+
+        {/* View switcher */}
+        <div className={styles.viewSwitcher}>
+          <Button
+            minimal
+            icon="home"
+            text={t('home')}
+            active={activeView === 'home'}
+            onClick={() => setActiveView('home')}
+            large
           />
-          <Button 
-            className="bp4-minimal" 
-            icon="dashboard" 
-            text={t('dashboard')} 
-            active={activeView === 'dashboard'} 
-            onClick={() => setActiveView('dashboard')} 
-            large 
+          <Button
+            minimal
+            icon="dashboard"
+            text={t('dashboard')}
+            active={activeView === 'dashboard'}
+            onClick={() => setActiveView('dashboard')}
+            large
           />
+          {isAdmin && (
+            <Button
+              minimal
+              icon="shield"
+              text={t('adminPanel')}
+              intent="warning"
+              onClick={() => navigate('/admin')}
+              large
+            />
+          )}
         </div>
 
-        {/* PROGRESS SECTION: Now correctly positioned thanks to the previous margin-right: auto */}
-        <div style={{ display: 'flex', alignItems: 'center', marginRight: '25px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 600, marginRight: '12px', color: isDark ? '#a7b6c2' : '#5c7080', whiteSpace: 'nowrap' }}>
+        {/* Progress */}
+        <div className={styles.progressSection}>
+          <span className={styles.progressLabel}>
             {t('progress')}: {percentage}%
           </span>
-          <ProgressBar 
-            intent={percentage === 100 ? "success" : "primary"} 
-            value={progress} 
-            style={{ width: '120px', height: '8px' }} 
-            stripes={percentage < 100} 
+          <ProgressBar
+            className={styles.progressBar}
+            intent={percentage === 100 ? 'success' : 'primary'}
+            value={progress}
+            stripes={percentage < 100}
           />
         </div>
 
         <Navbar.Divider />
-        
-        {/* SETTINGS SECTION */}
-        <div style={{ display: 'flex', alignItems: 'center', marginLeft: '10px' }}>
-          <Button 
-            className="bp4-minimal" 
-            icon={isDark ? "flash" : "moon"} 
-            onClick={toggleDark}             
-            large 
-            style={{ margin: '0 5px' }}
-          />
-          <Button 
-            className="bp4-minimal" 
-            icon="translate" 
-            text={i18n.language.startsWith('es') ? 'EN' : 'ES'} 
-            onClick={toggleLanguage} 
-            large 
-          />
+
+        {/* User info + controls */}
+        <div className={styles.settingsSection}>
+          {user && (
+            <div className={styles.userInfo}>
+              <button
+                className={styles.avatarBtn}
+                onClick={openEdit}
+                aria-label={t('editProfileTitle')}
+                title={t('editProfileTitle')}
+              >
+                {avatarSrc && (
+                  <img
+                    src={avatarSrc}
+                    alt={user.name ?? user.email}
+                    className={styles.avatar}
+                  />
+                )}
+              </button>
+              <span>{user.name ?? user.email}</span>
+              <span className={styles.userRole}>{isAdmin ? 'Admin' : 'User'}</span>
+            </div>
+          )}
+          <Button minimal icon={isDark ? 'flash' : 'moon'} onClick={toggleTheme} large />
+          <Button minimal onClick={toggleLanguage} large>
+            {i18n.language.startsWith('es')
+              ? <><span className="fi fi-es" style={{ marginRight: 6 }} />ES</>
+              : <><span className="fi fi-gb" style={{ marginRight: 6 }} />EN</>}
+          </Button>
+          {user && <Button minimal icon="log-out" onClick={logout} large />}
         </div>
+
       </Navbar.Group>
+
+      {/* Edit profile dialog */}
+      <Dialog
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        title={t('editProfileTitle')}
+        style={{ width: 360 }}
+      >
+        <DialogBody>
+          <FormGroup label={t('editProfileName')} labelFor="editName">
+            <InputGroup
+              id="editName"
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSaveName(); }}
+              large
+              autoFocus
+            />
+          </FormGroup>
+        </DialogBody>
+        <DialogFooter
+          actions={
+            <>
+              <Button onClick={() => setIsEditOpen(false)}>{t('cancel')}</Button>
+              <Button
+                intent={Intent.PRIMARY}
+                loading={isSaving}
+                onClick={handleSaveName}
+                disabled={!nameInput.trim()}
+              >
+                {t('editProfileSave')}
+              </Button>
+            </>
+          }
+        />
+      </Dialog>
+
     </Navbar>
   );
 };

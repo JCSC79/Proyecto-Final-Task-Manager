@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import amqp from 'amqplib';
 import type { Channel, ConsumeMessage } from 'amqplib';
 import type { ITask } from './models/task.model.ts';
@@ -9,7 +10,11 @@ import type { ITask } from './models/task.model.ts';
 async function startWorker() {
     try {
         // 1. Connection to the broker
-        const connection = await amqp.connect('amqp://JC:abc123..@localhost:5672');
+        const rabbitmqUrl = process.env.RABBITMQ_URL;
+        if (!rabbitmqUrl) {
+            throw new Error('RABBITMQ_URL environment variable is required');
+        }
+        const connection = await amqp.connect(rabbitmqUrl);
         
         // 2. Type narrowing for the channel (duck typing)
         let channel: Channel | undefined;

@@ -5,7 +5,7 @@ import type { ITask } from '../models/task.model.ts';
 
 /**
  * Custom interface to extend Express Request.
- * This allows us to access 'req.user' without using 'any'.
+ * This allows us to access 'req.user' without using 'any', fulfilling strict ESLint rules.
  */
 interface AuthRequest extends Request {
   user?: {
@@ -19,19 +19,37 @@ interface YupError {
   message: string;
 }
 
+/**
+ * TaskController - Manages the HTTP layer for task operations.
+ * Strictly enforces user identity in every request.
+ */
 class TaskController {
-  async getAll(_req: Request, res: Response): Promise<void> {
-    const result = await taskService.getAllTasks();
-    res.json(result.getValue());
+  
+  /**
+   * Retrieves tasks. Admin gets global view, User gets private view.
+   */
+  async getAll(req: Request, res: Response): Promise<void> {
+    try {
+      const authReq = req as AuthRequest;
+      const result = await taskService.getAllTasks(authReq.user!);
+      res.json(result.getValue());
+    } catch {
+      res.status(500).json({ error: 'Failed to retrieve tasks' });
+    }
   }
 
+  /**
+   * Retrieves a specific task ensuring ownership.
+   */
   async getById(req: Request, res: Response): Promise<Response | void> {
     const { id } = req.params;
+    const authReq = req as AuthRequest;
+
     if (typeof id !== 'string') {
       return res.status(400).json({ error: "Invalid ID format" });
     }
 
-    const result = await taskService.getTaskById(id);
+    const result = await taskService.getTaskById(id, authReq.user!.id);
     if (result.isFailure) {
       return res.status(404).json({ error: result.error });
     }
@@ -39,16 +57,11 @@ class TaskController {
   }
 
   /**
-   * Validates input and creates a new task with the owner's ID.
+   * Creates a new task bound to the authenticated user's ID.
    */
   async create(req: Request, res: Response): Promise<Response | void> {
     try {
       const validatedData = await createTaskSchema.validate(req.body, { abortEarly: false });
-      
-      /**
-       * CLEAN TYPING: We cast 'req' to our 'AuthRequest' interface.
-       * This fulfills ESLint rules and ensures 'id' exists.
-       */
       const authReq = req as AuthRequest;
       const userId = authReq.user?.id;
 
@@ -73,29 +86,45 @@ class TaskController {
     }
   }
 
+  /**
+   * Deletes a specific task if it belongs to the authenticated user.
+   */
   async delete(req: Request, res: Response): Promise<Response | void> {
     const { id } = req.params;
+    const authReq = req as AuthRequest;
+
     if (typeof id !== 'string') {
       return res.status(400).json({ error: "Invalid ID format" });
     }
 
-    const result = await taskService.deleteTask(id);
+    const result = await taskService.deleteTask(id, authReq.user!.id);
     if (result.isFailure) {
-      return res.status(404).json({ error: result.error });
+      // 403 Forbidden because the task exists but doesn't belong to the user
+      return res.status(403).json({ error: result.error });
     }
     res.status(204).send();
   }
 
-  async deleteAll(_req: Request, res: Response): Promise<Response | void> {
-    const result = await taskService.deleteAllTasks();
+  /**
+   * Clears all tasks belonging to the requesting user.
+   */
+  async deleteAll(req: Request, res: Response): Promise<Response | void> {
+    const authReq = req as AuthRequest;
+    const result = await taskService.deleteAllTasks(authReq.user!.id);
+    
     if (result.isFailure) {
       return res.status(500).json({ error: result.error });
     }
     res.status(204).send();
   }
 
+  /**
+   * Partially updates a task after verifying ownership.
+   */
   async update(req: Request, res: Response): Promise<Response | void> {
     const { id } = req.params;
+    const authReq = req as AuthRequest;
+
     if (typeof id !== 'string') {
       return res.status(400).json({ error: "Invalid ID format" });
     }
@@ -105,11 +134,10 @@ class TaskController {
         stripUnknown: true 
       });
 
-      const result = await taskService.updateTask(id, validatedUpdates as Partial<ITask>);
+      const result = await taskService.updateTask(id, authReq.user!.id, validatedUpdates as Partial<ITask>);
       
       if (result.isFailure) {
-        const status = result.error?.includes('not found') ? 404 : 500;
-        return res.status(status).json({ error: result.error });
+        return res.status(403).json({ error: result.error });
       }
 
       res.json(result.getValue());

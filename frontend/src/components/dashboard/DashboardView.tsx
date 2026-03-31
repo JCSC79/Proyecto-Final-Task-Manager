@@ -1,27 +1,22 @@
 import React from 'react';
-import { Card, Elevation, Icon, H3, H2, H4, Text } from '@blueprintjs/core';
+import { Card, Elevation, Icon, H3, H2, H4 } from '@blueprintjs/core';
 import { useTranslation } from 'react-i18next';
-import { 
-  PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line 
+import {
+  PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line
 } from 'recharts';
 import type { Task, TaskStatus } from '../../types/task';
-
-/**
- * DashboardView Component
- * Provides advanced analytics, KPIs, and interactive charts for task management.
- */
+import { useTheme } from '../../contexts/ThemeContext';
+import styles from './DashboardView.module.css';
 
 interface DashboardViewProps {
   tasks: Task[];
-  isDark: boolean;
   onChartClick: (status: TaskStatus) => void;
 }
 
 interface CustomTooltipProps {
   active?: boolean;
   payload?: Array<{ name: string; value: number; payload: unknown }>;
-  isDark: boolean;
 }
 
 interface ChartDataPoint {
@@ -30,30 +25,24 @@ interface ChartDataPoint {
   color: string;
 }
 
-/**
- * CustomTooltip: Styled tooltip for charts that adapts to light/dark themes.
- */
-const CustomTooltip = ({ active, payload, isDark }: CustomTooltipProps) => {
+const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
-      <div style={{ 
-        backgroundColor: isDark ? '#30404d' : '#ffffff', 
-        padding: '10px', 
-        borderRadius: '4px', 
-        border: `1px solid ${isDark ? '#394b59' : '#dbe3e8'}`,
-        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-      }}>
-        <Text style={{ color: isDark ? '#f5f8fa' : '#182026', fontWeight: 'bold' }}>
-          {`${payload[0].name}: ${payload[0].value}`}
-        </Text>
+      <div className={styles.tooltip}>
+        {`${payload[0].name}: ${payload[0].value}`}
       </div>
     );
   }
   return null;
 };
 
-export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], isDark, onChartClick }) => {
+export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], onChartClick }) => {
   const { t } = useTranslation();
+  const { isDark } = useTheme();
+
+  // Recharts requires actual color strings — CSS vars don't work inside chart props
+  const labelColor = isDark ? '#a7b6c2' : '#5c7080';
+  const gridColor = isDark ? '#394b59' : '#dbe3e8';
 
   // DATA PROCESSING FOR KPIs AND CHARTS
   const total = tasks.length;
@@ -108,10 +97,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], isDark
     [t('completed')]: 'COMPLETED'
   };
 
-  /**
-   * Chart event handler to filter tasks by status.
-   * Uses safe type casting to comply with strict ESLint rules.
-   */
   const handleChartEvent = (data: unknown) => {
     if (data && typeof data === 'object' && 'name' in data) {
       const entryName = (data as { name: string }).name;
@@ -125,56 +110,43 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], isDark
     { name: t('completed'), value: completedCount, color: '#0F9960' }
   ];
 
-  // Common styles for UI components
-  const cardStyle = { backgroundColor: isDark ? '#293742' : '#ffffff', color: isDark ? '#f5f8fa' : '#182026', borderRadius: '8px' };
-  const labelColor = isDark ? '#a7b6c2' : '#5c7080';
-
   return (
-    <div style={{ marginTop: '20px', paddingBottom: '40px' }}>
-      <H2 style={{ marginBottom: '30px', color: isDark ? '#f5f8fa' : '#182026' }}>
+    <div className={styles.wrapper}>
+      <H2 className={styles.pageTitle}>
         <Icon icon="chart" size={25} intent="primary" /> {t('kpiDashboard')}
       </H2>
 
-      {/* KPI CARDS SECTION  */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '30px' }}>
-        <Card elevation={Elevation.TWO} style={cardStyle}>
-          <div style={{ textAlign: 'center' }}>
-            <H4 style={{ color: labelColor }}>{t('totalTasks')}</H4>
-            <div style={{ fontSize: '2.5em', fontWeight: 'bold', color: isDark ? '#ffffff' : '#182026' }}>{total}</div>
+      {/* KPI CARDS */}
+      <div className={styles.kpiGrid}>
+        <Card elevation={Elevation.TWO} className={styles.kpiCard}>
+          <H4 className={styles.kpiLabel}>{t('totalTasks')}</H4>
+          <div className={styles.kpiValue}>{total}</div>
+        </Card>
+
+        <Card elevation={Elevation.TWO} className={styles.kpiCard}>
+          <H4 className={styles.kpiLabel}>{t('completionRate')}</H4>
+          <div className={`${styles.kpiValue} ${styles.kpiValueGreen}`}>{completionRate}%</div>
+        </Card>
+
+        <Card elevation={Elevation.TWO} className={styles.kpiCard}>
+          <H4 className={styles.kpiLabel}>{t('boardHealth')}</H4>
+          <div className={`${styles.kpiValue} ${completionRate > 70 ? styles.kpiValueGreen : styles.kpiValueOrange}`} style={{ fontSize: '1.5rem' }}>
+            {completionRate > 70 ? t('healthExcellent') : t('healthImprovable')}
           </div>
         </Card>
-        
-        <Card elevation={Elevation.TWO} style={cardStyle}>
-          <div style={{ textAlign: 'center' }}>
-            <H4 style={{ color: labelColor }}>{t('completionRate')}</H4>
-            <div style={{ fontSize: '2.5em', fontWeight: 'bold', color: '#0F9960' }}>{completionRate}%</div>
-          </div>
-        </Card>
-        
-        <Card elevation={Elevation.TWO} style={cardStyle}>
-          <div style={{ textAlign: 'center' }}>
-            <H4 style={{ color: labelColor }}>{t('boardHealth')}</H4>
-            <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: completionRate > 70 ? '#0F9960' : '#D9822B' }}>
-              {completionRate > 70 ? t('healthExcellent') : t('healthImprovable')}
-            </div>
-          </div>
-        </Card>
-        
-        <Card elevation={Elevation.TWO} style={cardStyle}>
-          <div style={{ textAlign: 'center' }}>
-            <H4 style={{ color: labelColor }}>{t('avgTime')}</H4>
-            <div style={{ fontSize: '1.2em', fontWeight: 'bold', color: isDark ? '#ffffff' : '#182026' }}>{timeDisplay}</div>
-          </div>
+
+        <Card elevation={Elevation.TWO} className={styles.kpiCard}>
+          <H4 className={styles.kpiLabel}>{t('avgTime')}</H4>
+          <div className={styles.kpiValue} style={{ fontSize: '1.2rem' }}>{timeDisplay}</div>
         </Card>
       </div>
 
-      {/* CHARTS SECTION */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px' }}>
-        
+      {/* CHARTS */}
+      <div className={styles.chartsGrid}>
         {/* Status Breakdown (Donut Chart) */}
-        <Card elevation={Elevation.ONE} style={{ ...cardStyle, padding: '30px' }}>
-          <H3 style={{ color: isDark ? '#f5f8fa' : '#182026' }}>{t('statusDistribution')}</H3>
-          <div style={{ width: '100%', height: '300px' }}>
+        <Card elevation={Elevation.ONE} className={styles.chartCard}>
+          <H3 className={styles.chartTitle}>{t('statusDistribution')}</H3>
+          <div className={styles.chartContainer}>
             <ResponsiveContainer>
               <PieChart>
                 <Pie
@@ -186,7 +158,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], isDark
                 >
                   {chartData.map((entry, index) => <Cell key={index} fill={entry.color} stroke="none" />)}
                 </Pie>
-                <Tooltip content={<CustomTooltip isDark={isDark} />} />
+                <Tooltip content={<CustomTooltip />} />
                 <Legend verticalAlign="bottom" height={36} />
               </PieChart>
             </ResponsiveContainer>
@@ -194,24 +166,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], isDark
         </Card>
 
         {/* Workload Bar Chart */}
-        <Card elevation={Elevation.ONE} style={{ ...cardStyle, padding: '30px' }}>
-          <H3 style={{ color: isDark ? '#f5f8fa' : '#182026' }}>{t('workloadTitle')}</H3>
-          <div style={{ width: '100%', height: '300px' }}>
+        <Card elevation={Elevation.ONE} className={styles.chartCard}>
+          <H3 className={styles.chartTitle}>{t('workloadTitle')}</H3>
+          <div className={styles.chartContainer}>
             <ResponsiveContainer>
               <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#394b59" : "#dbe3e8"} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: labelColor, fontSize: 12 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: labelColor, fontSize: 12 }} />
-                <Tooltip 
-                  content={<CustomTooltip isDark={isDark} />} 
-                  cursor={{ fill: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }} 
+                <Tooltip
+                  content={<CustomTooltip />}
+                  cursor={{ fill: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}
                 />
-                <Bar 
-                  dataKey="value" 
-                  radius={[4, 4, 0, 0]} 
-                  onClick={handleChartEvent}
-                  style={{ cursor: 'pointer', outline: 'none' }}
-                >
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} onClick={handleChartEvent} style={{ cursor: 'pointer', outline: 'none' }}>
                   {chartData.map((entry, index) => <Cell key={index} fill={entry.color} />)}
                 </Bar>
               </BarChart>
@@ -220,17 +187,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], isDark
         </Card>
 
         {/* Activity Trend (Line Chart) */}
-        <Card elevation={Elevation.ONE} style={{ ...cardStyle, padding: '30px', gridColumn: 'span 2' }}>
-          <H3 style={{ color: isDark ? '#f5f8fa' : '#182026', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <Card elevation={Elevation.ONE} className={`${styles.chartCard} ${styles.chartCardFull}`}>
+          <H3 className={styles.chartTitle}>
             <Icon icon="timeline-events" /> {t('recentActivity')}
           </H3>
-          <div style={{ width: '100%', height: '250px' }}>
+          <div className={styles.chartContainerSm}>
             <ResponsiveContainer>
               <LineChart data={last7Days}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#394b59" : "#dbe3e8"} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: labelColor }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: labelColor }} />
-                <Tooltip content={<CustomTooltip isDark={isDark} />} />
+                <Tooltip content={<CustomTooltip />} />
                 <Line type="monotone" dataKey="count" stroke="#2B95D9" strokeWidth={3} dot={{ r: 5, fill: '#2B95D9' }} activeDot={{ r: 8 }} />
               </LineChart>
             </ResponsiveContainer>

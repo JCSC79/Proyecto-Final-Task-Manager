@@ -11,7 +11,7 @@ test('TaskService should validate mandatory fields', async () => {
     
     const service = new TaskService(mockDao, mockMessaging);
 
-    const result = await service.createTask('', 'No title provided');
+    const result = await service.createTask('', 'No title provided', 'mock-user-id');
 
     assert.strictEqual(result.isFailure, true);
     assert.strictEqual(result.error, 'Title is required');

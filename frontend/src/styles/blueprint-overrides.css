@@ -1,0 +1,99 @@
+﻿/**
+ * BLUEPRINT OVERRIDES
+ * Bridges Blueprint's own colors to our CSS custom properties.
+ * NOTE: Blueprint v6 uses "bp6-" prefix throughout.
+ */
+
+/* NAVBAR */
+.bp6-navbar {
+  background-color: var(--bg-surface) !important;
+  box-shadow: var(--shadow-sm) !important;
+  color: var(--text-main) !important;
+  height: var(--navbar-height) !important;
+  transition: var(--transition) !important;
+  /* Blueprint uses floats for groups — switch to flex so height fills correctly */
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Groups: fill the full navbar height and center their children */
+.bp6-navbar .bp6-navbar-group {
+  height: var(--navbar-height) !important;
+  align-items: center !important;
+  float: none !important;
+}
+
+/* DARK MODE NAVBAR BUTTONS */
+/* bp6-dark is set on <body> when dark mode is active */
+.bp6-dark .bp6-navbar {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-main) !important;
+}
+
+.bp6-dark .bp6-navbar .bp6-button.bp6-minimal {
+  color: var(--text-main) !important;
+}
+
+.bp6-dark .bp6-navbar .bp6-button.bp6-minimal .bp6-icon,
+.bp6-dark .bp6-navbar .bp6-button.bp6-minimal .bp6-button-text {
+  color: var(--text-main) !important;
+}
+
+.bp6-dark .bp6-navbar .bp6-button.bp6-minimal:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Admin button (intent=warning) stays orange in dark mode */
+.bp6-dark .bp6-navbar .bp6-button.bp6-minimal.bp6-intent-warning,
+.bp6-dark .bp6-navbar .bp6-button.bp6-minimal.bp6-intent-warning .bp6-icon,
+.bp6-dark .bp6-navbar .bp6-button.bp6-minimal.bp6-intent-warning .bp6-button-text {
+  color: var(--color-warning) !important;
+  opacity: 1 !important;
+}
+
+/* CARD */
+.bp6-card {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-main) !important;
+  transition: var(--transition) !important;
+}
+
+/* DIALOG */
+.bp6-dialog {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-main) !important;
+}
+
+.bp6-dialog-header {
+  background-color: var(--bg-surface-alt) !important;
+  color: var(--text-main) !important;
+}
+
+/* ALERT */
+.bp6-alert {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-main) !important;
+}
+
+/* INPUT */
+.bp6-input {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border) !important;
+}
+
+/* MENU */
+.bp6-menu {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-main) !important;
+}
+
+/* LABEL / FORM */
+.bp6-label {
+  color: var(--text-main) !important;
+}
+
+/* TEXT HELPERS */
+.bp6-text-muted {
+  color: var(--text-muted) !important;
+}

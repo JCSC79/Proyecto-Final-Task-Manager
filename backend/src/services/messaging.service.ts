@@ -16,7 +16,11 @@ class MessagingService {
      */
     async init(): Promise<void> {
         try {
-            const connection = await amqp.connect('amqp://JC:abc123..@localhost:5672');
+            const rabbitmqUrl = process.env.RABBITMQ_URL;
+            if (!rabbitmqUrl) {
+                throw new Error('RABBITMQ_URL environment variable is required');
+            }
+            const connection = await amqp.connect(rabbitmqUrl);
             
             // Technical workaround for library type conflicts while respecting the "no-any" policy.
             if ('createChannel' in connection) {
