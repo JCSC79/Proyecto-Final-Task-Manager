@@ -9,7 +9,7 @@ import 'flag-icons/css/flag-icons.min.css';
 
 // Our style manager: variables → globals → blueprint-overrides
 import './styles/index.css';
-
+// import './styles/variables.css';
 import App from './App.tsx'
 import './i18n';
 import { ThemeProvider } from './contexts/ThemeContext.tsx';

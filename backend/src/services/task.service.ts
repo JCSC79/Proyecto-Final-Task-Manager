@@ -21,9 +21,10 @@ export class TaskService {
     }
 
     async getAllTasks(user: { id: string, role: string }): Promise<Result<ITask[]>> {
-        const tasks = user.role === 'ADMIN' 
-            ? await this.dao.adminGetAll() 
-            : await this.dao.getAll(user.id);
+        // const tasks = user.role === 'ADMIN' 
+        //     ? await this.dao.adminGetAll() 
+        //     : await this.dao.getAll(user.id);
+        const tasks = await this.dao.getAll(user.id);
         return Result.ok(tasks);
     }
 

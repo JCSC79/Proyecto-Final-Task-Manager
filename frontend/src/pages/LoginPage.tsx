@@ -38,6 +38,20 @@ const LoginPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+
+
+    // try {
+    //   await login(email.trim(), password);
+    //   // AppRouter will automatically redirect to / once isAuthenticated becomes true
+    // } catch (err: unknown) {
+    //   const axiosError = err as { response?: { data?: { error?: string } } };
+    //   const errorMessage = axiosError.response?.data?.error || t('loginError');
+    //   setError(errorMessage);
+    // } finally {
+    //   setIsLoading(false);
+    // }
+
+
   };
 
   const lockButton = (
