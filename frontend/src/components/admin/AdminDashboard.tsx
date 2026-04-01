@@ -3,7 +3,7 @@ import { StatusDonutChart } from './charts/StatusDonutChart';
 import { UserTasksBarChart } from './charts/UserTasksBarChart';
 import {
   Card, Elevation, H2, H3, H4, Icon, InputGroup,
-  Button, Alert, Intent, Tag, Spinner
+  Button, Alert, Intent, Tag, Spinner, ButtonGroup
 } from '@blueprintjs/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -23,8 +23,12 @@ export const AdminDashboard: React.FC = () => {
   const { isDark } = useTheme();
   const queryClient = useQueryClient();
 
+  // State for search, filtering, pagination, and pending role changes
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'USER'>('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8; 
+  // State for pending role changes
   const [pendingChange, setPendingChange] = useState<{ user: IUserWithStats; targetRole: 'ADMIN' | 'USER' } | null>(null);
 
   const { data: users = [], isLoading, isError } = useQuery<IUserWithStats[]>({
@@ -52,21 +56,42 @@ export const AdminDashboard: React.FC = () => {
     },
   });
 
-  // Global calculations
+  // FILTERING AND PAGINATION LOGIC 
+  const filteredUsers = users.filter(u => {
+    const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
+    const matchesSearch = search === '' ||
+      (u.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase());
+    return matchesRole && matchesSearch;
+  });
+
+  const totalPages = Math.ceil(filteredUsers.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + pageSize);
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setCurrentPage(1);
+  };
+
+  const handleFilterChange = (role: 'ALL' | 'ADMIN' | 'USER') => {
+    setRoleFilter(role);
+    setCurrentPage(1);
+  };
+
+  // KPIs and chart data
   const globalTotal = users.reduce((s, u) => s + u.stats.total, 0);
   const globalPending = users.reduce((s, u) => s + u.stats.pending, 0);
   const globalInProgress = users.reduce((s, u) => s + u.stats.inProgress, 0);
   const globalCompleted = users.reduce((s, u) => s + u.stats.completed, 0);
   const globalRate = globalTotal === 0 ? 0 : Math.round((globalCompleted / globalTotal) * 100);
 
-  // Data for the Donut (now managed by the child component)
   const pieData = [
     { name: t('pending'), value: globalPending, color: COLOR_PENDING },
     { name: t('inProgress'), value: globalInProgress, color: COLOR_IN_PROGRESS },
     { name: t('completed'), value: globalCompleted, color: COLOR_COMPLETED },
   ].filter(d => d.value > 0);
 
-  // Data for the Bars (now managed by the child component)
   const barData = [...users]
     .sort((a, b) => b.stats.total - a.stats.total)
     .slice(0, 10)
@@ -77,15 +102,7 @@ export const AdminDashboard: React.FC = () => {
       [t('completed')]: u.stats.completed,
     }));
 
-  const filteredUsers = users.filter(u => {
-    const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
-    const matchesSearch = search === '' ||
-      (u.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase());
-    return matchesRole && matchesSearch;
-  });
-
-  if (isLoading) { 
+  if (isLoading) {
     return <Spinner size={50} intent={Intent.PRIMARY} />;
   }
   if (isError) {
@@ -98,7 +115,6 @@ export const AdminDashboard: React.FC = () => {
         <Icon icon="shield" size={25} intent="warning" /> {t('adminPanel')}
       </H2>
 
-      {/* KPIs */}
       <div className={styles.kpiGrid}>
         <Card elevation={Elevation.TWO} className={styles.kpiCard}>
           <H4 className={styles.kpiLabel}>{t('adminTotalUsers')}</H4>
@@ -118,13 +134,11 @@ export const AdminDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Extracted Charts */}
       <div className={styles.chartsGrid}>
         <Card elevation={Elevation.ONE} className={styles.chartCard}>
           <H3 className={styles.chartTitle}>{t('statusDistribution')}</H3>
           <StatusDonutChart data={pieData} />
         </Card>
-
         <Card elevation={Elevation.ONE} className={styles.chartCard}>
           <H3 className={styles.chartTitle}>{t('adminTasksPerUser')}</H3>
           <UserTasksBarChart 
@@ -136,16 +150,20 @@ export const AdminDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* User Table */}
       <Card elevation={Elevation.ONE} className={styles.tableCard}>
         <H3 className={styles.tableTitle}><Icon icon="people" /> {t('adminUserList')}</H3>
         <div className={styles.toolbar}>
           <div className={styles.searchBox}>
-            <InputGroup leftIcon="search" placeholder={t('adminSearchUsers')} value={search} onChange={e => setSearch(e.target.value)} />
+            <InputGroup 
+              leftIcon="search" 
+              placeholder={t('adminSearchUsers')} 
+              value={search} 
+              onChange={e => handleSearchChange(e.target.value)} 
+            />
           </div>
-          <Button text={t('all')} active={roleFilter === 'ALL'} onClick={() => setRoleFilter('ALL')} minimal />
-          <Button text="Admin" active={roleFilter === 'ADMIN'} intent="primary" onClick={() => setRoleFilter('ADMIN')} minimal />
-          <Button text="User" active={roleFilter === 'USER'} onClick={() => setRoleFilter('USER')} minimal />
+          <Button text={t('all')} active={roleFilter === 'ALL'} onClick={() => handleFilterChange('ALL')} minimal />
+          <Button text="Admin" active={roleFilter === 'ADMIN'} intent="primary" onClick={() => handleFilterChange('ADMIN')} minimal />
+          <Button text="User" active={roleFilter === 'USER'} onClick={() => handleFilterChange('USER')} minimal />
         </div>
 
         <table className={styles.table}>
@@ -163,14 +181,18 @@ export const AdminDashboard: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.length === 0 ? (
+            {paginatedUsers.length === 0 ? (
               <tr className={styles.emptyRow}><td colSpan={9}>{t('noResults')}</td></tr>
             ) : (
-              filteredUsers.map(user => (
+              paginatedUsers.map(user => (
                 <tr key={user.id}>
                   <td>{user.name ?? '—'}</td>
                   <td>{user.email}</td>
-                  <td><span className={user.role === 'ADMIN' ? styles.roleAdmin : styles.roleUser}>{user.role}</span></td>
+                  <td>
+                    <span className={user.role === 'ADMIN' ? styles.roleAdmin : styles.roleUser}>
+                      {user.role === 'ADMIN' ? t('adminRole') : t('userRole')}
+                    </span>
+                  </td>
                   <td>{user.stats.total}</td>
                   <td><Tag intent="warning" minimal>{user.stats.pending}</Tag></td>
                   <td><Tag intent="primary" minimal>{user.stats.inProgress}</Tag></td>
@@ -191,6 +213,17 @@ export const AdminDashboard: React.FC = () => {
             )}
           </tbody>
         </table>
+
+        {/* PAGINATION */}
+        {totalPages > 1 && (
+          <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
+            <ButtonGroup>
+              <Button icon="chevron-left" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} />
+              <Button minimal disabled style={{ fontWeight: 'bold' }}>{t('page')} {currentPage} / {totalPages}</Button>
+              <Button icon="chevron-right" disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)} />
+            </ButtonGroup>
+          </div>
+        )}
       </Card>
 
       <Alert
@@ -201,9 +234,7 @@ export const AdminDashboard: React.FC = () => {
         cancelButtonText={t('cancel')}
         onCancel={() => setPendingChange(null)}
         onConfirm={() => {
-          if (pendingChange) {
-            roleMutation.mutate({ userId: pendingChange.user.id, role: pendingChange.targetRole });
-          }
+          if (pendingChange) roleMutation.mutate({ userId: pendingChange.user.id, role: pendingChange.targetRole });
         }}
         loading={roleMutation.isPending}
       >
