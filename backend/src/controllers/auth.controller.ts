@@ -1,6 +1,16 @@
 import type { Request, Response } from 'express';
 import { authService } from '../services/auth.service.ts';
 import { userDAO } from '../daos/user.dao.ts';
+import { registerSchema, loginSchema } from '../schemas/user.schema.ts'; // Validation schemas for auth routes
+
+/**
+ * Interface to define the structure of validation errors from Yup.
+ * This prevents using 'any' in catch blocks and satisfies ESLint rules.
+ */
+interface ValidationError {
+  errors?: string[];
+  message: string;
+}
 
 /**
  * AuthController - Handles incoming authentication requests.
@@ -12,28 +22,30 @@ class AuthController {
      * POST /api/auth/login
      */
     async login(req: Request, res: Response): Promise<Response | void> {
-        const { email, password } = req.body;
+        try {
+            // Validate credentials using Yup schema before hitting the service
+            const credentials = await loginSchema.validate(req.body, { abortEarly: false });
+            
+            const result = await authService.validateUser(credentials.email, credentials.password);
 
-        // Basic validation before hitting the service
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password are required' });
+            if (result.isFailure) {
+                // 401 Unauthorized for invalid credentials
+                return res.status(401).json({ error: result.error });
+            }
+
+            // Successful authentication
+            const { user, token } = result.getValue();
+
+            return res.json({
+                message: 'Login successful',
+                token: token,
+                user: user
+            });
+        } catch (err) {
+            // Safely cast error to avoid 'any' and handle validation feedback
+            const error = err as ValidationError;
+            return res.status(400).json({ error: error.errors || error.message });
         }
-
-        const result = await authService.validateUser(email, password);
-
-        if (result.isFailure) {
-            // 401 Unauthorized for invalid credentials
-            return res.status(401).json({ error: result.error });
-        }
-
-        // Successful authentication
-        const { user, token } = result.getValue();
-
-        return res.json({
-            message: 'Login successful',
-            token: token,
-            user: user
-        });
     }
 
     /**
@@ -41,24 +53,24 @@ class AuthController {
      * POST /api/auth/register
      */
     async register(req: Request, res: Response): Promise<Response | void> {
-        const { email, password, name } = req.body as { email?: string; password?: string; name?: string };
+        try {
+            // Validate registration data (email, password, name) using Yup schema
+            const data = await registerSchema.validate(req.body, { abortEarly: false });
 
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password are required' });
+            const result = await authService.registerUser(data.email, data.password, data.name);
+
+            if (result.isFailure) {
+                // 409 Conflict if user already exists or other business logic failure
+                return res.status(409).json({ error: result.error });
+            }
+
+            const { user, token } = result.getValue();
+            return res.status(201).json({ message: 'Registration successful', token, user });
+        } catch (err) {
+            // Safely cast error to avoid 'any' and handle validation feedback
+            const error = err as ValidationError;
+            return res.status(400).json({ error: error.errors || error.message });
         }
-
-        if (password.length < 6) {
-            return res.status(400).json({ error: 'Password must be at least 6 characters' });
-        }
-
-        const result = await authService.registerUser(email, password, name);
-
-        if (result.isFailure) {
-            return res.status(409).json({ error: result.error });
-        }
-
-        const { user, token } = result.getValue();
-        return res.status(201).json({ message: 'Registration successful', token, user });
     }
 
     /**
@@ -70,6 +82,7 @@ class AuthController {
         if (!userId) {
             return res.status(401).json({ error: 'Not authenticated' });
         }
+        
         const { name } = req.body as { name?: string };
         if (!name || !name.trim()) {
             return res.status(400).json({ error: 'Name is required' });

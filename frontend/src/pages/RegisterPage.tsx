@@ -6,6 +6,18 @@ import { useAuth } from '../contexts/AuthContext';
 import styles from './RegisterPage.module.css';
 import logoImg from '../assets/logo.png';
 
+/**
+ * Interface to safely type the API error response without using 'any'.
+ */
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string | string[];
+    };
+    status?: number;
+  };
+}
+
 const RegisterPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { register } = useAuth();
@@ -26,6 +38,7 @@ const RegisterPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
+    // Basic client-side validation
     if (!email.trim() || !password.trim()) {
       setError(t('loginRequiredFields'));
       return;
@@ -46,8 +59,19 @@ const RegisterPage: React.FC = () => {
       await register(email.trim(), password, name.trim() || undefined);
       // AppRouter redirects to / once isAuthenticated becomes true
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 409) {
+      const serverError = err as ApiError;
+      const status = serverError.response?.status;
+      const serverMessage = serverError.response?.data?.error;
+
+      // Logic to display specific Yup validation errors from the backend
+      if (status === 400 && serverMessage) {
+        if (Array.isArray(serverMessage)) {
+          // If Yup returns multiple errors, show the first one
+          setError(t(serverMessage[0]) || t('loginError'));
+        } else {
+          setError(t(serverMessage) || t('loginError'));
+        }
+      } else if (status === 409) {
         setError(t('registerEmailTaken'));
       } else {
         setError(t('loginError'));
@@ -77,7 +101,7 @@ const RegisterPage: React.FC = () => {
           <p className={styles.subtitle}>{t('registerSubtitle')}</p>
         </div>
 
-        {/* Error banner */}
+        {/* Error banner - Now displays dynamic server messages */}
         {error && <div className={styles.errorBanner}>{error}</div>}
 
         {/* Form */}

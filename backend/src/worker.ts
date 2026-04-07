@@ -46,6 +46,7 @@ async function startWorker() {
                     console.log('--------------------------------------------');
                     console.log(`[v] Received Task: ${task.title}`);
                     console.log(`[i] Status: ${task.status}`);
+                    console.log(`[i] Description: ${task.description}`);
                     console.log(`[i] ID: ${task.id}`);
                     console.log('--------------------------------------------');
 

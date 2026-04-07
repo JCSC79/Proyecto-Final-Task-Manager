@@ -123,6 +123,12 @@ i18n
           "sortTotalTasks": "Task Volume",
           "sortRate": "Success Rate",
           "userDetails": "User Performance Details",
+          "err_email_required": "Email is required",
+          "err_email_invalid": "Invalid email format",
+          "err_password_required": "Password is required",
+          "err_password_too_short": "Password must be at least 6 characters",
+          "err_password_no_letter": "Password must contain at least one letter",
+          "err_name_too_short": "Name is too short",
         }
       },
       es: {
@@ -241,6 +247,12 @@ i18n
           "sortTotalTasks": "Volumen de Tareas",
           "sortRate": "Tasa de Éxito",
           "userDetails": "Detalles de Rendimiento",
+          "err_email_required": "El correo electrónico es obligatorio",
+          "err_email_invalid": "El formato del correo no es válido",
+          "err_password_required": "La contraseña es obligatoria",
+          "err_password_too_short": "La contraseña debe tener al menos 6 caracteres",
+          "err_password_no_letter": "La contraseña debe contener al menos una letra",
+          "err_name_too_short": "El nombre es demasiado corto",
         }
       }
     },
