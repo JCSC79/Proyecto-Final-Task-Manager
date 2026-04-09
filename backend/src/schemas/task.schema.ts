@@ -3,24 +3,27 @@ import { TaskStatus } from '../models/task.model.ts';
 
 /**
  * Validation schema for task creation.
- * We define strict rules for the request body.
  */
 export const createTaskSchema = yup.object({
     title: yup.string()
-        .required('The title is mandatory')
-        .min(3, 'Title must be at least 3 characters')
-        .max(50, 'Title is too long'),
+        .required('err_title_required')
+        .min(3, 'err_title_short')
+        .max(50, 'err_title_long'),
     description: yup.string()
-        .required('Description is required')
-        .min(10, 'Please, provide a more detailed description')
+        .required('err_desc_required')
+        .min(10, 'err_desc_short')
 });
 
+/**
+ * Validation schema for task updates.
+ * We apply the same translation keys to maintain consistency.
+ */
 export const updateTaskSchema = yup.object({
     title: yup.string()
-        .min(3, 'Title must be at least 3 characters')
-        .max(50, 'Title is too long'),
+        .min(3, 'err_title_short')
+        .max(50, 'err_title_long'),
     description: yup.string()
-        .min(10, 'Description is too short'),
+        .min(10, 'err_desc_short'),
     status: yup.mixed<TaskStatus>()
-        .oneOf(Object.values(TaskStatus), 'Invalid status value')
+        .oneOf(Object.values(TaskStatus), 'err_status_invalid')
 });

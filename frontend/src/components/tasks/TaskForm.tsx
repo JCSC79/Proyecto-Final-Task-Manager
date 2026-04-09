@@ -6,8 +6,16 @@ import { useTranslation } from 'react-i18next';
 import { AppToaster } from '../../utils/toaster';
 import styles from './TaskForm.module.css';
 
+/**
+ * Updated interface to handle single strings or arrays of error keys
+ * sent by the Yup validation in the backend.
+ */
 interface ServerError {
-  response?: { data?: { error?: string } };
+  response?: { 
+    data?: { 
+      error?: string | string[] 
+    } 
+  };
 }
 
 export const TaskForm: React.FC = () => {
@@ -20,13 +28,28 @@ export const TaskForm: React.FC = () => {
     mutationFn: (newTask: { title: string; description: string }) => api.post('/tasks', newTask),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      // SUCCESS: The toaster remains for creation as it's a primary action
       AppToaster.show({ message: t('taskCreated'), intent: Intent.SUCCESS, icon: 'tick-circle' });
       handleClear();
     },
     onError: (error: unknown) => {
       const serverError = error as ServerError;
-      const errorMessage = serverError.response?.data?.error || t('errorMessage');
-      AppToaster.show({ message: errorMessage, intent: Intent.DANGER, icon: 'warning-sign' });
+      const rawError = serverError.response?.data?.error;
+      
+      /**
+       * IMPROVEMENT: Process server errors dynamically.
+       * If it's an array (multiple validation failures), we translate and join them.
+       * If it's a string, we translate it using our i18n keys.
+       */
+      const errorMessage = Array.isArray(rawError)
+        ? rawError.map(errKey => t(errKey)).join(' | ')
+        : t(rawError || 'errorMessage');
+
+      AppToaster.show({ 
+        message: errorMessage, 
+        intent: Intent.DANGER, 
+        icon: 'warning-sign' 
+      });
     },
   });
 
@@ -34,6 +57,7 @@ export const TaskForm: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Client-side quick check
     if (!title.trim() || !description.trim()) {
       AppToaster.show({ message: t('requiredFieldsError'), intent: Intent.WARNING, icon: 'info-sign' });
       return;
@@ -66,8 +90,22 @@ export const TaskForm: React.FC = () => {
           />
         </FormGroup>
         <div className={styles.buttonRow}>
-          <Button intent="primary" text={t('addTask')} icon="add" type="submit" loading={mutation.isPending} large />
-          <Button intent="none" outlined text={t('clear')} icon="eraser" onClick={handleClear} large />
+          <Button 
+            intent="primary" 
+            text={t('addTask')} 
+            icon="add" 
+            type="submit" 
+            loading={mutation.isPending} 
+            large 
+          />
+          <Button 
+            intent="none" 
+            outlined 
+            text={t('clear')} 
+            icon="eraser" 
+            onClick={handleClear} 
+            large 
+          />
         </div>
       </form>
     </Card>

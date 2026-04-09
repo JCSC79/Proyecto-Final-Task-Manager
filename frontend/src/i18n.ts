@@ -129,6 +129,12 @@ i18n
           "err_password_too_short": "Password must be at least 6 characters",
           "err_password_no_letter": "Password must contain at least one letter",
           "err_name_too_short": "Name is too short",
+          "err_title_required": "Title is required",
+          "err_title_short": "Title must be at least 3 characters",
+          "err_title_long": "Title is too long (max 50)",
+          "err_desc_required": "Description is required",
+          "err_desc_short": "Description must be at least 10 characters",
+          "err_status_invalid": "Invalid status value",
         }
       },
       es: {
@@ -253,6 +259,12 @@ i18n
           "err_password_too_short": "La contraseña debe tener al menos 6 caracteres",
           "err_password_no_letter": "La contraseña debe contener al menos una letra",
           "err_name_too_short": "El nombre es demasiado corto",
+          "err_title_required": "El título es obligatorio",
+          "err_title_short": "El título debe tener al menos 3 caracteres",
+          "err_title_long": "El título es demasiado largo (máx. 50)",
+          "err_desc_required": "La descripción es obligatoria",
+          "err_desc_short": "La descripción debe tener al menos 10 caracteres",
+          "err_status_invalid": "Estado no válido",
         }
       }
     },

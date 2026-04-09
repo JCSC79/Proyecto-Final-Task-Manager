@@ -15,8 +15,13 @@ interface AuthRequest extends Request {
   };
 }
 
+/**
+ * Updated interface to capture detailed validation errors from Yup.
+ * This allows the frontend to receive an array of keys for translation.
+ */
 interface YupError {
-  message: string;
+  errors?: string[]; // Array of translation keys like ['err_title_short']
+  message: string;   // Fallback generic message
 }
 
 /**
@@ -61,6 +66,7 @@ class TaskController {
    */
   async create(req: Request, res: Response): Promise<Response | void> {
     try {
+      // abortEarly: false ensures all validation errors are collected
       const validatedData = await createTaskSchema.validate(req.body, { abortEarly: false });
       const authReq = req as AuthRequest;
       const userId = authReq.user?.id;
@@ -81,8 +87,9 @@ class TaskController {
 
       res.status(201).json(result.getValue());
     } catch (err) {
+      // Return the array of error keys for frontend translation
       const yupError = err as YupError;
-      return res.status(400).json({ error: yupError.message });
+      return res.status(400).json({ error: yupError.errors || yupError.message });
     }
   }
 
@@ -131,7 +138,8 @@ class TaskController {
 
     try {
       const validatedUpdates = await updateTaskSchema.validate(req.body, { 
-        stripUnknown: true 
+        stripUnknown: true,
+        abortEarly: false 
       });
 
       const result = await taskService.updateTask(id, authReq.user!.id, validatedUpdates as Partial<ITask>);
@@ -142,8 +150,9 @@ class TaskController {
 
       res.json(result.getValue());
     } catch (err) {
+      // Consistently return array of errors for translation support
       const yupError = err as YupError;
-      return res.status(400).json({ error: yupError.message });
+      return res.status(400).json({ error: yupError.errors || yupError.message });
     }
   }
 }
