@@ -4,14 +4,14 @@
   "description": "Task Manager Backend - Phase 1",
   "type": "module",
   "main": "dist/server.js",
-  "scripts": {
+"scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint src/**/*.ts",
-    "db:seed": "knex seed:run --knexfile knexfile.cjs",
     "db:migrate": "knex migrate:latest --knexfile knexfile.cjs",
     "db:rollback": "knex migrate:rollback --knexfile knexfile.cjs",
+    "db:seed": "knex seed:run --specific=seed_users.cjs --knexfile knexfile.cjs && knex seed:run --specific=seed_tasks.cjs --knexfile knexfile.cjs",
     "test": "node --test src/**/*.test.ts"
   },
   "keywords": [],

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card, Elevation, H5, Text, Button, ButtonGroup,
   Alert, Intent, Dialog, Classes, FormGroup, InputGroup, TextArea,
@@ -19,7 +19,7 @@ interface TaskItemProps {
 export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  
+
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -31,19 +31,51 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   const isCompleted = task.status === 'COMPLETED';
   const statusIntent = isCompleted ? Intent.SUCCESS : isInProgress ? Intent.PRIMARY : Intent.WARNING;
 
+  // // en que se renderiza el componente por primera vez.
+  // const [isBrandNew] = useState(() => {
+  //   if (!task.createdAt) {
+  //     return false;
+  //   }
+  //   const createdTime = new Date(task.createdAt).getTime();
+  //   // Comparamos el momento de creación con el momento de montaje inicial
+  //   return Date.now() - createdTime < 5000;
+  // });
+
+// Estado para controlar la animación visual
+  const [showHighlight, setShowHighlight] = useState(() => {
+    if (!task.createdAt) return false;
+    // Si la tarea se creó hace menos de 5 segundos, empezamos con el highlight encendido
+    return Date.now() - new Date(task.createdAt).getTime() < 5000;
+  });
+
+  useEffect(() => {
+    // Si el highlight está encendido, programamos su apagado tras 2 segundos (duración de tu CSS)
+    if (showHighlight) {
+      const timer = setTimeout(() => setShowHighlight(false), 2000);
+      return () => clearTimeout(timer); // Limpieza para evitar fugas de memoria
+    }
+  }, [showHighlight]);
+  
+
   const updateMutation = useMutation({
     mutationFn: (payload: Partial<Task>) => api.patch(`/tasks/${task.id}`, payload),
-    onSuccess: () => {
+    onSuccess: (_, payload) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      // SUCCESS NOTIFICATION: Task updated
-      AppToaster.show({
-        message: t('taskUpdated'),
-        intent: Intent.SUCCESS,
-        icon: "refresh"
-      });
-      setIsEditOpen(false);
+
+      // Just showing toaster if content was edited (title or description)
+      const isEditingContent = payload.title !== undefined || payload.description !== undefined;
+
+      if (isEditingContent) {
+        AppToaster.show({
+          message: t('taskUpdated'),
+          intent: Intent.SUCCESS,
+          icon: "refresh"
+        });
+        setIsEditOpen(false);
+      }
     },
   });
+
 
   const deleteMutation = useMutation({
     mutationFn: () => api.delete(`/tasks/${task.id}`),
@@ -78,7 +110,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
         interactive
         className={clsx(
           styles.card,
-          isCompleted ? styles.statusDone : isInProgress ? styles.statusProgress : styles.statusPending
+          isCompleted ? styles.statusDone : isInProgress ? styles.statusProgress : styles.statusPending,
+          // isBrandNew && styles.newTaskHighlight
+          showHighlight && styles.newTaskHighlight
+
         )}
       >
         <div className={styles.content} onClick={() => setIsDetailsOpen(true)}>

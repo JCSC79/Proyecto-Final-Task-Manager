@@ -80,3 +80,35 @@
   min-height: 120px;
   resize: vertical;
 }
+
+/* Animation to highlight a newly created task */
+@keyframes highlight-fade {
+  0% {
+    background-color: var(--bg-surface-alt);
+    box-shadow: 0 0 15px var(--accent);
+    transform: scale(1.04);
+  }
+  100% {
+    background-color: var(--bg-surface);
+    box-shadow: var(--shadow-sm);
+    transform: scale(1);
+  }
+}
+
+@keyframes highlight-fade {
+  0% {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 12px var(--accent);
+    background-color: rgba(43, 149, 217, 0.1);
+  }
+  100% {
+    border-color: transparent !important;
+    box-shadow: var(--shadow-sm);
+    background-color: var(--bg-surface);
+  }
+}
+
+.newTaskHighlight {
+  animation: highlight-fade 4s ease-out forwards;
+  border: 2px solid var(--accent) !important;
+}

@@ -121,7 +121,8 @@ export const Header: React.FC<HeaderProps> = ({
               className={styles.progressBar}
               intent={percentage === 100 ? 'success' : 'primary'}
               value={progress}
-              stripes={percentage < 100}
+              stripes={false}
+              animate={false}
             />
           </div>
         )}
