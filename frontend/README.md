@@ -6,7 +6,8 @@ React 19 SPA built with **Vite 7**, **TypeScript** (strict), **BlueprintJS v6**,
 
 ## Project Structure
 
-```src/
+```/
+src/
 ├── main.tsx              App entry point, providers, global CSS imports
 ├── App.tsx               Root component (wraps providers)
 ├── i18n.ts               react-i18next config + EN/ES translation strings

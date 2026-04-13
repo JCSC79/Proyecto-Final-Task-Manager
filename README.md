@@ -1,6 +1,6 @@
 # Full-Stack Task Manager
 
-A complete full-stack Task Management system with JWT authentication, role-based access control, an admin panel, and real-time metrics. Built with Node.js/Express (backend) and React/Vite (frontend), containerised with Docker.
+A full-stack Task Management system containerized with Docker. Features JWT authentication, RBAC, real-time metrics, and an Nginx-backed frontend.
 
 ---
 
@@ -8,8 +8,8 @@ A complete full-stack Task Management system with JWT authentication, role-based
 
 ```/
 ├── backend/          Node.js 24 REST API (Express, PostgreSQL, RabbitMQ)
-├── frontend/         React 19 SPA (Vite, BlueprintJS v6, TanStack Query)
-└── docker-compose.yml  Infrastructure (PostgreSQL 15 + RabbitMQ 3)
+├── frontend/         React 19 SPA (Vite, BlueprintJS v6, TanStack Query) + Nginx
+└── docker-compose.yml  Orchestration for all services
 ```
 
 ---
@@ -40,91 +40,61 @@ Make sure **Docker Desktop is running** before the steps below.
 
 ---
 
-## Quick Start — Option A: Full Docker (recommended)
+## Quick Start (Dockerized)
 
-Everything — API, database, message broker — runs in containers. No local Node required for the backend.
+Ensure Docker Desktop is running.
 
-### 1. Clone the repo
+### 1. Environment Setup
 
 ```git clone https://github.com/JCSC79/proyecto-backend-fase1.git```
-```cd <repo-folder>```
 
-### 2. Configure backend environment
+```cd <repo-folder>```
 
 ```cp backend/.env.example backend/.env```
 
-Open `backend/.env` and set a strong `JWT_SECRET` (any random string ≥ 32 chars). The DB and RabbitMQ values are pre-filled to match `docker-compose.yml`.
+Edit `backend/.env` and set a strong `JWT_SECRET` (any random string ≥ 32 chars). The DB and RabbitMQ values are pre-filled to match `docker-compose.yml`.
 
-### 3. Start infrastructure + API
+### 2. Launch Ecosystem
 
 ```docker-compose up -d```
 
-This starts three containers:
+This builds and starts:
 
 - `postgres_db` — PostgreSQL 15 on port **5432**
 - `rabbitmq_broker` — RabbitMQ on ports **5672** (AMQP) / **15672** (management UI)
 - `task_api` — The Express API on port **3000** (built from `backend/Dockerfile`)
+- `task_frontend` — The frontend on port **5173** (built from `frontend/Dockerfile`)
 
-### 4. Run database migrations & seed data
+### 3. Initialize Database
 
-The API container has `knex` available. Run migrations then seed the two default users:
+- `docker exec task_api npm run db:migrate`
+- `docker exec task_api npm run db:seed`
 
-```docker exec task_api npm run db:migrate```
+### 4. Access
 
-```docker exec task_api npm run db:seed```
+- Web App: <http://localhost:5173>
+
+- API Docs: <http://localhost:3000/api-docs>
+
+- RabbitMQ Management: <http://localhost:15672> (user: `JC` / pass: `abc123..`)
 
 > **Default credentials after seeding:**
 >
 > | Email | Password | Role |
 > | --- | --- | --- |
 > | <admin@test.com> | AdminPassword123! | ADMIN |
-> | <user@test.com> | UserPassword123! | USER |
+> | <user@test.com> | 123456J | USER |
 
-### 5. Start the frontend
+## Useful Management Commands
 
-```cd frontend```
-```npm install --legacy-peer-deps```
-```npm run dev```
-
-Open **<http://localhost:5173>** in your browser.
-
----
-
-## Quick Start — Option B: Local backend (no Docker for the API)
-
-Use this if you want hot-reload TypeScript in the backend without rebuilding the image on every change.
-
-### 1–2. Same as Option A (clone + copy .env)
-
-### 3. Start only infrastructure
-
-```docker-compose up -d db rabbitmq```
-
-### 4. Install and run the backend locally
-
-```cd backend```
-```npm install```
-```npm run db:migrate```
-```npm run db:seed```
-```npm run dev```          # API at <http://localhost:3000>
-
-Optional — run the RabbitMQ worker in a second terminal:
-
-```cd backend```
-```npx tsx src/worker.ts```
-
-### 5. Frontend — same as Option A step 5
-
----
-
-## Useful URLs
-
-| Service | URL |
+| Action | Command |
 | --- | --- |
-| Frontend | <http://localhost:5173> |
-| Backend API | <http://localhost:3000> |
-| Swagger UI | <http://localhost:3000/api-docs> |
-| RabbitMQ Management | <http://localhost:15672> (user: `JC` / pass: `abc123..`) |
+| Stop (Pause) | `docker-compose stop` |
+| Start (Resume) | `docker-compose start` |
+| Full Wipe | `docker-compose down` |
+| Rebuild Front | `docker-compose up -d --build frontend` |
+| Restart API | `docker-compose restart api` |
+| View API Logs | `docker-compose logs -f api` |
 
 ---
 

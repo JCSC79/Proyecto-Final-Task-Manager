@@ -6,7 +6,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { gravatarUrl } from '../../utils/gravatar';
 import { AppToaster } from '../../utils/toaster';
-import logoImg from '../../assets/logo.png';
+import logoImg from '../../assets/Logo.png';
 import styles from './Header.module.css';
 
 type ViewMode = 'home' | 'dashboard';

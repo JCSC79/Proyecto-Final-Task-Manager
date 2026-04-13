@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './LoginPage.module.css';
-import logoImg from '../assets/logo.png';
+import logoImg from '../assets/Logo.png';
 
 const LoginPage: React.FC = () => {
   const { t, i18n } = useTranslation();

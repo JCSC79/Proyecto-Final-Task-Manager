@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import AuthForm from '../components/AuthForm'; // New modular component
 import styles from './RegisterPage.module.css';
-import logoImg from '../assets/logo.png';
+import logoImg from '../assets/Logo.png';
 
 interface ApiError {
   response?: { data?: { error?: string | string[] }; status?: number; };

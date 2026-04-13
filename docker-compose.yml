@@ -13,6 +13,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
 
   rabbitmq: 
     image: rabbitmq:3-management
@@ -24,9 +26,11 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: JC
       RABBITMQ_DEFAULT_PASS: abc123..
+    networks: 
+      - app-network
 
   api:
-    build: ./backend  # New line to build the API from the Dockerfile in the backend directory
+    build: ./backend
     container_name: task_api
     ports:
       - "3000:3000"
@@ -39,6 +43,22 @@ services:
     depends_on:
       - db
       - rabbitmq
+    networks:
+      - app-network
+
+  frontend:
+    build: ./frontend
+    container_name: task_frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   postgres_data:
