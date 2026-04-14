@@ -61,7 +61,7 @@ const HomePage: React.FC = () => {
               title={t('errorTitle')}
               description={(error as Error)?.message || t('errorMessage')}
               action={
-                <Button intent={Intent.PRIMARY} icon="refresh" onClick={() => refetch()} large>
+                <Button intent={Intent.PRIMARY} icon="refresh" onClick={() => refetch()} size="large">
                   {t('retry')}
                 </Button>
               }

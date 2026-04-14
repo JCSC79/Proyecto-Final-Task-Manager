@@ -22,7 +22,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit, isLoading }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent) => {
     e.preventDefault();
     // Only send what's needed based on mode
     onSubmit({ 

@@ -8,7 +8,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line
 } from 'recharts';
 import type { Task, TaskStatus } from '../../types/task';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useTheme } from '../../hooks/useTheme.ts';
 import styles from './DashboardView.module.css';
 
 interface DashboardViewProps {

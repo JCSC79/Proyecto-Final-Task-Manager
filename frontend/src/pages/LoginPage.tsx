@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, InputGroup, FormGroup, Intent } from '@blueprintjs/core';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth.ts'; // Updated import path for the custom hook
 import styles from './LoginPage.module.css';
 import logoImg from '../assets/Logo.png';
 
@@ -20,7 +20,7 @@ const LoginPage: React.FC = () => {
     i18n.changeLanguage(i18n.language.startsWith('es') ? 'en' : 'es');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -44,7 +44,7 @@ const LoginPage: React.FC = () => {
   const lockButton = (
     <Button
       icon={showPassword ? 'eye-open' : 'eye-off'}
-      minimal
+      variant="minimal"
       onClick={() => setShowPassword(p => !p)}
       aria-label={t('togglePassword')}
     />
@@ -77,7 +77,7 @@ const LoginPage: React.FC = () => {
               onChange={e => setEmail(e.target.value)}
               placeholder={t('loginEmailPlaceholder')}
               leftIcon="envelope"
-              large
+              size="large"
               autoComplete="email"
               autoFocus
             />
@@ -95,7 +95,7 @@ const LoginPage: React.FC = () => {
               placeholder={t('loginPasswordPlaceholder')}
               leftIcon="lock"
               rightElement={lockButton}
-              large
+              size="large"
               autoComplete="current-password"
             />
           </FormGroup>
@@ -104,7 +104,7 @@ const LoginPage: React.FC = () => {
             type="submit"
             intent={Intent.PRIMARY}
             loading={isLoading}
-            large
+            size="large"
             className={styles.submitButton}
             text={t('loginButton')}
           />
@@ -115,7 +115,7 @@ const LoginPage: React.FC = () => {
           <Link to="/register" className={styles.switchLink}>
             {t('registerLink')}
           </Link>
-          <Button minimal small onClick={toggleLanguage}>
+          <Button variant="minimal" size="small" onClick={toggleLanguage}>
             {i18n.language.startsWith('es')
               ? <><span className="fi fi-es" style={{ marginRight: 5 }} />Español</>
               : <><span className="fi fi-gb" style={{ marginRight: 5 }} />English</>}

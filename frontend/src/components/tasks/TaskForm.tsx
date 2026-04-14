@@ -55,7 +55,7 @@ export const TaskForm: React.FC = () => {
 
   const handleClear = () => { setTitle(''); setDescription(''); };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent) => {
     e.preventDefault();
     // Client-side quick check
     if (!title.trim() || !description.trim()) {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@blueprintjs/core';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth.ts'; // Updated import path for the custom hook
 import AuthForm from '../components/AuthForm'; // New modular component
 import styles from './RegisterPage.module.css';
 import logoImg from '../assets/Logo.png';
@@ -56,7 +56,7 @@ const RegisterPage: React.FC = () => {
 
         <div className={styles.footer}>
           <Link to="/login" className={styles.switchLink}>{t('loginLink')}</Link>
-          <Button minimal small onClick={() => i18n.changeLanguage(i18n.language.startsWith('es') ? 'en' : 'es')}>
+          <Button variant="minimal" size="small" onClick={() => i18n.changeLanguage(i18n.language.startsWith('es') ? 'en' : 'es')}>
             {i18n.language.startsWith('es')
               ? <><span className="fi fi-es" style={{ marginRight: 5 }} />Español</>
               : <><span className="fi fi-gb" style={{ marginRight: 5 }} />English</>}

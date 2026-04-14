@@ -8,7 +8,7 @@ import {
 import { useAdminDashboard } from '../../hooks/useAdminDashboard';
 import { UserDetailDialog } from './UserDetailDialog';
 import { UserManagementTable } from './UserManagementTable';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useTheme } from '../../hooks/useTheme.ts';
 import styles from './AdminDashboard.module.css';
 
 const COLOR_PENDING = '#D9822B';
