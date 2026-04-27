@@ -1,24 +1,37 @@
 .card {
-  margin-bottom: var(--space-sm);
-  padding: var(--space-sm);
+  margin-bottom: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-sm);
+  gap: var(--space-md);
   background-color: var(--bg-surface);
-  border-left: 6px solid var(--border);
+  border-left: 5px solid var(--border);
+  border-radius: var(--radius-md);
   transition: var(--transition);
+  min-height: 70px;
 }
 
-/* Status accent borders */
-.statusPending   { border-left-color: var(--status-pending); }
-.statusProgress  { border-left-color: var(--status-progress); }
-.statusDone      { border-left-color: var(--status-done); }
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.statusPending { 
+  border-left-color: var(--status-pending); 
+}
+
+.statusProgress { 
+  border-left-color: var(--status-progress); 
+}
+.statusDone { 
+  border-left-color: var(--status-done); 
+}
 
 .content {
   flex: 1;
-  min-width: 0;
+  min-width: 0; /* Critical for text-overflow to work inside flex */
   cursor: pointer;
 }
 
@@ -27,88 +40,50 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 0.95rem;
   color: var(--text-main);
 }
 
 .titleDone {
   text-decoration: line-through;
+  opacity: 0.7;
 }
 
 .description {
   color: var(--text-muted);
-  font-size: 12px;
-  margin-bottom: var(--space-xs);
+  font-size: 11px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dateRow {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 4px;
   color: var(--text-subtle);
-  font-size: 10px;
+  font-size: 9px;
+  margin-top: 4px;
 }
 
 .actions {
   flex-shrink: 0;
-}
-
-/* Dialog detail body */
-.detailHeader {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-md);
+  gap: 2px;
 }
 
-.detailBody {
-  padding: var(--space-md);
-  background-color: var(--bg-surface-alt);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  white-space: pre-wrap;
-  min-height: 100px;
-}
-
-.detailDate {
-  margin-top: var(--space-md);
-  color: var(--text-subtle);
-  font-size: 12px;
-  font-style: italic;
-}
-
-.editTextarea {
-  min-height: 120px;
-  resize: vertical;
-}
-
-/* Animation to highlight a newly created task */
+/* Highlight animation */
 @keyframes highlight-fade {
-  0% {
-    background-color: var(--bg-surface-alt);
-    box-shadow: 0 0 15px var(--accent);
-    transform: scale(1.04);
+  0% { 
+    border-color: var(--accent) !important; 
+    box-shadow: 0 0 10px var(--accent); 
   }
-  100% {
-    background-color: var(--bg-surface);
-    box-shadow: var(--shadow-sm);
-    transform: scale(1);
-  }
-}
-
-@keyframes highlight-fade {
-  0% {
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 12px var(--accent);
-    background-color: rgba(43, 149, 217, 0.1);
-  }
-  100% {
-    border-color: transparent !important;
-    box-shadow: var(--shadow-sm);
-    background-color: var(--bg-surface);
+  100% { 
+    border-color: transparent !important; 
   }
 }
 
 .newTaskHighlight {
-  animation: highlight-fade 4s ease-out forwards;
-  border: 2px solid var(--accent) !important;
+  animation: highlight-fade 2s ease-out forwards;
 }

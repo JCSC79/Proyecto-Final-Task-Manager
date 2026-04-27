@@ -1,70 +1,106 @@
-.sortBar {
+.boardGrid {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: var(--space-md);
-}
-
-.board {
-  display: flex;
-  gap: var(--space-md);
-  align-items: flex-start;
-  overflow-x: auto;
-  padding-bottom: var(--space-md);
+  flex-direction: row;
+  gap: var(--space-md); 
+  width: 100%;
+  align-items: start;
+  justify-content: space-between;
 }
 
 .column {
-  flex: 1;
-  min-width: 300px;
   background-color: var(--bg-surface-alt);
+  border-radius: var(--radius-md); 
   padding: var(--space-md);
-  border-radius: var(--radius-md);
-  height: 540px;
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
   transition: var(--transition);
+  height: 580px; 
 }
 
 .columnHeader {
-  border-bottom: 2px solid var(--border-strong);
-  padding-bottom: var(--space-sm);
-  margin-bottom: var(--space-md);
-  color: var(--text-main);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-shrink: 0;
-  transition: var(--transition);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--border-strong);
+  flex-shrink: 0; /* Prevents header from shrinking */
+}
+
+.headerInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
 }
 
 .columnCount {
-  font-size: 0.8em;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: var(--text-muted);
+  opacity: 0.7;
 }
 
-.columnScroll {
+.taskList {
   flex: 1;
-  overflow-y: auto;
-  padding-right: var(--space-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  /* Internal scroll if content exceeds the 580px height */
+  overflow-y: auto; 
+  padding-right: 4px;
+}
+
+/* Custom scrollbar for a cleaner look in the columns */
+.taskList::-webkit-scrollbar {
+  width: 4px;
+}
+.taskList::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 10px;
 }
 
 .emptyColumn {
-  text-align: center;
-  color: var(--text-muted);
-  margin-top: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--text-subtle);
   font-style: italic;
+  gap: var(--space-sm);
 }
 
 .pagination {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: var(--space-md);
+  margin-top: var(--space-md);
+  padding-top: var(--space-sm);
   border-top: 1px solid var(--border);
-  margin-top: auto;
-  flex-shrink: 0;
+  flex-shrink: 0; /* Prevents pagination from shrinking */
 }
 
 .pageLabel {
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-muted);
+}
+
+/* RESPONSIVE LOGIC */
+@media (max-width: 1080px) {
+  .boardGrid {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .column {
+    width: 100%;
+    /* MOBILE FIX: height auto so it doesn't leave empty vertical space */
+    height: auto; 
+    min-height: 200px;
+    padding: var(--space-sm);
+  }
 }

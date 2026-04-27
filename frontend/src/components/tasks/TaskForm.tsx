@@ -31,7 +31,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess }) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       AppToaster.show({ message: t('taskCreated'), intent: Intent.SUCCESS, icon: 'tick-circle' });
       handleClear();
-      if (onSuccess) onSuccess();
+      if (onSuccess) {
+        onSuccess();
+      }
     },
     // 2. We use 'unknown' to satisfy strict linting rules
     onError: (error: unknown) => {

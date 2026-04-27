@@ -6,6 +6,7 @@
 
 .row {
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-md);
@@ -13,10 +14,98 @@
 
 .searchWrapper {
   flex: 1;
+  min-width: 250px;
 }
 
-.controls {
+.controlsContainer {
   display: flex;
-  gap: var(--space-md);
   align-items: center;
+  gap: var(--space-md);
 }
+
+.desktopFilters { 
+  display: block; 
+}
+
+.mobileFilters { 
+  display: none; 
+}
+
+/* RESPONSIVE LOGIC */
+@media (max-width: 950px) {
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+  }
+
+  .searchWrapper { 
+    width: 100%; 
+  }
+
+  .controlsContainer {
+    display: grid;
+    /* Forces both columns to be exactly equal (50/50) */
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: var(--space-sm);
+  }
+
+  .desktopFilters { 
+    display: none; 
+  }
+
+  .mobileFilters { 
+    display: block; 
+    width: 100%; 
+    position: relative;
+    overflow: visible !important;
+  }
+  
+  /* Ensure the popover target (the button) fills the grid cell */
+  .mobileFilters :global(.bp6-popover-target) {
+    display: block;
+    width: 100%;
+  }
+
+  .filterMenuBtn { 
+    width: 100%; 
+  }
+
+  .clearBtn { 
+    width: 100%; 
+  }
+}
+
+.popoverMenu {
+  /* No more padding to make buttons touch the edges of the popup */
+  padding: 0; 
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden; /* Ensures corner buttons respect border-radius */
+  margin-top: 4px;
+  z-index: 1000;
+}
+
+/* We target the ButtonGroup inside the popover to remove default rounded corners */
+.popoverMenu :global(.bp6-button-group) {
+  border-radius: 0;
+}
+
+/* Ensure the buttons inside the menu don't have unnecessary margins */
+.popoverMenu :global(.bp6-button) {
+  margin: 0;
+  border-radius: 0;
+  height: 40px; /* Comfortable height for fingers */
+}
+
+/* Responsive adjustment for very small viewports */
+@media (max-width: 480px) {
+  .controlsContainer {
+    grid-template-columns: 1fr;
+    gap: var(--space-xs);
+  }
+}
+
