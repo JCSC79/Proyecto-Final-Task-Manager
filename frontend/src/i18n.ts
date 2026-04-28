@@ -137,6 +137,16 @@ i18n
           "err_status_invalid": "Invalid status value",
           "theme": "Theme",
           "logout": "Logout",
+          "navigation": "Navigation",
+          "resources": "Resources",
+          "connect": "Connect",
+          "allRightsReserved": "All rigths reserved.",
+          "developedBy": "Develop by",
+          "profile": "Profile",
+          "terms": "Terms of Service",
+          "policy": "Privacy Policy",
+          "descriptionText": "Streamline your productivity, organize your day, and achieve your goals faster.",
+
         }
       },
       es: {
@@ -269,6 +279,17 @@ i18n
           "err_status_invalid": "Estado no válido",
           "theme": "Tema",
           "logout": "Cerrar Sesión",
+          "navigation": "Navegación",
+          "resources": "Recursos",
+          "connect": "Conectar",
+          "allRightsReserved": "Todos los derechos reservados.",
+          "developedBy": "Desarrollado por",
+          "profile": "Perfil",
+          "terms": "Terminos de servicio",
+          "policy": "Política de Privacidad",
+          "descriptionText": "Optimiza tu productividad, organiza tu día y alcanza tus objetivos más rápido.",
+
+          
         }
       }
     },

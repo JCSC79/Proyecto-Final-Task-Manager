@@ -1,34 +1,174 @@
+/**
+ * Footer Styles
+ * Layout: CSS Grid for desktop with 4-column distribution
+ * Units: Relative (rem) for accessibility and responsive scaling
+ */
+
 .footer {
   margin-top: var(--space-xl);
-  padding: var(--space-lg) var(--space-md);
+  padding: var(--space-xl) 0;
   border-top: 1px solid var(--border);
-  background-color: var(--bg-app);
+  background-color: var(--bg-surface-alt);
   color: var(--text-muted);
-  text-align: center;
+  width: 100%;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  display: grid;
+  /* 1.5fr for the brand description, 1fr for the rest for balanced spacing */
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+/* MAIN BRAND COLUMN */
+.columnMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.appHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.appName {
+  margin: 0;
+  font-weight: 800;
+  color: var(--text-main);
+  font-size: 1.1rem;
+}
+
+.appDescription {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  max-width: 320px;
+}
+
+.credits {
+  font-size: 0.75rem;
+  color: var(--text-subtle);
+  margin-top: var(--space-sm);
+}
+
+/* NAVIGATION & RESOURCES COLUMNS */
+.columnLinks {
+  display: flex;
+  flex-direction: column;
+}
+
+.columnTitle {
+  margin-bottom: var(--space-md);
+  font-weight: 700;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.linkList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.linkList a {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
   transition: var(--transition);
 }
 
-.version {
-  margin-bottom: var(--space-sm);
-  font-weight: 500;
+.linkList a:hover {
+  color: var(--accent);
+  padding-left: 4px; /* Subtle visual feedback */
 }
 
-.links {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-lg);
-}
-
-.link {
-  color: var(--text-muted);
-  text-decoration: none;
+/* SOURCE CODE LINK (GitHub) */
+.sourceLink {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  font-size: 0.875rem;
-  transition: color 0.2s ease;
+  font-weight: 600 !important;
 }
 
-.link:hover {
+.githubIcon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.placeholderLink {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* CONNECT SECTION (Social Media) */
+.socialIcons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+}
+
+/* Centralized SVG size control using relative units */
+.socialSvg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+/* Override Blueprint minimal button styles for social icons */
+.socialIcons :global(.bp6-button) {
+  color: var(--text-subtle);
+  border-radius: 50%;
+  padding: 8px;
+  min-width: unset;
+  min-height: unset;
+}
+
+.socialIcons :global(.bp6-button:hover) {
   color: var(--accent);
+  background-color: rgba(43, 149, 217, 0.1);
+}
+
+/* RESPONSIVE BREAKPOINTS */
+
+/* Tablet & Smaller Laptops: 2 columns layout */
+@media (max-width: 1024px) {
+  .container {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+  }
+}
+
+/* Mobile: Single column centered layout */
+@media (max-width: 600px) {
+  .container {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: var(--space-md);
+  }
+
+  .columnMain, 
+  .appHeader, 
+  .linkList, 
+  .sourceLink, 
+  .socialIcons {
+    align-items: center;
+    justify-content: center;
+  }
+
+  .appDescription {
+    margin: 0 auto;
+  }
 }
