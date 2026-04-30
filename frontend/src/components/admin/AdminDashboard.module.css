@@ -1,6 +1,9 @@
 .wrapper {
   margin-top: var(--space-md);
   padding-bottom: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
 }
 
 .pageTitle {
@@ -11,47 +14,64 @@
   color: var(--text-main);
 }
 
-/*  Global KPI strip */
+/* KPI GRID: collapses 4 → 2 → 1 column at responsive breakpoints */
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-md);
-  margin-bottom: var(--space-lg);
 }
 
 .kpiCard {
   background-color: var(--bg-surface);
   padding: var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   text-align: center;
   transition: var(--transition);
 }
 
 .kpiLabel {
   color: var(--text-muted);
-  margin-bottom: var(--space-xs);
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
 .kpiValue {
-  font-size: 2.5rem;
-  font-weight: bold;
+  font-size: 1.6rem;
+  font-weight: 700;
   color: var(--text-main);
 }
 
-.kpiValueGreen  { color: var(--status-done);    }
-.kpiValueOrange { color: var(--status-pending);  }
-.kpiValueBlue   { color: var(--status-progress); }
+.kpiValueGreen  { 
+  color: var(--status-done);    
+}
 
-/* Aggregate chart section */
+.kpiValueOrange { 
+  color: var(--status-pending);  
+}
+
+.kpiValueBlue   { 
+  color: var(--status-progress); 
+}
+
+/* Charts: two equal columns on desktop, stacks to one on mobile */
 .chartsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-  gap: var(--space-lg);
-  margin-bottom: var(--space-lg);
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
 }
 
 .chartCard {
   background-color: var(--bg-surface);
   padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
   transition: var(--transition);
 }
 
@@ -210,9 +230,115 @@
   background-color: var(--bg-surface-alt) !important;
 }
 
-.sortControl {
+/* Mobile Card List */
+/* Desktop: full table visible, card list hidden */
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto; /* last-resort safety on very narrow screens */
+}
+
+.mobileList {
+  display: none;
+}
+
+.mobileCard {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-sm);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.mobileCard:hover {
+  background-color: var(--bg-surface-alt);
+}
+
+.mobileCardHeader {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-right: var(--space-md);
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.mobileCardName {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+.mobileCardEmail {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+/* 3-column stat grid: Pending | In Progress | Completed */
+.mobileCardStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+  text-align: center;
+  margin-bottom: var(--space-sm);
+  padding: var(--space-sm) 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.mobileCardStatLabel {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.mobileCardStatValue {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.mobileCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding-top: var(--space-sm);
+}
+
+/* When the button wraps to a new line, push it to the right */
+.mobileCardFooter > :last-child {
+  margin-left: auto;
+}
+
+/* Responsive Breakpoints */
+
+/* Tablet: KPI grid 4 → 2 columns */
+@media (max-width: 1200px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile: everything stacks to 1 column, table swaps to card list */
+@media (max-width: 768px) {
+  .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .chartsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Swap: hide table, show card list */
+  .tableWrapper {
+    display: none;
+  }
+
+  .mobileList {
+    display: block;
+  }
 }

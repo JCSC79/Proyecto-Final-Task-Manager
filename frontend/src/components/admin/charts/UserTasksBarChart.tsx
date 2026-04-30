@@ -31,7 +31,8 @@ export const UserTasksBarChart: React.FC<UserTasksBarChartProps> = ({
 
   return (
     <div className={styles.chartContainer}>
-      <ResponsiveContainer>
+      {/* height={380} mirrors the CSS .chartContainer height — avoids ResizeObserver -1 on first render */}
+      <ResponsiveContainer width="100%" height={380}>
         <BarChart data={data} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
           <XAxis
