@@ -23,8 +23,8 @@ interface UserTasksBarChartProps {
   isDark: boolean;
 }
 
-export const UserTasksBarChart: React.FC<UserTasksBarChartProps> = ({ 
-  data, colors, labels, isDark 
+export const UserTasksBarChart: React.FC<UserTasksBarChartProps> = ({
+  data, colors, labels, isDark
 }) => {
   const labelColor = isDark ? '#a7b6c2' : '#5c7080';
   const gridColor = isDark ? '#394b59' : '#dbe3e8';
@@ -49,11 +49,11 @@ export const UserTasksBarChart: React.FC<UserTasksBarChartProps> = ({
             tickLine={false}
             tick={{ fill: labelColor, fontSize: 11 }}
           />
-          <Tooltip 
+          <Tooltip
             cursor={{ fill: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}
-            contentStyle={{ 
-              backgroundColor: 'var(--bg-surface)', 
-              borderRadius: '8px', 
+            contentStyle={{
+              backgroundColor: 'var(--bg-surface)',
+              borderRadius: '8px',
               border: '1px solid var(--border)',
               color: 'var(--text-main)'
             }}

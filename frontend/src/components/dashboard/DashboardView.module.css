@@ -1,87 +1,105 @@
 .wrapper {
   margin-top: var(--space-md);
   padding-bottom: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md); /* Espacio reducido como en HomePage */
 }
 
 .pageTitle {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  margin-bottom: var(--space-lg);
   color: var(--text-main);
+  margin-bottom: var(--space-xs);
 }
 
-/* KPI grid */
+/* KPI GRID: Se adapta de 4 a 2 a 1 columna */
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-md);
-  margin-bottom: var(--space-lg);
 }
 
 .kpiCard {
   background-color: var(--bg-surface);
-  text-align: center;
   padding: var(--space-md);
-  transition: var(--transition);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
 }
 
 .kpiLabel {
   color: var(--text-muted);
-  margin-bottom: var(--space-xs);
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
 .kpiValue {
-  font-size: 2.5rem;
-  font-weight: bold;
+  font-size: 1.6rem;
+  font-weight: 700;
   color: var(--text-main);
 }
 
-.kpiValueGreen  { color: var(--status-done); }
-.kpiValueOrange { color: var(--status-pending); }
+.kpiValueGreen { 
+  color: var(--status-done); 
+}
 
-/* Charts grid */
+.kpiValueOrange { 
+  color: var(--status-pending); 
+}
+
+/* CHARTS GRID: Alineado con los KPIs */
 .chartsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--space-lg);
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
 }
 
 .chartCard {
   background-color: var(--bg-surface);
   padding: var(--space-lg);
-  transition: var(--transition);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  height: 400px; /* Altura fija necesaria para evitar errores de consola */
+  display: flex;
+  flex-direction: column;
 }
 
 .chartCardFull {
-  grid-column: span 2;
-}
-
-.chartTitle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  color: var(--text-main);
-  margin-bottom: var(--space-md);
-}
-
-.chartContainer {
-  width: 100%;
-  height: 380px;
-}
-
-.chartContainerSm {
-  width: 100%;
+  grid-column: 1 / -1;
   height: 350px;
 }
 
-/* Tooltip */
-.tooltip {
-  background-color: var(--bg-surface);
-  padding: var(--space-sm);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-  color: var(--text-main);
-  font-weight: bold;
+/* Contenedor crítico para ResponsiveContainer */
+.chartContainer {
+  flex: 1;
+  width: 100%;
+  /* min-height: 0; */
+  min-height: 200px;
+  position: relative;
+  /* New */
+  display: block;
+}
+
+/* RESPONSIVE: Aquí es donde evitamos que se desalineen */
+@media (max-width: 1200px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .chartsGrid, .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+  .chartCard {
+    height: 350px;
+  }
 }
