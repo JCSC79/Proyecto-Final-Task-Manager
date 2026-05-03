@@ -123,13 +123,13 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
 
         <ButtonGroup variant="minimal" className={styles.actions}>
           {prevStatus && (
-            <Button icon="undo" onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ status: prevStatus }); }} />
+            <Button icon="undo" aria-label={`${t('moveTo')} ${getTranslatedStatus(prevStatus)}`} onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ status: prevStatus }); }} />
           )}
           {nextStatus && (
-            <Button icon="double-chevron-right" intent="primary" onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ status: nextStatus }); }} />
+            <Button icon="double-chevron-right" intent="primary" aria-label={`${t('moveTo')} ${getTranslatedStatus(nextStatus)}`} onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ status: nextStatus }); }} />
           )}
-          <Button icon="edit" onClick={(e) => { e.stopPropagation(); setIsEditOpen(true); }} />
-          <Button icon="trash" intent="danger" onClick={(e) => { e.stopPropagation(); setIsAlertOpen(true); }} />
+          <Button icon="edit" aria-label={t('editTask')} onClick={(e) => { e.stopPropagation(); setIsEditOpen(true); }} />
+          <Button icon="trash" intent="danger" aria-label={t('deleteTask')} onClick={(e) => { e.stopPropagation(); setIsAlertOpen(true); }} />
         </ButtonGroup>
       </Card>
 

@@ -19,18 +19,28 @@ export const UserManagementTable: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
 
-  const renderHeader = (label: string, col: SortColumn) => (
-    <th className={styles.sortableTh} onClick={() => onSort(col)}>
-      <div className={styles.sortThContent}>
-        {label}
-        <Icon 
-          icon={sort.column === col ? (sort.direction === 'asc' ? 'chevron-up' : 'chevron-down') : 'double-caret-vertical'} 
-          size={12} 
-          style={{ opacity: sort.column === col ? 1 : 0.2 }}
-        />
-      </div>
-    </th>
-  );
+  const renderHeader = (label: string, col: SortColumn) => {
+    const isActive = sort.column === col;
+    const ariaSort = isActive ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none';
+    return (
+      <th
+        className={styles.sortableTh}
+        onClick={() => onSort(col)}
+        aria-sort={ariaSort}
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && onSort(col)}
+      >
+        <div className={styles.sortThContent}>
+          {label}
+          <Icon
+            icon={isActive ? (sort.direction === 'asc' ? 'chevron-up' : 'chevron-down') : 'double-caret-vertical'}
+            size={12}
+            style={{ opacity: isActive ? 1 : 0.2 }}
+          />
+        </div>
+      </th>
+    );
+  };
 
   return (
     <>
