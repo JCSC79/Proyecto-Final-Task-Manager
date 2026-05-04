@@ -48,9 +48,11 @@ app.use((req, _res, next) => {
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-/**
- * ROUTES MAPPING
- */
+// HEALTH CHECK
+app.get('/health', (_req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 
 // 1. PUBLIC ROUTES (No token required)
 app.use('/api/auth/login', loginRateLimiter);
