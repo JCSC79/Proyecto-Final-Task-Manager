@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Spinner, NonIdealState, Button, Intent, Icon, Dialog, DialogBody } from '@blueprintjs/core';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axiosInstance';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
@@ -16,9 +16,18 @@ import formStyles from '../components/tasks/TaskForm.module.css';
 const HomePage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
+
+  useEffect(() => {
+    const state = location.state as { statusFilter?: TaskStatus } | null;
+    if (state?.statusFilter) {
+      setStatusFilter(state.statusFilter);
+      navigate('/', { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   const { data: tasks, isLoading, isError, error, refetch } = useQuery<Task[]>({

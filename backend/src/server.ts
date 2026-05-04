@@ -23,6 +23,14 @@ const loginRateLimiter = rateLimit({
     message: { error: 'Too many login attempts. Please try again later.' },
 });
 
+const registerRateLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many registration attempts. Please try again later.' },
+});
+
 // SECURITY FIX: Update CORS to allow credentials from the frontend origin
 app.use(cors({
     origin: 'http://localhost:5173',
@@ -46,6 +54,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 1. PUBLIC ROUTES (No token required)
 app.use('/api/auth/login', loginRateLimiter);
+app.use('/api/auth/register', registerRateLimiter);
 app.use('/api/auth', authRoutes);
 
 // 2. PROTECTED ROUTES (Token required for all /tasks endpoints)
