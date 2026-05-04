@@ -72,8 +72,8 @@ describe('Header Component', () => {
   it('should show the progress percentage correctly', async () => {
     await renderHeader({ progress: 0.75 });
 
-    // 0.75 * 100 = 75%
-    expect(screen.getByText('progress: 75%')).toBeInTheDocument();
+    // 0.75 * 100 = 75% — verify via the progressbar's aria-valuenow attribute
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '75');
   });
 
   it('should call setActiveView when clicking navigation buttons', async () => {
@@ -88,8 +88,8 @@ describe('Header Component', () => {
   it('should open the edit profile dialog when clicking the avatar button', async () => {
     await renderHeader();
 
-    // Finding the avatar button by aria-label
-    const avatarBtn = screen.getByLabelText('editProfileTitle');
+    // Finding the avatar button by title attribute
+    const avatarBtn = screen.getByTitle('editProfileTitle');
     
     await act(async () => {
       fireEvent.click(avatarBtn);
