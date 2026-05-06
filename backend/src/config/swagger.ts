@@ -45,9 +45,9 @@ const options: swaggerJSDoc.Options = {
     paths: {
       '/api/auth/login': {
         post: {
-          summary: 'Get JWT Access Token',
+          summary: 'Login — get JWT cookie',
           tags: ['Authentication'],
-          security: [], // Public endpoint (no lock icon here)
+          security: [],
           requestBody: {
             required: true,
             content: {
@@ -56,33 +56,95 @@ const options: swaggerJSDoc.Options = {
                   type: 'object',
                   required: ['email', 'password'],
                   properties: {
-                    email: { type: 'string', example: 'usuario@email.com' },
-                    password: { type: 'string', example: 'XYZT1234' }
+                    email: { type: 'string', example: 'admin@example.com' },
+                    password: { type: 'string', example: 'Admin1234!' }
                   }
                 }
               }
             }
           },
           responses: {
-            200: { description: 'Success - Returns Token and User info' },
-            401: { description: 'Unauthorized - Invalid credentials' }
+            200: { description: 'JWT set as HttpOnly cookie + user info returned' },
+            401: { description: 'Invalid credentials' },
+            429: { description: 'Too many login attempts' }
           }
         }
       },
-      '/tasks': {
+      '/api/auth/register': {
+        post: {
+          summary: 'Register a new user account',
+          tags: ['Authentication'],
+          security: [],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['email', 'password'],
+                  properties: {
+                    email: { type: 'string', example: 'new@example.com' },
+                    password: { type: 'string', example: 'Secure1234!' },
+                    name: { type: 'string', example: 'Jane Doe' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            201: { description: 'User created — JWT cookie set' },
+            409: { description: 'Email already registered' },
+            429: { description: 'Too many registration attempts' }
+          }
+        }
+      },
+      '/api/auth/logout': {
+        post: {
+          summary: 'Logout — clears the JWT cookie',
+          tags: ['Authentication'],
+          responses: {
+            200: { description: 'Cookie cleared' }
+          }
+        }
+      },
+      '/api/auth/me': {
+        patch: {
+          summary: 'Update display name of authenticated user',
+          tags: ['Authentication'],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['name'],
+                  properties: {
+                    name: { type: 'string', example: 'New Display Name' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: { description: 'Profile updated' },
+            401: { description: 'Not authenticated' }
+          }
+        }
+      },
+      '/api/tasks': {
         get: {
-          summary: 'Retrieve my tasks (Isolation Active)',
+          summary: 'Get my tasks (user-isolated)',
           tags: ['Tasks'],
           responses: {
             200: {
-              description: 'Array of user-owned tasks',
+              description: 'Array of tasks owned by the authenticated user',
               content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Task' } } } }
             },
-            401: { description: 'Missing or invalid Token' }
+            401: { description: 'Missing or invalid token' }
           }
         },
         post: {
-          summary: 'Create a new task for current user',
+          summary: 'Create a new task',
           tags: ['Tasks'],
           requestBody: {
             required: true,
@@ -91,35 +153,53 @@ const options: swaggerJSDoc.Options = {
                 schema: {
                   type: 'object',
                   required: ['title', 'description'],
-                  properties: { title: { type: 'string' }, description: { type: 'string' } }
+                  properties: {
+                    title: { type: 'string', example: 'Fix login bug' },
+                    description: { type: 'string', example: 'Users cannot log in on Safari' }
+                  }
                 }
               }
             }
           },
           responses: {
-            201: { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/Task' } } } }
+            201: { description: 'Task created', content: { 'application/json': { schema: { $ref: '#/components/schemas/Task' } } } },
+            400: { description: 'Validation error' },
+            401: { description: 'Not authenticated' }
           }
         },
         delete: {
-          summary: 'Clear my board',
+          summary: 'Bulk delete tasks (all or by status)',
           tags: ['Tasks'],
-          responses: { 204: { description: 'All your tasks deleted' } }
+          parameters: [
+            {
+              name: 'status',
+              in: 'query',
+              required: false,
+              description: 'If provided, only tasks with this status are deleted',
+              schema: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'] }
+            }
+          ],
+          responses: {
+            204: { description: 'Tasks deleted' },
+            400: { description: 'Invalid status value' },
+            401: { description: 'Not authenticated' }
+          }
         }
       },
-      '/tasks/{id}': {
+      '/api/tasks/{id}': {
         get: {
-          summary: 'Get specific task',
+          summary: 'Get a specific task',
           tags: ['Tasks'],
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
           responses: {
-            200: { $ref: '#/components/schemas/Task' },
+            200: { description: 'Task found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Task' } } } },
             404: { description: 'Task not found or access denied' }
           }
         },
         patch: {
-          summary: 'Update task details',
+          summary: 'Update a task',
           tags: ['Tasks'],
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
           requestBody: {
             content: {
               'application/json': {
@@ -134,18 +214,62 @@ const options: swaggerJSDoc.Options = {
               }
             }
           },
-          responses: { 200: { description: 'Updated' } }
+          responses: {
+            200: { description: 'Task updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Task' } } } },
+            400: { description: 'Validation error' },
+            403: { description: 'Forbidden — task belongs to another user' }
+          }
         },
         delete: {
-          summary: 'Remove task',
+          summary: 'Delete a specific task',
           tags: ['Tasks'],
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-          responses: { 204: { description: 'Deleted' } }
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+          responses: {
+            204: { description: 'Task deleted' },
+            403: { description: 'Forbidden — task belongs to another user' }
+          }
+        }
+      },
+      '/api/admin/users': {
+        get: {
+          summary: 'List all users with task stats (Admin only)',
+          tags: ['Admin'],
+          responses: {
+            200: { description: 'Array of users with aggregated task counts' },
+            401: { description: 'Not authenticated' },
+            403: { description: 'Admin role required' }
+          }
+        }
+      },
+      '/api/admin/users/{id}/role': {
+        patch: {
+          summary: 'Promote or demote a user role (Admin only)',
+          tags: ['Admin'],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['role'],
+                  properties: {
+                    role: { type: 'string', enum: ['admin', 'user'] }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: { description: 'Role updated' },
+            403: { description: 'Admin role required' },
+            404: { description: 'User not found' }
+          }
         }
       }
     }
   },
-  apis: [], 
+  apis: [],
 };
 
 export const swaggerSpec = swaggerJSDoc(options);
