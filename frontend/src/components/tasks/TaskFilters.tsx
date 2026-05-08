@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { 
-  InputGroup, ButtonGroup, Button, Card, 
-  Elevation, Alert, Intent, Popover, Position 
+import {
+  InputGroup, ButtonGroup, Button, Card,
+  Elevation, Alert, Intent, Popover, Position
 } from '@blueprintjs/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axiosInstance';
@@ -22,15 +22,14 @@ interface FilterButtonsProps {
   statusFilter: string;
   setStatusFilter: (val: TaskStatus | 'ALL') => void;
   t: (key: string) => string;
-  onSelect?: () => void; // Added callback to close popover
+  onSelect?: () => void;
 }
 
 /**
  * Sub-component for filter buttons.
- * Triggers onSelect when a button is clicked to handle menu closing.
  */
-const FilterButtons: React.FC<FilterButtonsProps> = ({ 
-  isMobile = false, statusFilter, setStatusFilter, t, onSelect 
+const FilterButtons: React.FC<FilterButtonsProps> = ({
+  isMobile = false, statusFilter, setStatusFilter, t, onSelect
 }) => {
   const handleSetFilter = (val: TaskStatus | 'ALL') => {
     setStatusFilter(val);
@@ -41,28 +40,28 @@ const FilterButtons: React.FC<FilterButtonsProps> = ({
 
   return (
     <ButtonGroup size="large" fill vertical={isMobile}>
-      <Button 
-        text={t('all')} 
-        active={statusFilter === 'ALL'} 
-        onClick={() => handleSetFilter('ALL')} 
+      <Button
+        text={t('all')}
+        active={statusFilter === 'ALL'}
+        onClick={() => handleSetFilter('ALL')}
       />
-      <Button 
-        text={t('pending')} 
-        intent={Intent.WARNING} 
-        active={statusFilter === 'PENDING'} 
-        onClick={() => handleSetFilter('PENDING')} 
+      <Button
+        text={t('pending')}
+        intent={Intent.WARNING}
+        active={statusFilter === 'PENDING'}
+        onClick={() => handleSetFilter('PENDING')}
       />
-      <Button 
-        text={t('inProgress')} 
-        intent={Intent.PRIMARY} 
-        active={statusFilter === 'IN_PROGRESS'} 
-        onClick={() => handleSetFilter('IN_PROGRESS')} 
+      <Button
+        text={t('inProgress')}
+        intent={Intent.PRIMARY}
+        active={statusFilter === 'IN_PROGRESS'}
+        onClick={() => handleSetFilter('IN_PROGRESS')}
       />
-      <Button 
-        text={t('completed')} 
-        intent={Intent.SUCCESS} 
-        active={statusFilter === 'COMPLETED'} 
-        onClick={() => handleSetFilter('COMPLETED')} 
+      <Button
+        text={t('completed')}
+        intent={Intent.SUCCESS}
+        active={statusFilter === 'COMPLETED'}
+        onClick={() => handleSetFilter('COMPLETED')}
       />
     </ButtonGroup>
   );
@@ -77,7 +76,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false); // Controlled popover state
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const clearMutation = useMutation({
     mutationFn: async (): Promise<void> => {
@@ -85,10 +84,10 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      AppToaster.show({ 
-        message: t('completedCleared'), 
-        intent: Intent.DANGER, 
-        icon: 'trash' 
+      AppToaster.show({
+        message: t('completedCleared'),
+        intent: Intent.DANGER,
+        icon: 'trash'
       });
       setIsAlertOpen(false);
     },
@@ -110,6 +109,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             size="large"
+            aria-label={t('search')}
             rightElement={
               searchTerm ? (
                 <Button
@@ -125,10 +125,10 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
 
         <div className={styles.controlsContainer}>
           <div className={styles.desktopFilters}>
-            <FilterButtons 
-              statusFilter={statusFilter} 
-              setStatusFilter={setStatusFilter} 
-              t={t} 
+            <FilterButtons
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              t={t}
             />
           </div>
 
@@ -137,36 +137,37 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               isOpen={isPopoverOpen}
               onInteraction={(state) => setIsPopoverOpen(state)}
               position={Position.BOTTOM}
-              minimal={true} 
+              minimal={true}
               matchTargetWidth={true}
-              usePortal={false} // FIXED: Prevents "jumping" to top-left on small viewports
+              usePortal={false}
               content={
                 <div className={styles.popoverMenu}>
-                  <FilterButtons 
-                    isMobile 
-                    statusFilter={statusFilter} 
-                    setStatusFilter={setStatusFilter} 
-                    t={t} 
-                    onSelect={() => setIsPopoverOpen(false)} // Closes on click
+                  <FilterButtons
+                    isMobile
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    t={t}
+                    onSelect={() => setIsPopoverOpen(false)}
                   />
                 </div>
               }
             >
-              <Button 
+              <Button
                 size="large"
-                fill 
-                icon="filter" 
-                text={t('statusDistribution')} 
+                fill
+                icon="filter"
+                text={t('statusDistribution')}
                 endIcon="caret-down"
                 className={styles.filterMenuBtn}
+                aria-label={t('statusDistribution')}
               />
             </Popover>
           </div>
 
-          <Button 
-            icon="trash" 
-            intent={Intent.DANGER} 
-            text={t('clearCompleted')} 
+          <Button
+            icon="trash"
+            intent={Intent.DANGER}
+            text={t('clearCompleted')}
             onClick={() => setIsAlertOpen(true)}
             size="large"
             className={styles.clearBtn}

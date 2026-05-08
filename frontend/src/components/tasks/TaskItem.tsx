@@ -31,32 +31,25 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   const isCompleted = task.status === 'COMPLETED';
   const statusIntent = isCompleted ? Intent.SUCCESS : isInProgress ? Intent.PRIMARY : Intent.WARNING;
 
-  // State to control visual animation
   const [showHighlight, setShowHighlight] = useState(() => {
     if (!task.createdAt) {
       return false;
     }
-    // If the task was created less than 5 seconds ago, start with the highlight on
     return Date.now() - new Date(task.createdAt).getTime() < 5000;
   });
 
   useEffect(() => {
-    // If the highlight is on, schedule its turn off after 2 seconds (duration of your CSS)
     if (showHighlight) {
       const timer = setTimeout(() => setShowHighlight(false), 2000);
-      return () => clearTimeout(timer); // Cleanup to avoid memory leaks
+      return () => clearTimeout(timer);
     }
   }, [showHighlight]);
-
 
   const updateMutation = useMutation({
     mutationFn: (payload: Partial<Task>) => api.patch(`/api/tasks/${task.id}`, payload),
     onSuccess: (_, payload) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-
-      // Just showing toaster if content was edited (title or description)
       const isEditingContent = payload.title !== undefined || payload.description !== undefined;
-
       if (isEditingContent) {
         AppToaster.show({
           message: t('taskUpdated'),
@@ -68,12 +61,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
     },
   });
 
-
   const deleteMutation = useMutation({
     mutationFn: () => api.delete(`/api/tasks/${task.id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      // SUCCESS NOTIFICATION: Task removed
       AppToaster.show({
         message: t('taskDeleted'),
         intent: Intent.DANGER,
@@ -86,12 +77,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   const prevStatus: TaskStatus | null = isCompleted ? 'IN_PROGRESS' : isInProgress ? 'PENDING' : null;
 
   const getTranslatedStatus = (status: TaskStatus) => {
-    if (status === 'IN_PROGRESS') {
-      return t('inProgress');
-    }
-    if (status === 'PENDING') {
-      return t('pending');
-    }
+    if (status === 'IN_PROGRESS') return t('inProgress');
+    if (status === 'PENDING') return t('pending');
     return t('completed');
   };
 
@@ -106,7 +93,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
           showHighlight && styles.newTaskHighlight
         )}
       >
-        <div className={styles.content} onClick={() => setIsDetailsOpen(true)}>
+        <div className={styles.content} onClick={() => setIsDetailsOpen(true)} role="button" tabIndex={0}>
           <H5 className={clsx(styles.title, isCompleted && styles.titleDone)}>
             {task.title}
           </H5>
@@ -123,13 +110,32 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
 
         <ButtonGroup variant="minimal" className={styles.actions}>
           {prevStatus && (
-            <Button icon="undo" aria-label={`${t('moveTo')} ${getTranslatedStatus(prevStatus)}`} onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ status: prevStatus }); }} />
+            <Button 
+              icon="undo" 
+              /* ACCESSIBILITY FIX: Enhanced ARIA label for empty buttons */
+              aria-label={`${t('moveTo')} ${getTranslatedStatus(prevStatus)}`} 
+              onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ status: prevStatus }); }} 
+            />
           )}
           {nextStatus && (
-            <Button icon="double-chevron-right" intent="primary" aria-label={`${t('moveTo')} ${getTranslatedStatus(nextStatus)}`} onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ status: nextStatus }); }} />
+            <Button 
+              icon="double-chevron-right" 
+              intent="primary" 
+              aria-label={`${t('moveTo')} ${getTranslatedStatus(nextStatus)}`} 
+              onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ status: nextStatus }); }} 
+            />
           )}
-          <Button icon="edit" aria-label={t('editTask')} onClick={(e) => { e.stopPropagation(); setIsEditOpen(true); }} />
-          <Button icon="trash" intent="danger" aria-label={t('deleteTask')} onClick={(e) => { e.stopPropagation(); setIsAlertOpen(true); }} />
+          <Button 
+            icon="edit" 
+            aria-label={t('editTask')} 
+            onClick={(e) => { e.stopPropagation(); setIsEditOpen(true); }} 
+          />
+          <Button 
+            icon="trash" 
+            intent="danger" 
+            aria-label={t('deleteTask')} 
+            onClick={(e) => { e.stopPropagation(); setIsAlertOpen(true); }} 
+          />
         </ButtonGroup>
       </Card>
 

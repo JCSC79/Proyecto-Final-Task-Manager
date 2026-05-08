@@ -155,7 +155,7 @@ export const Header: React.FC<{
         <Divider />
 
         <div className={styles.desktopUserActions}>
-          <Button variant="minimal" icon={isDark ? 'flash' : 'moon'} onClick={toggleTheme} />
+          <Button variant="minimal" icon={isDark ? 'flash' : 'moon'} onClick={toggleTheme} aria-label={t('theme')} />
           
           <Button variant="minimal" onClick={toggleLanguage} className={styles.langButton}>
             {/* Wrapper to ensure horizontal alignment of flag and text */}
@@ -174,22 +174,25 @@ export const Header: React.FC<{
             </button>
           </div>
 
-          <Button variant="minimal" icon="log-out" onClick={logout} />
+          <Button variant="minimal" icon="log-out" onClick={logout} aria-label={t('logout')} />
         </div>
       </Navbar.Group>
 
       {/* MOBILE TRIGGER VIEW */}
       <Navbar.Group align={Alignment.END} className={styles.mobileMenuBtn}>
         <div className={styles.mobileTriggerWrapper}>
-          <button className={styles.avatarBtn} onClick={() => setIsEditOpen(true)}>
-            {avatarSrc && <img src={avatarSrc} className={styles.avatar} alt="User" />}
+          <button className={styles.avatarBtn} onClick={() => setIsEditOpen(true)} aria-label={t('editProfileTitle')}>
+            {avatarSrc && <img src={avatarSrc} className={styles.avatar} alt="" />}
           </button>
           <Button
             variant="minimal"
             icon="menu"
             onClick={() => setIsMenuOpen(true)}
             className={styles.menuToggle}
-          />
+            aria-label={t('navigation')}
+          >
+            <span className="sr-only">{t('navigation')}</span>
+          </Button>
         </div>
       </Navbar.Group>
 
