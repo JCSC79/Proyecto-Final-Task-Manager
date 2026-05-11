@@ -1,7 +1,7 @@
 {
-  "name": "proyecto-backend-fase1",
+  "name": "proyecto-final-api",
   "version": "1.0.0",
-  "description": "Task Manager Backend - Phase 1",
+  "description": "Task Manager Backend - Proyecto Final",
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
