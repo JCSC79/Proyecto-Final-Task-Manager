@@ -68,9 +68,9 @@ export const Footer: React.FC = () => {
         <div className={styles.columnLinks}>
           <h5 className={styles.columnTitle}>{t('connect')}</h5>
           <div className={styles.socialIcons}>
-            <Button icon={<SocialIcons.X />} variant="minimal" title="X (Twitter)" />
-            <Button icon={<SocialIcons.Instagram />} variant="minimal" title="Instagram" />
-            <Button icon={<SocialIcons.WhatsApp />} variant="minimal" title="WhatsApp" />
+            <Button icon={<SocialIcons.X />} variant="minimal" aria-label="X (Twitter)"><span className="sr-only">X (Twitter)</span></Button>
+            <Button icon={<SocialIcons.Instagram />} variant="minimal" aria-label="Instagram"><span className="sr-only">Instagram</span></Button>
+            <Button icon={<SocialIcons.WhatsApp />} variant="minimal" aria-label="WhatsApp"><span className="sr-only">WhatsApp</span></Button>
           </div>
         </div>
       </div>

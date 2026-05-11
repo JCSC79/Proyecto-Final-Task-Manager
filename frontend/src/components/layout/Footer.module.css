@@ -8,7 +8,8 @@
   margin-top: var(--space-xl);
   padding: var(--space-xl) 0;
   border-top: 1px solid var(--border);
-  background-color: var(--bg-surface-alt);
+  /* --bg-surface instead of --bg-surface-alt: ensures --text-muted passes 4.5:1 in light mode */
+  background-color: var(--bg-surface);
   color: var(--text-muted);
   width: 100%;
 }
@@ -109,7 +110,8 @@
 }
 
 .placeholderLink {
-  opacity: 0.6;
+  /* opacity: 0.6 caused effective contrast ~3.26:1 — replaced with explicit color */
+  color: var(--text-subtle) !important;
   cursor: default;
 }
 

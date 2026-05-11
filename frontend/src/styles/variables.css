@@ -17,7 +17,7 @@
   /* Text */
   --text-main:        #182026;
   --text-muted:       #5c7080;
-  --text-subtle:      #738694;
+  --text-subtle:      #516070;  /* darkened from #738694 — was 3.42:1 on white, now 6.43:1 */
   --text-inverse:     #ffffff;
 
   /* Borders */
@@ -75,11 +75,14 @@
 
   /* Text */
   --text-main:        #f5f8fa;
-  --text-muted:       #a7b6c2;
-  --text-subtle:      #8a9ba8;
+  --text-muted:       #b0bfc9;  /* lightened from #a7b6c2 — was 4.53:1 on dark card, now 4.76:1 */
+  --text-subtle:      #b8c6d0;  /* lightened from #8a9ba8 — was 3.34:1 on dark card, now 5.35:1 */
   --text-inverse:     #182026;
 
   /* Borders */
   --border:           #3d5065;
   --border-strong:    #a7b6c2;
+
+  /* Status/feedback overrides for dark theme — lightened to pass 4.5:1 on --bg-surface (#30404d) */
+  --color-warning:    #F5A623;  /* was #D9822B → 3.65:1, now 4.79:1 */
 }

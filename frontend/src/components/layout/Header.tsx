@@ -169,7 +169,7 @@ export const Header: React.FC<{
 
           <div className={styles.userInfoDesktop}>
             <span className={styles.userNameDesktop}>{user?.name || user?.email}</span>
-            <button className={styles.avatarBtn} onClick={() => setIsEditOpen(true)} title={t('editProfileTitle')}>
+            <button className={styles.avatarBtn} onClick={() => setIsEditOpen(true)} aria-label={t('editProfileTitle')}>
               {avatarSrc && <img src={avatarSrc} className={styles.avatar} alt="User" />}
             </button>
           </div>

@@ -51,7 +51,7 @@
 
 .description {
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 0.75rem; /* raised from 11px — below 10px triggers WAVE very small text alert */
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -63,7 +63,7 @@
   align-items: center;
   gap: 4px;
   color: var(--text-subtle);
-  font-size: 9px;
+  font-size: 0.7rem; /* raised from 9px — below 10px triggers WAVE very small text alert */
   margin-top: 4px;
 }
 

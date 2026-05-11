@@ -24,7 +24,7 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const state = location.state as { statusFilter?: TaskStatus } | null;
     if (state?.statusFilter) {
-      setStatusFilter(state.statusFilter);
+      //setStatusFilter(state.statusFilter);
       navigate('/', { replace: true, state: {} });
     }
   }, [location.state, navigate]);
@@ -64,6 +64,8 @@ const HomePage: React.FC = () => {
       />
 
       <main className={pageStyles.main}>
+        {/* sr-only h1 satisfies WCAG: every page must have a first-level heading */}
+        <h1 className="sr-only">{t('appName')}</h1>
         {isError && (
           <div className={pageStyles.errorWrapper}>
             <NonIdealState
@@ -107,8 +109,10 @@ const HomePage: React.FC = () => {
           intent={Intent.PRIMARY}
           icon={<Icon icon="add" size={25} />}
           onClick={() => setIsFormOpen(true)}
-          title={t('createTask')}
-        />
+          aria-label={t('createTask')}
+        >
+          {/* <span className="sr-only">{t('createTask')}</span> */}
+        </Button>
       </div>
 
       {/* Create Task Modal */}

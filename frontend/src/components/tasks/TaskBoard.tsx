@@ -69,7 +69,6 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter }) => 
             icon={currentSort === 'desc' ? "sort-desc" : "sort-asc"} 
             onClick={() => toggleSort(status)}
             aria-label={currentSort === 'desc' ? t('sortNewest') : t('sortOldest')}
-            title={currentSort === 'desc' ? t('sortNewest') : t('sortOldest')}
           >
             {/* sr-only text ensures WAVE detects accessible name regardless of Blueprint prop forwarding */}
             <span className="sr-only">{currentSort === 'desc' ? t('sortNewest') : t('sortOldest')}</span>
