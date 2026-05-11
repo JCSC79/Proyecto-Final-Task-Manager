@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card, Elevation, H5, Text, Button, ButtonGroup,
+  Card, Elevation, H3, Text, Button, ButtonGroup,
   Alert, Intent, Dialog, Classes, FormGroup, InputGroup, TextArea,
   Tag, Icon
 } from '@blueprintjs/core';
@@ -77,8 +77,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   const prevStatus: TaskStatus | null = isCompleted ? 'IN_PROGRESS' : isInProgress ? 'PENDING' : null;
 
   const getTranslatedStatus = (status: TaskStatus) => {
-    if (status === 'IN_PROGRESS') return t('inProgress');
-    if (status === 'PENDING') return t('pending');
+    if (status === 'IN_PROGRESS') {
+      return t('inProgress');
+    }
+    if (status === 'PENDING') {
+      return t('pending');
+    }
     return t('completed');
   };
 
@@ -94,9 +98,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
         )}
       >
         <div className={styles.content} onClick={() => setIsDetailsOpen(true)} role="button" tabIndex={0}>
-          <H5 className={clsx(styles.title, isCompleted && styles.titleDone)}>
+          <H3 className={clsx(styles.title, isCompleted && styles.titleDone)}>
             {task.title}
-          </H5>
+          </H3>
           <Text ellipsize className={styles.description}>
             {task.description || t('noDescription')}
           </Text>
@@ -148,7 +152,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
       >
         <div className={Classes.DIALOG_BODY}>
           <div className={styles.detailHeader}>
-            <H5 className={styles.dialogTitle}>{task.title}</H5>
+            <H3 className={styles.dialogTitle}>{task.title}</H3>
             <Tag intent={statusIntent} size="large" round className={styles.statusTag}>
               {getTranslatedStatus(task.status)}
             </Tag>

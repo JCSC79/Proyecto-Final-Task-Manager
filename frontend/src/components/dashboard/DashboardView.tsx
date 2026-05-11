@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Card, Elevation, H2, H4, Icon } from '@blueprintjs/core';
+import { Card, Elevation, H2, H3, Icon } from '@blueprintjs/core';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, LineChart, Line 
@@ -79,22 +79,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], onChar
       </H2>
 
       <div className={styles.kpiGrid}>
-        <Card elevation={Elevation.ONE} className={styles.kpiCard}>
-          <span className={styles.kpiLabel}>{t('totalTasks')}</span>
+        <Card elevation={Elevation.TWO} className={styles.kpiCard}>
+          <H3 className={styles.kpiLabel}>{t('totalTasks')}</H3>
           <div className={styles.kpiValue}>{stats.total}</div>
         </Card>
-        <Card elevation={Elevation.ONE} className={styles.kpiCard}>
-          <span className={styles.kpiLabel}>{t('completionRate')}</span>
+        <Card elevation={Elevation.TWO} className={styles.kpiCard}>
+          <H3 className={styles.kpiLabel}>{t('completionRate')}</H3>
           <div className={`${styles.kpiValue} ${styles.kpiValueGreen}`}>{stats.rate}%</div>
         </Card>
-        <Card elevation={Elevation.ONE} className={styles.kpiCard}>
-          <span className={styles.kpiLabel}>{t('boardHealth')}</span>
+        <Card elevation={Elevation.TWO} className={styles.kpiCard}>
+          <H3 className={styles.kpiLabel}>{t('boardHealth')}</H3>
           <div className={`${styles.kpiValue} ${stats.rate > 70 ? styles.kpiValueGreen : styles.kpiValueOrange}`}>
             {stats.rate > 70 ? t('healthExcellent') : t('healthImprovable')}
           </div>
         </Card>
-        <Card elevation={Elevation.ONE} className={styles.kpiCard}>
-          <span className={styles.kpiLabel}>{t('avgTime')}</span>
+        <Card elevation={Elevation.TWO} className={styles.kpiCard}>
+          <H3 className={styles.kpiLabel}>{t('avgTime')}</H3>
           <div className={`${styles.kpiValue} ${stats.avgTime ? styles.kpiValueGreen : ''}`}>
             {stats.avgTime ?? '—'}
           </div>
@@ -103,7 +103,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], onChar
 
       <div className={styles.chartsGrid}>
         <Card elevation={Elevation.ONE} className={styles.chartCard}>
-          <H4 className={styles.chartTitle}>{t('statusDistribution')}</H4>
+          <H3 className={styles.chartTitle}>{t('statusDistribution')}</H3>
           <div className={styles.chartContainer}>
             <StatusDonutChart 
               data={chartData.filter(d => d.value > 0)} 
@@ -113,7 +113,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], onChar
         </Card>
 
         <Card elevation={Elevation.ONE} className={styles.chartCard}>
-          <H4 className={styles.chartTitle}>{t('workloadTitle')}</H4>
+          <H3 className={styles.chartTitle}>{t('workloadTitle')}</H3>
           <div className={styles.chartContainer}>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -141,9 +141,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], onChar
         </Card>
 
         <Card elevation={Elevation.ONE} className={`${styles.chartCard} ${styles.chartCardFull}`}>
-          <H4 className={styles.chartTitle}>
+          <H3 className={styles.chartTitle}>
             <Icon icon="timeline-events" /> {t('recentActivity')}
-          </H4>
+          </H3>
           <div className={styles.chartContainer}>
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={activityData}>

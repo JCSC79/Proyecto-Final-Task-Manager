@@ -97,3 +97,16 @@
 .bp6-text-muted {
   color: var(--text-muted) !important;
 }
+
+/* TABLE TAG MINIMAL — Blueprint uses intent colors directly as text on transparent bg.
+   In dark mode the default warning/primary/success colors fail WCAG AA.
+   Override using our already-compliant dark-mode status tokens. */
+[data-theme="dark"] .bp6-tag.bp6-minimal.bp6-intent-warning {
+  color: var(--status-pending) !important;  /* #F5A623 — 4.79:1 on dark surface */
+}
+[data-theme="dark"] .bp6-tag.bp6-minimal.bp6-intent-primary {
+  color: var(--status-progress) !important; /* #45B4EA — 4.57:1 on dark surface */
+}
+[data-theme="dark"] .bp6-tag.bp6-minimal.bp6-intent-success {
+  color: var(--status-done) !important;     /* #1AC678 — 4.75:1 on dark surface */
+}

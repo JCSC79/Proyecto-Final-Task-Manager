@@ -55,10 +55,12 @@ describe('TaskService - Business Logic & Security', () => {
 
     // 2. VALIDATION TESTS
     test('should validate mandatory fields (Title required)', async () => {
-        const result = await service.createTask('', 'Some description', 'user-id');
+        const result = await service.createTask({ title: '', description: 'Some description' }, 'user-id');
 
         assert.strictEqual(result.isFailure, true);
-        assert.strictEqual(result.error, 'Title is required');
+        // Empty string triggers both 'required' and 'min(3)' rules simultaneously
+        assert.ok(result.error !== null, 'error should not be null');
+        assert.match(result.error, /err_title_required/);
     });
 
     // 3. SECURITY & ISOLATION TESTS
@@ -87,7 +89,7 @@ describe('TaskService - Business Logic & Security', () => {
         const result = await service.updateTask('valid-task', 'intruding-user', { title: 'Hacked' });
 
         assert.strictEqual(result.isFailure, true);
-        assert.strictEqual(result.error, 'Unauthorized update attempt');
+        assert.strictEqual(result.error, 'Unauthorized update attempt or task not found');
     });
 
     // 4. BUSINESS LOGIC TESTS (RabbitMQ Integration)
@@ -101,7 +103,7 @@ describe('TaskService - Business Logic & Security', () => {
         } as unknown as typeof messagingService;
         
         const serviceWithSpy = new TaskService(mockDao, spyMessaging);
-        await serviceWithSpy.createTask('New Task', 'Description', 'owner-1');
+        await serviceWithSpy.createTask({ title: 'New Task', description: 'A valid description' }, 'owner-1');
 
         assert.strictEqual(notificationSent, true);
     });

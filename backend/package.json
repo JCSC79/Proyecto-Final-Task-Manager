@@ -12,7 +12,7 @@
     "db:migrate": "knex migrate:latest --knexfile knexfile.cjs",
     "db:rollback": "knex migrate:rollback --knexfile knexfile.cjs",
     "db:seed": "knex seed:run --specific=seed_users.cjs --knexfile knexfile.cjs && knex seed:run --specific=seed_tasks.cjs --knexfile knexfile.cjs",
-    "test": "node --test src/**/*.test.ts"
+    "test": "node --env-file=.env.test --test src/**/*.test.ts"
   },
   "keywords": [],
   "author": "",

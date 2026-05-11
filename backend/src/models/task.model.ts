@@ -21,6 +21,7 @@ export interface ITask {
     description: string;
     status: TaskStatus;
     userId: string;     // Foreign key reference to User.id
+    projectId?: string; // Optional — column exists in DB but is not required by the app
     createdAt: Date;
     updatedAt?: Date;
 }

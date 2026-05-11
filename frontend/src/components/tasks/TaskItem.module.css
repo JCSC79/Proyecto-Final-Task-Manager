@@ -40,7 +40,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.95rem;
+  font-size: 1rem !important;
   color: var(--text-main);
 }
 
@@ -90,9 +90,11 @@
 
 /* Dialog detail header: title + status tag side by side */
 .dialogTitle {
-  margin: 0;
+  margin-bottom: var(--space-md);
+  font-size: 1.5rem !important;
 }
 
 .statusTag {
+  margin-bottom: var(--space-md);
   text-transform: uppercase;
 }

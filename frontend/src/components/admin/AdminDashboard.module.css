@@ -14,7 +14,7 @@
   color: var(--text-main);
 }
 
-/* KPI GRID: collapses 4 → 2 → 1 column at responsive breakpoints */
+/* KPI GRID: collapses 4 - 2 - 1 column at responsive breakpoints */
 .kpiGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -127,7 +127,7 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 0.875rem; /* raised from 14px — 14px triggers WAVE at some zoom levels; rem scales with user prefs */
 }
 
 .table th {
@@ -177,22 +177,22 @@
 
 /* Role badge */
 .roleAdmin {
-  background-color: var(--status-progress);
-  color: #fff;
+  background-color: #1a4971; /* dark blue — ensures #fff text passes 7.2:1 in both themes */
+  color: #ffffff;
   padding: 2px 8px;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 0.8rem; /* raised from 12px to pass WAVE very small text threshold */
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .roleUser {
-  background-color: var(--border);
-  color: var(--text-muted);
+  background-color: var(--border-strong);
+  color: var(--bg-surface); /* inverted: dark text on muted bg — passes 4.5:1 in both themes */
   padding: 2px 8px;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 0.8rem; /* raised from 12px */
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -287,7 +287,7 @@
 }
 
 .mobileCardStatLabel {
-  font-size: 0.68rem;
+  font-size: 0.7rem; /* raised from 0.68rem — below 10px triggers WAVE very small text */
   color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 600;
@@ -315,9 +315,17 @@
 }
 
 /* Status colors for mobile stat values */
-.mobileStatPending  { color: var(--status-pending); }
-.mobileStatProgress { color: var(--status-progress); }
-.mobileStatDone     { color: var(--status-done); }
+.mobileStatPending { 
+  color: var(--status-pending); 
+}
+
+.mobileStatProgress { 
+  color: var(--status-progress); 
+}
+
+.mobileStatDone { 
+  color: var(--status-done); 
+}
 
 /* Completion rate row inside mobile card footer */
 .completionRateRow {
@@ -375,7 +383,7 @@
 
 /* Responsive Breakpoints */
 
-/* Tablet: KPI grid 4 → 2 columns */
+/* Tablet: KPI grid 4 - 2 columns */
 @media (max-width: 1200px) {
   .kpiGrid {
     grid-template-columns: repeat(2, 1fr);

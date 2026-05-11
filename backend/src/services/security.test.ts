@@ -60,7 +60,7 @@ describe('Security - User Context Integrity', () => {
         
         // We simulate a creation call where we ensure the service uses the ID 
         // provided by our Auth Middleware, not some random value.
-        const result = await service.createTask('New Task', 'Description', authenticatedUser);
+        const result = await service.createTask({ title: 'New Task', description: 'A valid description' }, authenticatedUser);
 
         assert.strictEqual(result.isSuccess, true);
         assert.strictEqual(result.getValue().userId, authenticatedUser);

@@ -2,7 +2,7 @@ import React from 'react';
 import { StatusDonutChart } from './charts/StatusDonutChart';
 import { UserTasksBarChart } from './charts/UserTasksBarChart';
 import {
-  Card, Elevation, H2, H3, H4, Icon, InputGroup,
+  Card, Elevation, H2, H3, Icon, InputGroup,
   Button, Alert, Intent, Spinner, ButtonGroup
 } from '@blueprintjs/core';
 import { useAdminDashboard } from '../../hooks/useAdminDashboard';
@@ -52,19 +52,19 @@ export const AdminDashboard: React.FC = () => {
       {/* KPI Section */}
       <div className={styles.kpiGrid}>
         <Card elevation={Elevation.TWO} className={styles.kpiCard}>
-          <H4 className={styles.kpiLabel}>{t('adminTotalUsers')}</H4>
+          <H3 className={styles.kpiLabel}>{t('adminTotalUsers')}</H3>
           <div className={styles.kpiValue}>{users.length}</div>
         </Card>
         <Card elevation={Elevation.TWO} className={styles.kpiCard}>
-          <H4 className={styles.kpiLabel}>{t('adminTotalTasks')}</H4>
+          <H3 className={styles.kpiLabel}>{t('adminTotalTasks')}</H3>
           <div className={styles.kpiValue}>{globalStats.total}</div>
         </Card>
         <Card elevation={Elevation.TWO} className={styles.kpiCard}>
-          <H4 className={styles.kpiLabel}>{t('completionRate')}</H4>
+          <H3 className={styles.kpiLabel}>{t('completionRate')}</H3>
           <div className={`${styles.kpiValue} ${styles.kpiValueGreen}`}>{globalStats.rate}%</div>
         </Card>
         <Card elevation={Elevation.TWO} className={styles.kpiCard}>
-          <H4 className={styles.kpiLabel}>{t('adminInProgress')}</H4>
+          <H3 className={styles.kpiLabel}>{t('adminInProgress')}</H3>
           <div className={`${styles.kpiValue} ${styles.kpiValueBlue}`}>{globalStats.inProgress}</div>
         </Card>
       </div>

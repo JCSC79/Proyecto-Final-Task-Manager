@@ -88,8 +88,10 @@ describe('Header Component', () => {
   it('should open the edit profile dialog when clicking the avatar button', async () => {
     await renderHeader();
 
-    // Finding the avatar button by title attribute
-    const avatarBtn = screen.getByTitle('editProfileTitle');
+    // The header renders two avatar buttons (desktop + mobile).
+    // We target the first one (desktop) to open the edit profile dialog.
+    const avatarBtns = screen.getAllByLabelText('editProfileTitle');
+    const avatarBtn = avatarBtns[0];
     
     await act(async () => {
       fireEvent.click(avatarBtn);

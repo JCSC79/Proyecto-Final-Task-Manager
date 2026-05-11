@@ -1,168 +1,233 @@
 # Task Manager — Backend
 
-REST API built with **Node.js 24**, **Express 5**, **TypeScript** (strict / zero-any), **PostgreSQL 15**, and **RabbitMQ**. Implements JWT authentication, role-based access control (RBAC), and the Result Pattern throughout.
+REST API built with **Node.js 24**, **Express 5**, **TypeScript** (strict / zero-any), **PostgreSQL 15**, and **RabbitMQ**. Implements JWT authentication (httpOnly cookie), role-based access control (RBAC), Yup input validation, and the Result Pattern throughout.
+
+> This README covers the backend in isolation. For the full project setup (Docker Compose, environment variables, frontend) see the [root README](../README.md).
 
 ---
 
 ## Architecture
 
-```src/
-├── server.ts             Express app entry point, route mounting
-├── worker.ts             RabbitMQ consumer (runs separately)
+```text
+src/
+├── server.ts               Express app — middleware stack + route mounting
+├── worker.ts               RabbitMQ consumer (optional, runs separately)
 ├── config/
-│   └── swagger.ts        OpenAPI 3.0 spec
-├── controllers/          HTTP layer — validates input, delegates to services
+│   └── swagger.ts          OpenAPI 3.0 spec (served at /api-docs)
+├── controllers/            HTTP layer — parse request, call service, return response
 │   ├── auth.controller.ts
 │   ├── task.controller.ts
 │   └── admin.controller.ts
-├── services/             Business logic
-│   ├── auth.service.ts   JWT generation, bcrypt, user registration
-│   ├── task.service.ts
-│   └── messaging.service.ts  RabbitMQ producer
-├── daos/                 Database access objects (Knex queries)
+├── services/               Business logic — framework-agnostic
+│   ├── auth.service.ts     JWT generation, bcrypt hashing, user registration
+│   ├── task.service.ts     Task CRUD with per-user isolation
+│   ├── messaging.service.ts  RabbitMQ producer (fire-and-forget notifications)
+│   ├── auth.service.test.ts
+│   ├── task.service.test.ts
+│   └── security.test.ts
+├── daos/                   Data Access Objects — all Knex queries here
 │   ├── user.dao.ts
 │   └── task.dao.ts
 ├── middlewares/
-│   ├── auth.middleware.ts    authenticateToken (JWT guard)
-│   └── admin.middleware.ts   requireAdmin (RBAC guard)
-├── models/               TypeScript interfaces
-├── routes/               Express Router definitions
+│   ├── auth.middleware.ts  JWT guard (authenticateToken)
+│   └── admin.middleware.ts RBAC guard (requireAdmin)
+├── models/                 TypeScript interfaces (IUser, ITask)
+├── routes/                 Express Router definitions
 │   ├── auth.routes.ts
 │   └── admin.routes.ts
-├── schemas/              Yup validation schemas
+├── schemas/                Yup validation schemas
+│   ├── task.schema.ts
+│   └── user.schema.ts
 ├── db/
-│   ├── migrations/       Knex migration files
-│   └── seeds/            Seed data (users + tasks)
+│   ├── migrations/         Knex migration files (applied in order)
+│   └── seeds/              Default users + stress-test task dataset
 └── utils/
-    └── result.ts         Result<T> pattern
+    └── result.ts           Generic Result<T> pattern
 ```
 
 ---
 
 ## API Endpoints
 
-### Auth — `/api/auth`  *(public)*
+### Auth — `/api/auth` *(public)*
 
 | Method | Path | Description |
 | --- | --- | --- |
-| POST | `/api/auth/login` | Login. Returns `{ token, user }` |
-| POST | `/api/auth/register` | Self-register. Returns `{ token, user }` |
-| PATCH | `/api/auth/me` | Update display name *(requires token)* |
+| `POST` | `/api/auth/register` | Create a new USER account. Returns `{ token, user }`. Rate limited: 5 req / hour. |
+| `POST` | `/api/auth/login` | Validate credentials. Returns `{ token, user }` + sets httpOnly cookie. Rate limited: 10 req / 15 min. |
+| `POST` | `/api/auth/logout` | Clears the auth cookie. |
+| `PATCH` | `/api/auth/me` | Update the authenticated user's display name. Requires token. |
 
-### Tasks — `/tasks`  *(requires token)*
+### Tasks — `/api/tasks` *(JWT required)*
 
-| Method | Path | Description |
-| --- | --- | --- |
-| GET | `/tasks` | Get all tasks for the logged-in user |
-| POST | `/tasks` | Create a task |
-| PATCH | `/tasks/:id` | Update title, description, or status |
-| DELETE | `/tasks/:id` | Delete a specific task |
-| DELETE | `/tasks` | Delete all tasks (clear board) |
-
-### Admin — `/api/admin`  *(requires token + ADMIN role)*
+All task endpoints are scoped to the authenticated user — users can only access their own tasks.
 
 | Method | Path | Description |
 | --- | --- | --- |
-| GET | `/api/admin/users` | All users with per-user task statistics |
-| PATCH | `/api/admin/users/:id/role` | Promote or demote a user |
+| `GET` | `/api/tasks` | Get all tasks for the logged-in user |
+| `POST` | `/api/tasks` | Create a new task |
+| `GET` | `/api/tasks/:id` | Get a single task by ID |
+| `PATCH` | `/api/tasks/:id` | Update title, description, or status |
+| `DELETE` | `/api/tasks/:id` | Delete a specific task |
+| `DELETE` | `/api/tasks` | Bulk delete. Optional `?status=COMPLETED` to delete only by status. |
+
+### Admin — `/api/admin` *(JWT + ADMIN role required)*
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/admin/users` | All users with per-user task statistics |
+| `PATCH` | `/api/admin/users/:id/role` | Promote a user to ADMIN or demote to USER |
 
 ---
 
 ## Local Development Setup
 
-### 1. Infrastructure (Docker)
+> **Prerequisite:** Docker Desktop must be running to start the database and RabbitMQ.
 
-From the **project root** (not this folder):
+### 1. Start the infrastructure
 
-```docker-compose up -d db rabbitmq```
+From the **project root**:
 
-### 2. Environment variables
+```bash
+docker-compose up -d db rabbitmq
+```
 
-```cp .env.example .env```
+### 2. Configure environment variables
 
-Edit `.env` — at minimum set a strong `JWT_SECRET`:
+```bash
+cp ../.env.example .env
+```
+
+Edit `backend/.env` and make sure `DB_HOST` is `127.0.0.1` (not `db`), since the API runs directly on your machine:
 
 ```env
-JWT_SECRET=any_random_string_at_least_32_chars
-RABBITMQ_URL=amqp://JC:abc123..@localhost:5672
+JWT_SECRET=replace_with_a_strong_random_secret_32chars_minimum
 DB_HOST=127.0.0.1
 DB_USER=postgres
-DB_PASSWORD=abc123..
+DB_PASSWORD=change_me
 DB_NAME=tasks_db
+RABBITMQ_URL=amqp://admin:change_me@localhost:5672
 ```
 
 > **Never commit `.env`** — it is in `.gitignore`. Only `.env.example` is tracked.
 
 ### 3. Install dependencies
 
-```npm install```
+```bash
+npm install
+```
 
-### 4. Run migrations
+### 4. Run database migrations
 
 Creates the `users` and `tasks` tables:
 
-```npm run db:migrate```
+```bash
+npm run db:migrate
+```
 
-### 5. Seed default users
+### 5. Seed default data
 
-Creates two accounts for testing:
+Runs two seed files in order: first users, then tasks:
 
-```npm run db:seed```
+```bash
+npm run db:seed
+```
 
-| Email | Password | Role |
-| --- | --- | --- |
-| `admin@test.com` | AdminPassword123! | ADMIN |
-| `user@test.com` | UserPassword123! | USER |
+This creates **17 users** and **1500 tasks** distributed among them (round-robin):
 
-> Running the seed again is safe — it clears users first to avoid duplicate key errors.  
-> **Change these passwords** before any production deployment.
+| Email | Password | Role | Notes |
+| --- | --- | --- | --- |
+| `admin@test.com` | `AdminPassword123!` | ADMIN | Main admin account |
+| `user@test.com` | `123456J` | USER | Main regular account |
+| `user1@test.com` … `user15@test.com` | `123456J` | USER | Stress-test accounts |
 
-### 6. Start the API
+The 1500 tasks are split evenly across the three statuses (`PENDING` / `IN_PROGRESS` / `COMPLETED`) and spread across the 17 users — ideal for testing pagination, charts, and the admin dashboard.
 
-```npm run dev```
+> Running the seed again is safe — it wipes all tasks and users first to avoid duplicate key errors.
 
-API available at **<http://localhost:3000>**
+### 6. Start the development server
+
+```bash
+npm run dev
+```
+
+API is available at **<http://localhost:3000>**  
+Swagger UI is available at **<http://localhost:3000/api-docs>**
 
 ### 7. (Optional) Start the async worker
 
 In a separate terminal, to process RabbitMQ task notifications:
 
-```npx tsx src/worker.ts```
+```bash
+npx tsx src/worker.ts
+```
 
 ---
 
-## Database Management Scripts
+## Database Scripts
 
-```npm run db:migrate```    # Apply all pending migrations
-```npm run db:rollback```   # Revert the last migration batch
-```npm run db:seed```       # Re-seed users (clears existing users first)
-
----
-
-## Running inside Docker (full stack)
-
-From the project root:
-
-```docker-compose build api```       # Build the API image
-```docker-compose up -d```           # Start everything
-```docker exec task_api npm run db:migrate```
-```docker exec task_api npm run db:seed```
-
-After any backend code change, rebuild:
-
-```docker-compose build api && docker-compose up -d api```
+| Script | Command | Description |
+| --- | --- | --- |
+| Migrate | `npm run db:migrate` | Apply all pending migrations |
+| Rollback | `npm run db:rollback` | Revert the last migration batch |
+| Seed | `npm run db:seed` | Re-seed default users + tasks (destructive) |
 
 ---
 
-## Interactive API Docs
+## Running Tests
 
-Swagger UI: **<http://localhost:3000/api-docs>**
+Tests use Node.js's built-in test runner (`node:test`) — no Jest required.
+
+```bash
+npm test
+```
+
+Expected output: **13 tests, 0 failures** across 3 suites:
+
+| Suite | File | Coverage |
+| --- | --- | --- |
+| AuthService | `auth.service.test.ts` | Login validation, registration, JWT generation |
+| TaskService | `task.service.test.ts` | CRUD validation, user isolation, messaging |
+| Security | `security.test.ts` | Cross-user access prevention, ID spoofing |
+
+Tests run against a **dummy environment** defined in `.env.test` — no real database connection is made. All DAOs are mocked via dependency injection.
+
+---
+
+## Database Schema
+
+```text
+users
+  id          uuid  PK
+  email       varchar  UNIQUE NOT NULL
+  password    varchar  NOT NULL  (bcrypt hashed)
+  role        varchar  DEFAULT 'USER'  ('USER' | 'ADMIN')
+  name        varchar  nullable
+  avatar_url  varchar  nullable
+  createdAt   timestamp
+
+tasks
+  id          uuid  PK
+  title       varchar  NOT NULL
+  description text
+  status      varchar  DEFAULT 'PENDING'  ('PENDING' | 'IN_PROGRESS' | 'COMPLETED')
+  userId      uuid  NOT NULL  FK → users(id)  CASCADE DELETE
+  projectId   uuid  nullable  FK → (future projects table)
+  createdAt   timestamp
+  updatedAt   timestamp  nullable
+```
+
+> `projectId` is present in the schema and nullable — it is the prepared extension point for Phase 2 (Projects feature).
 
 ---
 
 ## Key Design Decisions
 
-- **Result Pattern** — every service method returns `Result<T>` instead of throwing. Controllers check `result.isFailure` and map to the correct HTTP status code.
-- **exactOptionalPropertyTypes: true** — optional fields must use spread `...(value ? { field: value } : {})` instead of `field: value ?? undefined`.
-- **Express 5** — `app.use()` + `app.get()` mixing on the same path is unreliable; all sub-routes use dedicated `Router` instances.
-- **Rate limiting** — `/api/auth/login` is capped at 10 requests / 15 min via `express-rate-limit`.
+| Decision | Rationale |
+| --- | --- |
+| **Result Pattern** | Every service method returns `Result<T>` instead of throwing. Controllers check `result.isFailure` and map to the correct HTTP status code. No unhandled exceptions leak to the HTTP layer. |
+| **DAO → Service → Controller** | Strict separation. DAOs only talk to the DB. Services only talk to DAOs. Controllers only talk to Services. |
+| **Dependency injection in TaskService** | `TaskService` accepts `dao` and `messaging` as constructor arguments, making it fully testable without a real database or RabbitMQ. |
+| **httpOnly cookie auth** | The JWT is stored in an httpOnly cookie (not localStorage) to prevent XSS token theft. The Axios instance on the frontend uses `withCredentials: true`. |
+| **Rate limiting on auth routes** | `express-rate-limit` caps login at 10 req/15 min and registration at 5 req/hour to mitigate brute-force attacks. |
+| **Zero-any TypeScript policy** | No `any` types in service or DAO layers. Workarounds use `unknown` + type narrowing. |

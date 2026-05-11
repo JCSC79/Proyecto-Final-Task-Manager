@@ -36,9 +36,10 @@
   gap: var(--space-xs);
 }
 
-/* Reset BlueprintJS H5 margin inside column header */
+/* Reset BlueprintJS H2 margin inside column header; override font-size so visual stays at h5 scale */
 .columnTitle {
   margin: 0;
+  font-size: 1.1rem !important;
 }
 
 .columnCount {

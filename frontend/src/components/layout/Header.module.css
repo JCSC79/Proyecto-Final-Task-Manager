@@ -22,13 +22,13 @@
 }
 
 .logo {
-  height: 2.5rem;
-  width: 2.5rem;
-  margin-right: var(--space-sm);
+  height: 3.5rem;
+  width: 3.5rem;
+  margin-right: var(--space-md);
 }
 
 .appName {
-  font-size: 1.1rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--text-main);
   letter-spacing: 0.5px;
@@ -48,7 +48,7 @@
 }
 
 .avatarBtn:hover {
-  transform: scale(1.1);
+  transform: scale(1.5);
 }
 
 .avatar {
@@ -82,6 +82,11 @@
   gap: var(--space-xs);
 }
 
+/* Prevent icon and text from separating when the button width grows */
+.navButtonsContainer :global(.bp6-button-text) {
+  white-space: nowrap;
+}
+
 .progressSection {
   display: flex;
   align-items: center;
@@ -89,7 +94,7 @@
 }
 
 .progressLabel {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-muted);
   white-space: nowrap; /* Ensures percentage doesn't wrap alone */
@@ -128,7 +133,7 @@
 }
 
 .userNameDesktop {
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   font-weight: 500;
   color: var(--text-main);
   max-width: 120px;

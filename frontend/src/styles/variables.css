@@ -28,10 +28,10 @@
   --accent:           #2B95D9;
   --accent-hover:     #1a7abf;
 
-  /* Status colors (task states) */
-  --status-pending:   #D9822B;
-  --status-progress:  #2B95D9;
-  --status-done:      #0F9960;
+  /* Status colors (task states) — darkened from originals to pass 4.5:1 on --bg-surface (#ffffff) */
+  --status-pending:   #A0621F;  /* was #D9822B → 2.78:1, now 4.63:1 */
+  --status-progress:  #1A72A8;  /* was #2B95D9 → 3.07:1, now 4.82:1 */
+  --status-done:      #0A7A4C;  /* was #0F9960 → 3.45:1, now 5.02:1 */
 
   /* Feedback */
   --color-danger:     #c23030;
@@ -59,10 +59,8 @@
   --transition:       background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 
   /* Layout */
-  /* --max-width:        1400px; */
   --max-width:        100rem;
-  /* --navbar-height:    84px; */
-  --navbar-height:    5rem;
+  --navbar-height:    6rem;
 }
 
 /* DARK THEME */
@@ -85,4 +83,7 @@
 
   /* Status/feedback overrides for dark theme — lightened to pass 4.5:1 on --bg-surface (#30404d) */
   --color-warning:    #F5A623;  /* was #D9822B → 3.65:1, now 4.79:1 */
+  --status-done:      #1AC678;  /* was #0F9960 → 3.0:1,  now 4.75:1 */
+  --status-progress:  #45B4EA;  /* was #2B95D9 → 3.31:1, now 4.57:1 */
+  --status-pending:   #F5A623;  /* was #D9822B → 3.65:1, now 4.79:1 */
 }

@@ -38,7 +38,8 @@
   font-size: 1rem;
   font-weight: 700;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  /* explicit margin overrides Blueprint H3 default top/bottom margin */
+  margin: 0 0 4px 0;
 }
 
 .kpiValue {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, H5, Icon } from '@blueprintjs/core';
+import { Button, H2, Icon } from '@blueprintjs/core';
 import { TaskItem } from './TaskItem';
 import type { Task, TaskStatus } from '../../types/task';
 import { useTranslation } from 'react-i18next';
@@ -61,7 +61,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter }) => 
       <div className={styles.column}>
         <div className={styles.columnHeader}>
           <div className={styles.headerInfo}>
-            <H5 className={styles.columnTitle}>{t(labelKey)}</H5>
+            <H2 className={styles.columnTitle}>{t(labelKey)}</H2>
             <span className={styles.columnCount}>({columnTasks.length})</span>
           </div>
           <Button 

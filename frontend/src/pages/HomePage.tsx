@@ -19,12 +19,15 @@ const HomePage: React.FC = () => {
   const location = useLocation();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
+  // Initialize statusFilter from navigation state
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>(
+    () => (location.state as { statusFilter?: TaskStatus } | null)?.statusFilter ?? 'ALL'
+  );
 
+  // Only clear the navigation state — no setState here to avoid cascading renders
   useEffect(() => {
     const state = location.state as { statusFilter?: TaskStatus } | null;
     if (state?.statusFilter) {
-      //setStatusFilter(state.statusFilter);
       navigate('/', { replace: true, state: {} });
     }
   }, [location.state, navigate]);
