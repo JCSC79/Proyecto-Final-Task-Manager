@@ -114,7 +114,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               searchTerm ? (
                 <Button
                   icon="cross"
-                  variant="minimal"
+                  variant="outlined"
                   onClick={() => setSearchTerm('')}
                   aria-label={t('clear')}
                 />

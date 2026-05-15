@@ -85,7 +85,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
 
         <Button
           icon="plus"
-          variant="minimal"
+          variant="solid"
           intent={Intent.PRIMARY}
           onClick={() => setIsDialogOpen(true)}
           className={styles.newBtn}
@@ -97,6 +97,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
 
       <Dialog
         isOpen={isDialogOpen}
+        icon="add-application"
         onClose={() => setIsDialogOpen(false)}
         title={t('newProject')}
         style={{ width: 380 }}

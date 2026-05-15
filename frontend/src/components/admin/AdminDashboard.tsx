@@ -72,11 +72,15 @@ export const AdminDashboard: React.FC = () => {
       {/* Analytics Section */}
       <div className={styles.chartsGrid}>
         <Card elevation={Elevation.ONE} className={styles.chartCard}>
-          <H3 className={styles.chartTitle}>{t('statusDistribution')}</H3>
+          <H3 className={styles.chartTitle}>
+            <Icon icon="doughnut-chart" size={25} /> {t('statusDistribution')}
+          </H3>
           <StatusDonutChart data={pieData} />
         </Card>
         <Card elevation={Elevation.ONE} className={styles.chartCard}>
-          <H3 className={styles.chartTitle}>{t('adminTasksPerUser')}</H3>
+          <H3 className={styles.chartTitle}>
+            <Icon icon="stacked-chart" size={25} /> {t('adminTasksPerUser')}
+          </H3>
           <UserTasksBarChart
             data={barData}
             colors={{ pending: CHART_COLORS.pending, inProgress: CHART_COLORS.progress, completed: CHART_COLORS.done }}

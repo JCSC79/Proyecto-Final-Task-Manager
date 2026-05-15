@@ -2,6 +2,7 @@
   background: transparent;
   padding: var(--space-md);
   margin-bottom: var(--space-md);
+  margin-top: var(--space-md);
 }
 
 .row {

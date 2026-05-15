@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { Card, Elevation, H2, H3, Icon } from '@blueprintjs/core';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
-  ResponsiveContainer, LineChart, Line 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, LineChart, Line
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import { useChartColors } from '../../hooks/useChartColors';
@@ -75,7 +75,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], onChar
   return (
     <div className={styles.wrapper}>
       <H2 className={styles.pageTitle}>
-        <Icon icon="chart" size={35} intent="primary" /> {t('kpiDashboard')}
+        <Icon icon="chart" size={50} intent="primary" /> {t('kpiDashboard')}
       </H2>
 
       <div className={styles.kpiGrid}>
@@ -103,30 +103,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], onChar
 
       <div className={styles.chartsGrid}>
         <Card elevation={Elevation.ONE} className={styles.chartCard}>
-          <H3 className={styles.chartTitle}>{t('statusDistribution')}</H3>
+          <H3 className={styles.chartTitle}>
+            <Icon icon="doughnut-chart" size={25} /> {t('statusDistribution')}
+          </H3>
           <div className={styles.chartContainer}>
-            <StatusDonutChart 
-              data={chartData.filter(d => d.value > 0)} 
+            <StatusDonutChart
+              data={chartData.filter(d => d.value > 0)}
               onPieClick={(data) => data.status && onChartClick?.(data.status)}
             />
           </div>
         </Card>
 
         <Card elevation={Elevation.ONE} className={styles.chartCard}>
-          <H3 className={styles.chartTitle}>{t('workloadTitle')}</H3>
+          <H3 className={styles.chartTitle}>
+            <Icon icon="grouped-bar-chart" size={25} /> {t('workloadTitle')}
+          </H3>
           <div className={styles.chartContainer}>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: labelColor, fontSize: 11 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: labelColor, fontSize: 11 }} />
-                <Tooltip 
+                <Tooltip
                   cursor={{ fill: cursorFill }}
                   contentStyle={{ backgroundColor: 'var(--bg-surface)', borderRadius: '8px', border: '1px solid var(--border)', color: 'var(--text-main)' }}
                 />
-                <Bar 
-                  dataKey="value" 
-                  radius={[4, 4, 0, 0]} 
+                <Bar
+                  dataKey="value"
+                  radius={[4, 4, 0, 0]}
                   onClick={(data: unknown) => {
                     const entry = data as { payload: ChartDataPoint };
                     if (entry?.payload?.status) {
@@ -142,7 +146,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], onChar
 
         <Card elevation={Elevation.ONE} className={`${styles.chartCard} ${styles.chartCardFull}`}>
           <H3 className={styles.chartTitle}>
-            <Icon icon="timeline-events" /> {t('recentActivity')}
+            <Icon icon="timeline-line-chart" size={25} /> {t('recentActivity')}
           </H3>
           <div className={styles.chartContainer}>
             <ResponsiveContainer width="100%" height={260}>
