@@ -1,0 +1,14 @@
+# Environment variables — backend-specific
+.env
+.env.*
+!.env.example
+
+# TypeScript build output
+dist/
+
+# Test / coverage
+coverage/
+
+# Logs
+*.log
+npm-debug.log*

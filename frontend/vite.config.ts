@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'; // Importante: de 'vitest/config'
+import { defineConfig } from 'vitest/config'; // Must import from 'vitest/config', not 'vite'
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
@@ -7,6 +7,6 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './vitest.setup.ts',
-    css: true, // Esto ayuda si los tests dependen de clases CSS
+    css: true, // Enables CSS processing so tests that depend on CSS classes work correctly
   },
 });
