@@ -182,6 +182,57 @@ class ProjectDAO {
             .where('pm.projectId', projectId)
             .select('pm.userId', 'u.name', 'u.email', 'pm.role', 'pm.joinedAt');
     }
+
+    // Renames a project. Only the OWNER can rename. Returns null if not found or not owner.
+    async rename(projectId: string, name: string, userId: string): Promise<IProjectWithDetails | null> {
+        const membership = await db<IProjectMember>('project_members')
+            .where({ projectId, userId, role: 'OWNER' })
+            .first();
+
+        if (!membership) {
+            return null;
+        }
+
+        await db<IProject>('projects').where({ id: projectId }).update({ name });
+
+        const updated = await db('projects as p')
+            .leftJoin('project_settings as ps', 'ps.projectId', 'p.id')
+            .leftJoin('project_members as pm', function () {
+                this.on('pm.projectId', '=', 'p.id').andOn(
+                    'pm.userId',
+                    '=',
+                    db.raw('?', [userId])
+                );
+            })
+            .where('p.id', projectId)
+            .select(
+                'p.id', 'p.name', 'p.userId', 'p.createdAt',
+                'ps.description', 'ps.color', 'ps.isPublic',
+                'pm.role as memberRole'
+            )
+            .first();
+
+        const countRow = await db('project_members')
+            .where('projectId', projectId)
+            .count('userId as memberCount')
+            .first();
+
+        return {
+            id: updated.id as string,
+            name: updated.name as string,
+            userId: updated.userId as string,
+            createdAt: updated.createdAt as Date,
+            settings: {
+                projectId: updated.id as string,
+                description: updated.description as string | null,
+                color: (updated.color as string) ?? '#4c90f0',
+                isPublic: updated.isPublic as boolean,
+                createdAt: updated.createdAt as Date,
+            },
+            memberRole: (updated.memberRole as 'OWNER' | 'MEMBER' | null) ?? null,
+            memberCount: Number(countRow?.memberCount ?? 0),
+        };
+    }
 }
 
 export const projectDAO = new ProjectDAO();

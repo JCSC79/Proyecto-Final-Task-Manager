@@ -72,6 +72,17 @@ const options: swaggerJSDoc.Options = {
             joinedAt: { type: 'string', format: 'date-time' }
           }
         },
+        Tag: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string', maxLength: 30 },
+            color: { type: 'string', example: '#e03131', description: '7-char hex color' },
+            projectId: { type: 'string', format: 'uuid' },
+            createdAt: { type: 'string', format: 'date-time' },
+            taskCount: { type: 'integer', description: 'Number of tasks using this tag' }
+          }
+        },
         ErrorResponse: {
           type: 'object',
           properties: { error: { type: 'string' } }
@@ -355,6 +366,30 @@ const options: swaggerJSDoc.Options = {
         }
       },
       '/api/projects/{id}': {
+        patch: {
+          summary: 'Rename a project (OWNER only)',
+          description: 'Updates the project name. Only the project OWNER can perform this action.',
+          tags: ['Projects'],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['name'],
+                  properties: { name: { type: 'string', minLength: 2, maxLength: 50, example: 'My Renamed Project' } }
+                }
+              }
+            }
+          },
+          responses: {
+            200: { description: 'Project renamed', content: { 'application/json': { schema: { '$ref': '#/components/schemas/Project' } } } },
+            400: { description: 'Validation error (name too short/long)' },
+            403: { description: 'Not the owner of this project' },
+            401: { description: 'Not authenticated' }
+          }
+        },
         delete: {
           summary: 'Delete a project (OWNER only)',
           description: 'Permanently deletes the project and ALL its tasks, tags, settings and memberships via DB CASCADE. Only the project OWNER can perform this action.',
@@ -410,6 +445,97 @@ const options: swaggerJSDoc.Options = {
                 }
               }
             },
+            401: { description: 'Not authenticated' }
+          }
+        }
+      },
+      '/api/projects/{id}/tags': {
+        get: {
+          summary: 'List tags of a project',
+          description: 'Returns all tags defined in the project, each with a taskCount showing how many tasks use it.',
+          tags: ['Tags'],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+          responses: {
+            200: {
+              description: 'Array of tags with task usage counts',
+              content: { 'application/json': { schema: { type: 'array', items: { '$ref': '#/components/schemas/Tag' } } } }
+            },
+            401: { description: 'Not authenticated' }
+          }
+        },
+        post: {
+          summary: 'Create a tag in a project',
+          description: 'Creates a new tag scoped to the project. Requires the user to be a member (OWNER or MEMBER).',
+          tags: ['Tags'],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['name'],
+                  properties: {
+                    name: { type: 'string', maxLength: 30, example: 'Bug' },
+                    color: { type: 'string', example: '#e03131', description: '7-char hex. Defaults to #4c90f0' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            201: { description: 'Tag created', content: { 'application/json': { schema: { '$ref': '#/components/schemas/Tag' } } } },
+            400: { description: 'Validation error' },
+            403: { description: 'Not a project member' },
+            401: { description: 'Not authenticated' }
+          }
+        }
+      },
+      '/api/projects/{id}/tags/{tagId}': {
+        delete: {
+          summary: 'Delete a tag from a project (OWNER only)',
+          description: 'Deletes the tag and removes it from all tasks automatically (CASCADE). Only the project OWNER can do this.',
+          tags: ['Tags'],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+            { name: 'tagId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            204: { description: 'Tag deleted' },
+            403: { description: 'Only the project owner can delete tags' },
+            404: { description: 'Tag not found' },
+            401: { description: 'Not authenticated' }
+          }
+        }
+      },
+      '/api/tasks/{id}/tags/{tagId}': {
+        post: {
+          summary: 'Assign a tag to a task',
+          description: 'The tag must belong to the same project as the task. The user must own the task.',
+          tags: ['Tags'],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Task ID' },
+            { name: 'tagId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            200: { description: 'Tag assigned successfully' },
+            400: { description: 'Task does not belong to a project' },
+            404: { description: 'Task or tag not found' },
+            409: { description: 'Tag already assigned to this task' },
+            401: { description: 'Not authenticated' }
+          }
+        },
+        delete: {
+          summary: 'Remove a tag from a task',
+          description: 'The user must own the task.',
+          tags: ['Tags'],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Task ID' },
+            { name: 'tagId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            200: { description: 'Tag removed successfully' },
+            404: { description: 'Task not found or tag not assigned' },
             401: { description: 'Not authenticated' }
           }
         }

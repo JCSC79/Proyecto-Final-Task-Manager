@@ -145,6 +145,32 @@ class ProjectController {
     const members = await projectDAO.getMembers(id);
     res.json(members);
   }
+
+  /**
+   * PATCH /api/projects/:id
+   * Renames a project. Only the OWNER can rename.
+   */
+  async rename(req: Request, res: Response): Promise<Response | void> {
+    const authReq = req as AuthRequest;
+    const { id } = req.params;
+    const { name } = req.body as { name?: string };
+
+    if (typeof id !== 'string') {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+    if (!name || name.trim().length < 2) {
+      return res.status(400).json({ error: 'Project name must be at least 2 characters' });
+    }
+    if (name.trim().length > 50) {
+      return res.status(400).json({ error: 'Project name cannot exceed 50 characters' });
+    }
+
+    const updated = await projectDAO.rename(id, name.trim(), authReq.user!.id);
+    if (!updated) {
+      return res.status(403).json({ error: 'Project not found or you are not the owner' });
+    }
+    res.json(updated);
+  }
 }
 
 export const projectController = new ProjectController();

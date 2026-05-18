@@ -10,6 +10,7 @@ import { messagingService } from './services/messaging.service.ts';
 import authRoutes from './routes/auth.routes.ts';
 import adminRoutes from './routes/admin.routes.ts';
 import projectRoutes from './routes/project.routes.ts'; // NEW: Added projects routing
+import { projectTagRouter, taskTagRouter } from './routes/tag.routes.ts';
 import { authenticateToken } from './middlewares/auth.middleware.ts';
 import { requireAdmin } from './middlewares/admin.middleware.ts';
 
@@ -75,12 +76,17 @@ app.patch('/api/tasks/:id', (req, res) => taskController.update(req, res));
 // Secured project routes added below tasks
 app.use('/api/projects', authenticateToken, projectRoutes);
 
+// TAGS (project-scoped: create/list/delete tags) 
+// mergeParams: true in the router allows access to :id from the parent path
+app.use('/api/projects/:id/tags', authenticateToken, projectTagRouter);
+
+// TAGS (task-scoped: assign/unassign tags on a task)
+app.use('/api/tasks/:id/tags', authenticateToken, taskTagRouter);
+
 // 3. ADMIN ROUTES
 app.use('/api/admin', authenticateToken, requireAdmin, adminRoutes);
 
-/**
- * SERVER STARTUP
- */
+// SERVER STARTUP
 const server = app.listen(PORT, async () => {
     await messagingService.init();
     console.log(`[OK] Server running at http://localhost:${PORT}`);
@@ -88,9 +94,7 @@ const server = app.listen(PORT, async () => {
     console.log(`[DOCS] Swagger available at http://localhost:${PORT}/api-docs`);
 });
 
-/**
- * GRACEFUL SHUTDOWN: Reinstated for clean process termination
- */
+// GRACEFUL SHUTDOWN: Reinstated for clean process termination
 const shutdown = () => {
     console.log('[*] Shutting down gracefully...');
     server.close(() => {

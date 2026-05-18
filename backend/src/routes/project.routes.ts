@@ -18,6 +18,9 @@ router.post('/:id/join', (req, res) => projectController.join(req, res));
 // DELETE /api/projects/:id/leave  — leave a project (MEMBER only, OWNERs must delete)
 router.delete('/:id/leave', (req, res) => projectController.leave(req, res));
 
+// PATCH  /api/projects/:id — rename project (OWNER only)
+router.patch('/:id', (req, res) => projectController.rename(req, res));
+
 // GET    /api/projects/:id/members — list all members with roles
 router.get('/:id/members', (req, res) => projectController.getMembers(req, res));
 
