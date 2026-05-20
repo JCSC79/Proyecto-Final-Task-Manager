@@ -6,20 +6,27 @@
   background-color: var(--bg-surface);
   border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.1));
   flex-wrap: wrap;
-  min-height: 3rem;
   row-gap: 0.4rem;
+  min-height: 3rem;
   border-radius: 4px;
 }
 
+/* Dialog width override — Blueprint Dialog ignores CSS width without this */
+.createDialog {
+  width: 380px;
+}
+
+/* Base chip */
 .chip {
   display: inline-flex;
   align-items: center;
+  gap: 0.35rem;
   padding: 0.3rem 0.85rem;
   border-radius: 1rem;
   border: 1px solid var(--border-color, rgba(255,255,255,0.2));
   background: transparent;
-  color: var(--text-muted, #8a9ba8);
-  font-size: 0.82rem;
+  color: var(--text-subtle, #516070);
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
@@ -32,8 +39,17 @@
   border-color: var(--accent-color, #4c90f0);
 }
 
+/* Project name text inside chips — truncates with ellipsis on long names */
+.chipName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 20ch;
+  min-width: 0;
+}
+
 .chipActive {
-  background: var(--accent-color, #4c90f0);
+  background: var(--accent-color, #4c91f0);
   color: #fff;
   border-color: var(--accent-color, #4c90f0);
 }
@@ -43,10 +59,160 @@
   color: #fff;
 }
 
+/* Member chip (OWNER or MEMBER) — accent border, project color shown via dot */
+.chipMember {
+  border-color: var(--accent-color, #4c90f0);
+  color: var(--text-main);
+}
+
+.chipMember:hover {
+  background: rgba(76, 144, 240, 0.12);
+  border-color: var(--accent-color, #4c90f0);
+  color: var(--text-main);
+}
+
+.chipMemberActive {
+  background: var(--accent-color, #4c90f0);
+  color: #fff;
+  border-color: var(--accent-color, #4c90f0);
+}
+
+.chipMemberActive:hover {
+  background: var(--accent-color, #4c90f0);
+  color: #fff;
+}
+
+/* Non-member chip (not joined) */
+.chipGuest {
+  border-style: dashed;
+  color: var(--text-subtle, #516070);
+  border-color: var(--border-strong, #5c7080);
+}
+
+.chipGuest:hover {
+  opacity: 1;
+  color: var(--text-main);
+  border-color: var(--accent-color, #4c90f0);
+  border-style: solid;
+}
+
+/* "Show more / show less" toggle chip */
+.chipToggle {
+  border-style: dashed;
+  border-color: var(--accent-color, #4c90f0);
+  color: var(--accent-color, #4c90f0);
+  font-weight: 700;
+  gap: 0.2rem;
+}
+
+.chipToggle:hover {
+  background: rgba(76, 144, 240, 0.1);
+  border-style: solid;
+  color: var(--accent-color, #4c90f0);
+}
+
+/* Member count badge */
+.memberBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.15);
+  border-radius: 0.6rem;
+  padding: 0 0.35rem;
+  min-width: 1.2rem;
+  height: 1.1rem;
+  line-height: 1;
+}
+
+.chipMemberActive .memberBadge {
+  background: rgba(255,255,255,0.25);
+}
+
+/* Delete (×) button inside OWNER chips */
+.deleteBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-subtle, #516070);
+  cursor: pointer;
+  padding: 0;
+  line-height: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.deleteBtn:hover {
+  color: #fff;
+  background: var(--color-danger, #c23030);
+}
+
+/* Edit (✏) button inside OWNER chips */
+.editBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-subtle, #516070);
+  cursor: pointer;
+  padding: 0;
+  line-height: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.editBtn:hover {
+  color: var(--text-main);
+  background: rgba(76, 144, 240, 0.2);
+}
+
+/* Leave (↩) button inside MEMBER chips */
+.leaveBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-subtle, #516070);
+  cursor: pointer;
+  padding: 0;
+  line-height: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.leaveBtn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* "Join" label inside guest chips */
+.joinLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-color, #4c90f0);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* New project button */
 .newBtn {
   font-size: 0.82rem !important;
-  /* In Desktop push to the end; in mobile behave normally */
   margin-left: auto !important;
+  flex-shrink: 0 !important;
 }
 
 @media (max-width: 480px) {
