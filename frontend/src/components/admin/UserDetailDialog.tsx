@@ -22,7 +22,7 @@ export const UserDetailDialog: React.FC<UserDetailDialogProps> = ({ user, isOpen
       onClose={onClose}
       title={t('userDetails')}
       icon="info-sign"
-      style={{ width: '500px' }}
+      className={styles.userDetailDialog}
     >
       <DialogBody>
         {user && (
@@ -31,18 +31,18 @@ export const UserDetailDialog: React.FC<UserDetailDialogProps> = ({ user, isOpen
             <p className="bp6-text-muted">{user.email}</p>
             
             <div className={styles.statsHighlight}>
-              <div style={{ textAlign: 'center' }}>
-                <div className="bp6-text-muted" style={{ fontSize: '11px', fontWeight: 600 }}>{t('adminColTotal')}</div>
-                <H2 style={{ margin: 0 }}>{user.stats.total}</H2>
+              <div className={styles.statsHighlightCell}>
+                <div className={`bp6-text-muted ${styles.statsHighlightLabel}`}>{t('adminColTotal')}</div>
+                <H2 className={styles.statsHighlightValue}>{user.stats.total}</H2>
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <div className="bp6-text-muted" style={{ fontSize: '11px', fontWeight: 600 }}>{t('completionRate')}</div>
-                <H2 style={{ margin: 0, color: 'var(--status-done)' }}>{user.stats.completionRate}%</H2>
+              <div className={styles.statsHighlightCell}>
+                <div className={`bp6-text-muted ${styles.statsHighlightLabel}`}>{t('completionRate')}</div>
+                <H2 className={styles.statsHighlightValueGreen}>{user.stats.completionRate}%</H2>
               </div>
             </div>
 
             <H4>{t('statusDistribution')}</H4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+            <div className={styles.tagList}>
               <Tag intent="warning" size="large" fill minimal icon="time">{t('pending')}: {user.stats.pending}</Tag>
               <Tag intent="primary" size="large" fill minimal icon="play">{t('inProgress')}: {user.stats.inProgress}</Tag>
               <Tag intent="success" size="large" fill minimal icon="tick-circle">{t('completed')}: {user.stats.completed}</Tag>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { NonIdealState, Button, Intent, Icon } from '@blueprintjs/core';
+import styles from './ErrorBoundary.module.css';
 
 interface Props {
   children: React.ReactNode;
@@ -31,7 +32,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+        <div className={styles.fullPageCenter}>
           <NonIdealState
             icon={<Icon icon="warning-sign" size={60} intent={Intent.DANGER} />}
             title="Something went wrong"

@@ -1,0 +1,7 @@
+/* Full-screen centered container for error fallback UI */
+.fullPageCenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
