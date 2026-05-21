@@ -14,33 +14,50 @@ interface Props {
   onDemote: (user: IUserWithStats) => void;
 }
 
+// Extracted as a named component so each branch returns a <th> with a literal
+// aria-sort string — prevents the Edge Tools axe/aria false positive that fires
+// when the attribute value is a JSX expression instead of a string literal.
+interface SortableThProps {
+  label: string;
+  col: SortColumn;
+  sort: { column: SortColumn; direction: 'asc' | 'desc' };
+  onSort: (col: SortColumn) => void;
+}
+
+const SortableTh: React.FC<SortableThProps> = ({ label, col, sort, onSort }) => {
+  const isActive = sort.column === col;
+  const thProps = {
+    className: styles.sortableTh,
+    onClick: () => onSort(col),
+    tabIndex: 0 as const,
+    onKeyDown: (e: React.KeyboardEvent<HTMLTableCellElement>) => { if (e.key === 'Enter') onSort(col); },
+  };
+  const content = (
+    <div className={styles.sortThContent}>
+      {label}
+      <Icon
+        icon={isActive ? (sort.direction === 'asc' ? 'chevron-up' : 'chevron-down') : 'double-caret-vertical'}
+        size={12}
+        style={{ opacity: isActive ? 1 : 0.2 }}
+      />
+    </div>
+  );
+  
+  if (!isActive) {
+    return <th {...thProps} aria-sort="none">{content}</th>;
+  }
+
+  if (sort.direction === 'asc') {
+    return <th {...thProps} aria-sort="ascending">{content}</th>;
+  
+  }
+  return <th {...thProps} aria-sort="descending">{content}</th>;
+};
+
 export const UserManagementTable: React.FC<Props> = ({
   users, sort, onSort, onOpenModal, onPromote, onDemote
 }) => {
   const { t } = useTranslation();
-
-  const renderHeader = (label: string, col: SortColumn) => {
-    const isActive = sort.column === col;
-    const ariaSort = isActive ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none';
-    return (
-      <th
-        className={styles.sortableTh}
-        onClick={() => onSort(col)}
-        aria-sort={ariaSort}
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && onSort(col)}
-      >
-        <div className={styles.sortThContent}>
-          {label}
-          <Icon
-            icon={isActive ? (sort.direction === 'asc' ? 'chevron-up' : 'chevron-down') : 'double-caret-vertical'}
-            size={12}
-            style={{ opacity: isActive ? 1 : 0.2 }}
-          />
-        </div>
-      </th>
-    );
-  };
 
   return (
     <>
@@ -49,14 +66,14 @@ export const UserManagementTable: React.FC<Props> = ({
         <table className={styles.table}>
           <thead>
             <tr>
-              {renderHeader(t('adminColName'), 'name')}
-              {renderHeader(t('adminColEmail'), 'email')}
+              <SortableTh label={t('adminColName')} col="name" sort={sort} onSort={onSort} />
+              <SortableTh label={t('adminColEmail')} col="email" sort={sort} onSort={onSort} />
               <th>{t('adminColRole')}</th>
-              {renderHeader(t('adminColTotal'), 'total')}
-              {renderHeader(t('pending'), 'pending')}
-              {renderHeader(t('inProgress'), 'inProgress')}
-              {renderHeader(t('completed'), 'completed')}
-              {renderHeader(t('completionRate'), 'rate')}
+              <SortableTh label={t('adminColTotal')} col="total" sort={sort} onSort={onSort} />
+              <SortableTh label={t('pending')} col="pending" sort={sort} onSort={onSort} />
+              <SortableTh label={t('inProgress')} col="inProgress" sort={sort} onSort={onSort} />
+              <SortableTh label={t('completed')} col="completed" sort={sort} onSort={onSort} />
+              <SortableTh label={t('completionRate')} col="rate" sort={sort} onSort={onSort} />
               <th>{t('adminColActions')}</th>
             </tr>
           </thead>
@@ -79,9 +96,12 @@ export const UserManagementTable: React.FC<Props> = ({
                   <td><Tag intent="success" minimal>{user.stats.completed}</Tag></td>
                   <td>
                     {user.stats.completionRate}%
-                    <span className={styles.miniBarTrack}>
-                      <span className={styles.miniBarFill} style={{ width: `${user.stats.completionRate}%` }} />
-                    </span>
+                    <progress
+                      className={styles.miniBar}
+                      max={100}
+                      value={user.stats.completionRate}
+                      aria-label={`${user.stats.completionRate}%`}
+                    />
                   </td>
                   <td>
                     <ButtonGroup variant="minimal"> {/* We use ButtonGroup to fix the error */}
@@ -148,9 +168,12 @@ export const UserManagementTable: React.FC<Props> = ({
                     {t('completionRate')}:
                   </span>
                   <strong>{user.stats.completionRate}%</strong>
-                  <span className={styles.miniBarTrack}>
-                    <span className={styles.miniBarFill} style={{ width: `${user.stats.completionRate}%` }} />
-                  </span>
+                  <progress
+                    className={styles.miniBar}
+                    max={100}
+                    value={user.stats.completionRate}
+                    aria-label={`${user.stats.completionRate}%`}
+                  />
                 </div>
                 <ButtonGroup variant="minimal">
                   {user.role === 'USER' ? (

@@ -1,0 +1,4 @@
+/* Dialog width override — Blueprint Dialog ignores CSS width without this */
+.dialog {
+  width: 360px;
+}

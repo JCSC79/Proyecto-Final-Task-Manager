@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import LoginPage from './LoginPage';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
+import type { AuthContextType } from '../contexts/AuthContext';
 
 /** * 1. Improved i18next Mock
  * Since we mock 't' to return the key name, screen will look for "loginEmail", etc.
@@ -19,22 +20,21 @@ vi.mock('react-i18next', () => ({
 
 /** * 2. Auth Context Mock
  */
-const mockAuthContext = {
-  login: vi.fn(),
+const mockAuthContext: AuthContextType = {
+  login: vi.fn() as AuthContextType['login'],
   user: null,
   isAuthenticated: false,
   isAdmin: false,
-  logout: vi.fn(),
-  register: vi.fn(),
-  updateName: vi.fn(),
+  logout: vi.fn() as AuthContextType['logout'],
+  register: vi.fn() as AuthContextType['register'],
+  updateName: vi.fn() as AuthContextType['updateName'],
 };
 
 describe('LoginPage', () => {
   it('should render email, password fields and the login button', () => {
     render(
       <BrowserRouter>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <AuthContext.Provider value={mockAuthContext as any}>
+        <AuthContext.Provider value={mockAuthContext}>
           <LoginPage />
         </AuthContext.Provider>
       </BrowserRouter>

@@ -3,6 +3,7 @@ import { Dialog, DialogBody, DialogFooter, Button, FormGroup, InputGroup, Intent
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth.ts';
 import { AppToaster } from '../../utils/toaster';
+import styles from './EditProfileDialog.module.css';
 
 export const EditProfileDialog: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
@@ -27,7 +28,7 @@ export const EditProfileDialog: React.FC<{ isOpen: boolean; onClose: () => void 
   };
 
   return (
-    <Dialog isOpen={isOpen} onClose={onClose} title={t('editProfileTitle')} style={{ width: 360 }}>
+    <Dialog isOpen={isOpen} onClose={onClose} title={t('editProfileTitle')} className={styles.dialog}>
       <DialogBody>
         <FormGroup label={t('editProfileName')}>
           <InputGroup 
