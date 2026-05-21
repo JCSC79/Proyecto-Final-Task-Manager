@@ -27,6 +27,8 @@
   /* Brand / Accent */
   --accent:           #2B95D9;
   --accent-hover:     #1a7abf;
+  --accent-color:     #2571CF;   /* accessible — 4.91:1 vs #fff, for text on white */
+  --chip-active-bg:   #2571CF;   /* chip background with white text — passes in both themes */
 
   /* Status colors (task states) — darkened from originals to pass 4.5:1 on --bg-surface (#ffffff) */
   --status-pending:   #A0621F;  /* was #D9822B → 2.78:1, now 4.63:1 */
@@ -80,6 +82,9 @@
   /* Borders */
   --border:           #3d5065;
   --border-strong:    #a7b6c2;
+
+  /* Accent — lighter blue for text on dark surfaces (5.04:1 vs --bg-surface) */
+  --accent-color:     #71B9F5;
 
   /* Status/feedback overrides for dark theme — lightened to pass 4.5:1 on --bg-surface (#30404d) */
   --color-warning:    #F5A623;  /* was #D9822B → 3.65:1, now 4.79:1 */

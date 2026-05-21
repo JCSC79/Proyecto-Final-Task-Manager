@@ -45,9 +45,7 @@
   }
 
   .controlsContainer {
-    display: grid;
-    /* Forces both columns to be exactly equal (50/50) */
-    grid-template-columns: 1fr 1fr;
+    display: flex;
     width: 100%;
     gap: var(--space-sm);
   }
@@ -70,10 +68,6 @@
   }
 
   .filterMenuBtn { 
-    width: 100%; 
-  }
-
-  .clearBtn { 
     width: 100%; 
   }
 }
@@ -102,11 +96,4 @@
   height: 40px; /* Comfortable height for fingers */
 }
 
-/* Responsive adjustment for very small viewports */
-@media (max-width: 480px) {
-  .controlsContainer {
-    grid-template-columns: 1fr;
-    gap: var(--space-xs);
-  }
-}
 

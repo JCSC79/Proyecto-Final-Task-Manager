@@ -36,7 +36,7 @@
 .chip:hover {
   background: var(--bg-hover, rgba(255,255,255,0.08));
   color: var(--text-main);
-  border-color: var(--accent-color, #4c90f0);
+  border-color: var(--accent-color);
 }
 
 /* Project name text inside chips — truncates with ellipsis on long names */
@@ -49,36 +49,36 @@
 }
 
 .chipActive {
-  background: var(--accent-color, #4c91f0);
+  background: var(--chip-active-bg);
   color: #fff;
-  border-color: var(--accent-color, #4c90f0);
+  border-color: var(--chip-active-bg);
 }
 
 .chipActive:hover {
-  background: var(--accent-color, #4c90f0);
+  background: var(--chip-active-bg);
   color: #fff;
 }
 
 /* Member chip (OWNER or MEMBER) — accent border, project color shown via dot */
 .chipMember {
-  border-color: var(--accent-color, #4c90f0);
+  border-color: var(--chip-active-bg);
   color: var(--text-main);
 }
 
 .chipMember:hover {
-  background: rgba(76, 144, 240, 0.12);
-  border-color: var(--accent-color, #4c90f0);
+  background: rgba(37, 113, 207, 0.12);
+  border-color: var(--chip-active-bg);
   color: var(--text-main);
 }
 
 .chipMemberActive {
-  background: var(--accent-color, #4c90f0);
+  background: var(--chip-active-bg);
   color: #fff;
-  border-color: var(--accent-color, #4c90f0);
+  border-color: var(--chip-active-bg);
 }
 
 .chipMemberActive:hover {
-  background: var(--accent-color, #4c90f0);
+  background: var(--chip-active-bg);
   color: #fff;
 }
 
@@ -92,23 +92,23 @@
 .chipGuest:hover {
   opacity: 1;
   color: var(--text-main);
-  border-color: var(--accent-color, #4c90f0);
+  border-color: var(--accent-color);
   border-style: solid;
 }
 
 /* "Show more / show less" toggle chip */
 .chipToggle {
   border-style: dashed;
-  border-color: var(--accent-color, #4c90f0);
-  color: var(--accent-color, #4c90f0);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
   font-weight: 700;
   gap: 0.2rem;
 }
 
 .chipToggle:hover {
-  background: rgba(76, 144, 240, 0.1);
+  background: rgba(37, 113, 207, 0.1);
   border-style: solid;
-  color: var(--accent-color, #4c90f0);
+  color: var(--accent-color);
 }
 
 /* Member count badge */
@@ -171,7 +171,7 @@
 
 .editBtn:hover {
   color: var(--text-main);
-  background: rgba(76, 144, 240, 0.2);
+  background: rgba(37, 113, 207, 0.2);
 }
 
 /* Leave (↩) button inside MEMBER chips */
@@ -203,7 +203,7 @@
   gap: 0.2rem;
   font-size: 0.7rem;
   font-weight: 700;
-  color: var(--accent-color, #4c90f0);
+  color: var(--accent-color);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }

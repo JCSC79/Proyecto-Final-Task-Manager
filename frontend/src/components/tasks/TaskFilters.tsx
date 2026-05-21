@@ -23,13 +23,14 @@ interface FilterButtonsProps {
   setStatusFilter: (val: TaskStatus | 'ALL') => void;
   t: (key: string) => string;
   onSelect?: () => void;
+  onClearCompleted?: () => void;
 }
 
 /**
  * Sub-component for filter buttons.
  */
 const FilterButtons: React.FC<FilterButtonsProps> = ({
-  isMobile = false, statusFilter, setStatusFilter, t, onSelect
+  isMobile = false, statusFilter, setStatusFilter, t, onSelect, onClearCompleted
 }) => {
   const handleSetFilter = (val: TaskStatus | 'ALL') => {
     setStatusFilter(val);
@@ -41,28 +42,50 @@ const FilterButtons: React.FC<FilterButtonsProps> = ({
   return (
     <ButtonGroup size="large" fill vertical={isMobile}>
       <Button
+        icon="clipboard"
+        size="large"
+        alignText="start" 
         text={t('all')}
         active={statusFilter === 'ALL'}
         onClick={() => handleSetFilter('ALL')}
       />
       <Button
+        icon="circle"
+        size="large"
+        alignText="start" 
         text={t('pending')}
         intent={Intent.WARNING}
         active={statusFilter === 'PENDING'}
         onClick={() => handleSetFilter('PENDING')}
       />
       <Button
+        icon="full-circle"
+        size="large"
+        alignText="start" 
         text={t('inProgress')}
         intent={Intent.PRIMARY}
         active={statusFilter === 'IN_PROGRESS'}
         onClick={() => handleSetFilter('IN_PROGRESS')}
       />
       <Button
+        icon="tick-circle"
+        size="large"
+        alignText="start" 
         text={t('completed')}
         intent={Intent.SUCCESS}
         active={statusFilter === 'COMPLETED'}
         onClick={() => handleSetFilter('COMPLETED')}
       />
+      {onClearCompleted && (
+        <Button
+          icon="trash"
+          size="large"
+          alignText="start"
+          text={t('clearCompleted')}
+          intent={Intent.DANGER}
+          onClick={onClearCompleted}
+        />
+      )}
     </ButtonGroup>
   );
 };
@@ -129,6 +152,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               statusFilter={statusFilter}
               setStatusFilter={setStatusFilter}
               t={t}
+              onClearCompleted={() => setIsAlertOpen(true)}
             />
           </div>
 
@@ -148,6 +172,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                     setStatusFilter={setStatusFilter}
                     t={t}
                     onSelect={() => setIsPopoverOpen(false)}
+                    onClearCompleted={() => { setIsPopoverOpen(false); setIsAlertOpen(true); }}
                   />
                 </div>
               }
@@ -155,7 +180,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               <Button
                 size="large"
                 fill
-                icon="filter"
+                icon="filter-list"
                 text={t('statusDistribution')}
                 endIcon="caret-down"
                 className={styles.filterMenuBtn}
@@ -164,14 +189,6 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
             </Popover>
           </div>
 
-          <Button
-            icon="trash"
-            intent={Intent.DANGER}
-            text={t('clearCompleted')}
-            onClick={() => setIsAlertOpen(true)}
-            size="large"
-            className={styles.clearBtn}
-          />
         </div>
       </div>
 

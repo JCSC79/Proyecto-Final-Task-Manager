@@ -21,6 +21,8 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
   const [projectToRename, setProjectToRename] = useState<IProject | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [isBarExpanded, setIsBarExpanded] = useState(false);
+  const [projectToJoin, setProjectToJoin] = useState<IProject | null>(null);
+  const [projectToLeave, setProjectToLeave] = useState<IProject | null>(null);
 
   const { data: projects = [], isLoading } = useQuery<IProject[]>({
     queryKey: ['projects'],
@@ -63,9 +65,11 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       AppToaster.show({ message: t('projectJoined'), intent: Intent.SUCCESS, icon: 'tick-circle' });
+      setProjectToJoin(null);
     },
     onError: () => {
       AppToaster.show({ message: t('projectJoinError'), intent: Intent.DANGER, icon: 'warning-sign' });
+      setProjectToJoin(null);
     },
   });
 
@@ -78,9 +82,11 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
       if (selectedProjectId === id) {
         onSelect(null);
       }
+      setProjectToLeave(null);
     },
     onError: () => {
       AppToaster.show({ message: t('projectLeaveError'), intent: Intent.DANGER, icon: 'warning-sign' });
+      setProjectToLeave(null);
     },
   });
 
@@ -126,7 +132,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
 
   const handleLeaveClick = (e: React.MouseEvent, project: IProject) => {
     e.stopPropagation();
-    leaveMutation.mutate(project.id);
+    setProjectToLeave(project);
   };
 
   const handleRenameClick = (e: React.MouseEvent, project: IProject) => {
@@ -188,7 +194,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
                   <button
                     key={project.id}
                     className={`${styles.chip} ${styles.chipGuest}`}
-                    onClick={() => joinMutation.mutate(project.id)}
+                    onClick={() => setProjectToJoin(project)}
                     aria-label={`${t('joinProject')}: ${project.name}`}
                     disabled={joinMutation.isPending}
                     title={project.name}
@@ -379,6 +385,40 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
           <strong>{projectToDelete?.name}</strong>
         </p>
         <p>{t('deleteProjectWarning')}</p>
+      </Alert>
+
+      {/* Join project confirmation alert */}
+      <Alert
+        isOpen={projectToJoin !== null}
+        intent={Intent.PRIMARY}
+        icon="add"
+        confirmButtonText={t('joinProjectConfirm')}
+        cancelButtonText={t('cancel')}
+        loading={joinMutation.isPending}
+        onConfirm={() => projectToJoin && joinMutation.mutate(projectToJoin.id)}
+        onCancel={() => setProjectToJoin(null)}
+      >
+        <p>
+          <strong>{projectToJoin?.name}</strong>
+        </p>
+        <p>{t('joinProjectWarning')}</p>
+      </Alert>
+
+      {/* Leave project confirmation alert */}
+      <Alert
+        isOpen={projectToLeave !== null}
+        intent={Intent.WARNING}
+        icon="log-out"
+        confirmButtonText={t('leaveProjectConfirm')}
+        cancelButtonText={t('cancel')}
+        loading={leaveMutation.isPending}
+        onConfirm={() => projectToLeave && leaveMutation.mutate(projectToLeave.id)}
+        onCancel={() => setProjectToLeave(null)}
+      >
+        <p>
+          <strong>{projectToLeave?.name}</strong>
+        </p>
+        <p>{t('leaveProjectWarning')}</p>
       </Alert>
     </>
   );
