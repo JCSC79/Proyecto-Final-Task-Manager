@@ -1,8 +1,13 @@
 /**
  * Knex configuration for Task Manager Backend.
  * Uses PostgreSQL for persistent storage.
- * * @type { Object.<string, import("knex").Knex.Config> }
+ *
+ * dotenv/config is loaded here so that 'npm run db:migrate' and
+ * 'npm run db:seed' work without any special shell flags — the same
+ * way 'import dotenv/config' works at the top of server.ts.
  */
+require('dotenv').config();
+
 module.exports = {
   development: {
     client: 'pg',

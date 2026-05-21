@@ -11,7 +11,7 @@
     "lint": "eslint src/**/*.ts",
     "db:migrate": "knex migrate:latest --knexfile knexfile.cjs",
     "db:rollback": "knex migrate:rollback --knexfile knexfile.cjs",
-    "db:seed": "knex seed:run --specific=seed_users.cjs --knexfile knexfile.cjs && knex seed:run --specific=seed_tasks.cjs --knexfile knexfile.cjs",
+    "db:seed": "knex seed:run --specific=seed_categories.cjs --knexfile knexfile.cjs && knex seed:run --specific=seed_users.cjs --knexfile knexfile.cjs && knex seed:run --specific=seed_tasks.cjs --knexfile knexfile.cjs",
     "test": "node --env-file=.env.test --test src/**/*.test.ts"
   },
   "keywords": [],

@@ -6,9 +6,9 @@
  * Fixed UUIDs allow other seeds or fixtures to reference these rows by ID without having to query first.
  */
 const CATEGORIES = [
-    { id: 'aaaaaaaa-0000-0000-0000-000000000001', name: 'Bug',         color: '#e74c3c' },
-    { id: 'aaaaaaaa-0000-0000-0000-000000000002', name: 'Feature',     color: '#3498db' },
-    { id: 'aaaaaaaa-0000-0000-0000-000000000003', name: 'Improvement', color: '#27ae60' },
+    { id: '00000000-0000-4000-8000-000000000001', name: 'Bug',         color: '#e74c3c' },
+    { id: '00000000-0000-4000-8000-000000000002', name: 'Feature',     color: '#3498db' },
+    { id: '00000000-0000-4000-8000-000000000003', name: 'Improvement', color: '#27ae60' },
 ];
 
 /**
