@@ -98,3 +98,28 @@
   margin-bottom: var(--space-md);
   text-transform: uppercase;
 }
+
+/* Category badge: colored dot + label */
+.categoryBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.categoryDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-subtle);
+  flex-shrink: 0;
+}
+
+/* One class per seeded category — avoids any inline style */
+.categoryDotBug         { background-color: #e74c3c; }
+.categoryDotFeature     { background-color: #3498db; }
+.categoryDotImprovement { background-color: #27ae60; }

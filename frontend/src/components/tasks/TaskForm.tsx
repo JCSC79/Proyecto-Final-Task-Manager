@@ -3,9 +3,11 @@ import { Button, InputGroup, TextArea, FormGroup, H4, Intent, HTMLSelect } from 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axiosInstance';
 import { getProjects } from '../../api/project.api';
+import { getCategories } from '../../api/category.api';
 import { useTranslation } from 'react-i18next';
 import { AppToaster } from '../../utils/toaster';
 import type { IProject } from '../../types/project';
+import type { ICategory } from '../../types/task';
 import styles from './TaskForm.module.css';
 
 // 1. Interface for the exact shape of our API error responses
@@ -28,6 +30,13 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState<string>(defaultProjectId ?? '');
+  const [categoryId, setCategoryId] = useState<string>('');
+
+  const { data: categories = [] } = useQuery<ICategory[]>({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+    staleTime: Infinity,
+  });
 
   const { data: projects = [] } = useQuery<IProject[]>({
     queryKey: ['projects'],
@@ -35,7 +44,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
   });
 
   const mutation = useMutation({
-    mutationFn: (newTask: { title: string; description: string; projectId?: string }) =>
+    mutationFn: (newTask: { title: string; description: string; projectId?: string; categoryId?: string }) =>
       api.post('/api/tasks', newTask),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -63,7 +72,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
     },
   });
 
-  const handleClear = () => { setTitle(''); setDescription(''); setProjectId(defaultProjectId ?? ''); };
+  const handleClear = () => { setTitle(''); setDescription(''); setProjectId(defaultProjectId ?? ''); setCategoryId(''); };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +84,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
       title,
       description,
       ...(projectId ? { projectId } : {}),
+      ...(categoryId ? { categoryId } : {}),
     });
   };
 
@@ -113,6 +123,21 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
               <option value="">{t('noProject')}</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </HTMLSelect>
+          </FormGroup>
+        )}
+        {categories.length > 0 && (
+          <FormGroup label={t('category')} labelFor="category-select">
+            <HTMLSelect
+              id="category-select"
+              fill
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+            >
+              <option value="">{t('noCategory')}</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </HTMLSelect>
           </FormGroup>

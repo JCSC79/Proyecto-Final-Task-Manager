@@ -183,6 +183,10 @@ i18n
           "projectRenamed": "Project renamed!",
           "projectRenameError": "Could not rename the project. Try again.",
           "save": "Save",
+          "category": "Category",
+          "noCategory": "No category",
+          "err_categoryId_invalid": "Invalid category selected",
+          "notYourTask": "You can only modify your own tasks"
 
         }
       },
@@ -362,6 +366,10 @@ i18n
           "projectRenamed": "¡Proyecto renombrado!",
           "projectRenameError": "No se pudo renombrar el proyecto. Inténtalo de nuevo.",
           "save": "Guardar",
+          "category": "Categoría",
+          "noCategory": "Sin categoría",
+          "err_categoryId_invalid": "Categoría seleccionada no válida",
+          "notYourTask": "Solo puedes modificar tus propias tareas"
 
           
         }

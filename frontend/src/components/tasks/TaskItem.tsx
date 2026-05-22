@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
   Card, Elevation, H3, Text, Button, ButtonGroup,
   Alert, Intent, Dialog, Classes, FormGroup, InputGroup, TextArea,
-  Tag, Icon
+  Tag, Icon, HTMLSelect
 } from '@blueprintjs/core';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axiosInstance';
-import type { Task, TaskStatus } from '../../types/task';
+import { getCategories } from '../../api/category.api';
+import type { Task, TaskStatus, ICategory } from '../../types/task';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../hooks/useAuth';
 import { AppToaster } from '../../utils/toaster';
 import clsx from 'clsx';
 import styles from './TaskItem.module.css';
@@ -18,7 +20,12 @@ interface TaskItemProps {
 
 export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  // True when the logged-in user created this task.
+  // Only the owner can edit content or delete; status changes will be opened to project members in Bloque 1.
+  const isOwner = user?.id === task.userId;
 
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -26,6 +33,13 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
 
   const [editTitle, setEditTitle] = useState(task.title);
   const [editDescription, setEditDescription] = useState(task.description);
+  const [editCategoryId, setEditCategoryId] = useState<string>(task.category?.id ?? '');
+
+  const { data: categories = [] } = useQuery<ICategory[]>({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+    staleTime: Infinity,
+  });
 
   const isInProgress = task.status === 'IN_PROGRESS';
   const isCompleted = task.status === 'COMPLETED';
@@ -59,6 +73,13 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
         setIsEditOpen(false);
       }
     },
+    onError: () => {
+      AppToaster.show({
+        message: t('notYourTask'),
+        intent: Intent.WARNING,
+        icon: "lock"
+      });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -69,6 +90,13 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
         message: t('taskDeleted'),
         intent: Intent.DANGER,
         icon: "trash"
+      });
+    },
+    onError: () => {
+      AppToaster.show({
+        message: t('notYourTask'),
+        intent: Intent.WARNING,
+        icon: "lock"
       });
     },
   });
@@ -104,9 +132,15 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
           <Text ellipsize className={styles.description}>
             {task.description || t('noDescription')}
           </Text>
+          {task.category && (
+            <span className={styles.categoryBadge}>
+              <span className={`${styles.categoryDot} ${styles[`categoryDot${task.category.name}` as keyof typeof styles] ?? ''}`} />
+              {task.category.name}
+            </span>
+          )}
           {task.createdAt && (
             <div className={styles.dateRow}>
-              <Icon icon="calendar" size={15} />
+              <Icon icon="calendar" size={16} />
               <span>{new Date(task.createdAt).toLocaleDateString()}</span>
             </div>
           )}
@@ -129,17 +163,21 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
               onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ status: nextStatus }); }} 
             />
           )}
-          <Button 
-            icon="edit" 
-            aria-label={t('editTask')} 
-            onClick={(e) => { e.stopPropagation(); setIsEditOpen(true); }} 
-          />
-          <Button 
-            icon="trash" 
-            intent="danger" 
-            aria-label={t('deleteTask')} 
-            onClick={(e) => { e.stopPropagation(); setIsAlertOpen(true); }} 
-          />
+          {isOwner && (
+            <Button 
+              icon="edit" 
+              aria-label={t('editTask')} 
+              onClick={(e) => { e.stopPropagation(); setIsEditOpen(true); }} 
+            />
+          )}
+          {isOwner && (
+            <Button 
+              icon="trash" 
+              intent="danger" 
+              aria-label={t('deleteTask')} 
+              onClick={(e) => { e.stopPropagation(); setIsAlertOpen(true); }} 
+            />
+          )}
         </ButtonGroup>
       </Card>
 
@@ -169,9 +207,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
         <div className={Classes.DIALOG_FOOTER}>
           <div className={Classes.DIALOG_FOOTER_ACTIONS}>
             <Button onClick={() => setIsDetailsOpen(false)}>{t('close')}</Button>
-            <Button intent="primary" icon="edit" onClick={() => { setIsDetailsOpen(false); setIsEditOpen(true); }}>
-              {t('editTask')}
-            </Button>
+            {isOwner && (
+              <Button intent="primary" icon="edit" onClick={() => { setIsDetailsOpen(false); setIsEditOpen(true); }}>
+                {t('editTask')}
+              </Button>
+            )}
           </div>
         </div>
       </Dialog>
@@ -195,13 +235,32 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
               onChange={(e) => setEditDescription(e.target.value)}
             />
           </FormGroup>
+          {categories.length > 0 && (
+            <FormGroup label={t('category')} labelFor="edit-category-select">
+              <HTMLSelect
+                id="edit-category-select"
+                fill
+                value={editCategoryId}
+                onChange={(e) => setEditCategoryId(e.target.value)}
+              >
+                <option value="">{t('noCategory')}</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </HTMLSelect>
+            </FormGroup>
+          )}
         </div>
         <div className={Classes.DIALOG_FOOTER}>
           <div className={Classes.DIALOG_FOOTER_ACTIONS}>
             <Button onClick={() => setIsEditOpen(false)}>{t('cancel')}</Button>
             <Button
               intent="primary"
-              onClick={() => updateMutation.mutate({ title: editTitle, description: editDescription })}
+              onClick={() => updateMutation.mutate({
+                title: editTitle,
+                description: editDescription,
+                ...(editCategoryId ? { categoryId: editCategoryId } : {}),
+              })}
               loading={updateMutation.isPending}
             >
               {t('saveChanges')}
