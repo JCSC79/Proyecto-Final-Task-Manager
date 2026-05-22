@@ -1,3 +1,5 @@
+import type { ICategory } from './category.model.ts';
+
 /**
  * Task status options.
  * Using a constant object with 'as const' ensures type safety and compatibility with Node.js native execution.
@@ -21,7 +23,9 @@ export interface ITask {
     description: string;
     status: TaskStatus;
     userId: string;     // Foreign key reference to User.id
-    projectId?: string; // Optional — column exists in DB but is not required by the app
+    projectId?: string;  // Optional — column exists in DB but is not required by the app
+    categoryId?: string;  // FK -> categories.id — optional task type classification
+    category?: ICategory; // Populated via LEFT JOIN in read queries; absent on write operations
     createdAt: Date;
     updatedAt?: Date;
 }

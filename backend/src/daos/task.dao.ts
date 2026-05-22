@@ -1,14 +1,79 @@
 import knex from 'knex';
 import { createRequire } from 'module';
-import type { ITask } from '../models/task.model.ts';
+import type { ITask, TaskStatus } from '../models/task.model.ts';
+import type { ICategory } from '../models/category.model.ts';
 
 const require = createRequire(import.meta.url);
 const config = require('../../knexfile.cjs');
 const db = knex(config.development);
 
 /**
+ * Raw row shape returned by task queries that include the LEFT JOIN with categories.
+ * The joined category columns are aliased to avoid collisions with task columns.
+ */
+interface RawTaskRow {
+    id: string;
+    title: string;
+    description: string;
+    status: string;
+    userId: string;
+    projectId: string | null;
+    categoryId: string | null;
+    createdAt: Date;
+    updatedAt: Date | null;
+    categoryName: string | null;
+    categoryColor: string | null;
+}
+
+/**
+ * Maps a raw DB row (task + LEFT JOIN categories) to a typed ITask.
+ * Optional fields are only assigned when their DB column is non-null, which satisfies exactOptionalPropertyTypes without explicit undefined.
+ */
+function mapTaskRow(row: RawTaskRow): ITask {
+    const task: ITask = {
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        status: row.status as TaskStatus,
+        userId: row.userId,
+        createdAt: row.createdAt,
+    };
+    if (row.projectId != null) {
+        task.projectId = row.projectId;
+    }
+    if (row.categoryId != null && row.categoryName != null && row.categoryColor != null) {
+        task.categoryId = row.categoryId;
+        // Build the embedded category object. createdAt is not needed here
+        // (it is only included when fetching from GET /api/categories directly).
+        const cat: ICategory = { id: row.categoryId, name: row.categoryName, color: row.categoryColor };
+        task.category = cat;
+    }
+    if (row.updatedAt != null) {
+        task.updatedAt = row.updatedAt;
+    }
+    return task;
+}
+
+/**
+ * Columns selected in every task read query.
+ * Table-qualified names prevent ambiguity after the LEFT JOIN with categories.
+ */
+const TASK_SELECT = [
+    'tasks.id',
+    'tasks.title',
+    'tasks.description',
+    'tasks.status',
+    'tasks.userId',
+    'tasks.projectId',
+    'tasks.categoryId',
+    'tasks.createdAt',
+    'tasks.updatedAt',
+    'categories.name as categoryName',
+    'categories.color as categoryColor',
+];
+
+/**
  * TaskDAO - Data Access Object for tasks.
- *
  * Visibility model (Odoo-inspired):
  *   A user can READ a task if:
  *     a) they created it (tasks.userId = me), OR
@@ -21,28 +86,39 @@ const db = knex(config.development);
 class TaskDAO {
 
     /**
+     * Shared base query: tasks LEFT JOIN categories on categoryId.
+     * All read methods use this to get the embedded category object for free.
+     */
+    private baseQuery() {
+        return db('tasks')
+            .leftJoin('categories', 'categories.id', 'tasks.categoryId')
+            .select(TASK_SELECT);
+    }
+
+    /**
      * Returns all tasks visible to the user:
      *   - tasks the user created (any project or no project), PLUS
      *   - tasks in projects the user is a member of (created by others).
      */
     async getAll(userId: string): Promise<ITask[]> {
-        return await db<ITask>('tasks')
-            .where({ userId })
+        const rows = await this.baseQuery()
+            .where('tasks.userId', userId)
             .orWhere(function () {
                 // Include tasks from projects where the user is a member
-                this.whereNotNull('projectId').whereIn(
-                    'projectId',
+                this.whereNotNull('tasks.projectId').whereIn(
+                    'tasks.projectId',
                     db('project_members').select('projectId').where({ userId })
                 );
-            })
-            .select('*');
+            });
+        return (rows as RawTaskRow[]).map(mapTaskRow);
     }
 
-    /**
+    /*
      * SPECIAL: Allows ADMIN role to see the entire global task board.
      */
     async adminGetAll(): Promise<ITask[]> {
-        return await db<ITask>('tasks').select('*');
+        const rows = await this.baseQuery();
+        return (rows as RawTaskRow[]).map(mapTaskRow);
     }
 
     /**
@@ -50,31 +126,51 @@ class TaskDAO {
      * the user must be either the creator OR a member of the task's project.
      */
     async getById(id: string, userId: string): Promise<ITask | undefined> {
-        return await db<ITask>('tasks')
-            .where({ id, userId })
-            .orWhere(function () {
-                this.where('id', id)
-                    .whereNotNull('projectId')
-                    .whereIn(
-                        'projectId',
-                        db('project_members').select('projectId').where({ userId })
-                    );
+        const row = await this.baseQuery()
+            .where('tasks.id', id)
+            .andWhere(function () {
+                this.where('tasks.userId', userId)
+                    .orWhere(function () {
+                        this.whereNotNull('tasks.projectId').whereIn(
+                            'tasks.projectId',
+                            db('project_members').select('projectId').where({ userId })
+                        );
+                    });
             })
             .first();
+        if (!row) {
+            return undefined;
+        }
+        return mapTaskRow(row as RawTaskRow);
     }
 
+    /**
+     * Inserts a new task. Only the DB columns are listed explicitly to
+     * exclude the virtual `category` field that lives only in read responses.
+     */
     async create(task: ITask): Promise<ITask> {
-        await db<ITask>('tasks').insert(task);
+        await db('tasks').insert({
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            status: task.status,
+            userId: task.userId,
+            ...(task.projectId !== undefined ? { projectId: task.projectId } : {}),
+            ...(task.categoryId !== undefined ? { categoryId: task.categoryId } : {}),
+            createdAt: task.createdAt,
+        });
         return task;
     }
 
     /**
      * Updates a task only if the ownership (userId) matches.
+     * Uses a Record cast so TypeScript does not complain about the virtual
+     * `category` field that Knex would never find in the DB schema.
      */
     async update(id: string, userId: string, updates: Partial<ITask>): Promise<ITask | undefined> {
-        const updatedRows = await db<ITask>('tasks')
+        const updatedRows = await db('tasks')
             .where({ id, userId })
-            .update(updates);
+            .update(updates as Record<string, unknown>);
 
         if (updatedRows === 0) {
             return undefined;

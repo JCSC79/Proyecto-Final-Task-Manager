@@ -11,6 +11,7 @@ import authRoutes from './routes/auth.routes.ts';
 import adminRoutes from './routes/admin.routes.ts';
 import projectRoutes from './routes/project.routes.ts'; // NEW: Added projects routing
 import { projectTagRouter, taskTagRouter } from './routes/tag.routes.ts';
+import categoryRouter from './routes/category.routes.ts';
 import { authenticateToken } from './middlewares/auth.middleware.ts';
 import { requireAdmin } from './middlewares/admin.middleware.ts';
 
@@ -75,6 +76,9 @@ app.patch('/api/tasks/:id', (req, res) => taskController.update(req, res));
 // PROJECTS
 // Secured project routes added below tasks
 app.use('/api/projects', authenticateToken, projectRoutes);
+
+// CATEGORIES (global reference list — read-only)
+app.use('/api/categories', authenticateToken, categoryRouter);
 
 // TAGS (project-scoped: create/list/delete tags) 
 // mergeParams: true in the router allows access to :id from the parent path

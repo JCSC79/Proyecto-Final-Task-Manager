@@ -42,6 +42,7 @@ export class TaskService {
             const validated = await createTaskSchema.validate(data, { abortEarly: false });
             
             const projectId = (data as { projectId?: string }).projectId;
+            const categoryId = (data as { categoryId?: string }).categoryId;
 
             const newTask: ITask = {
                 id: crypto.randomUUID(),
@@ -50,6 +51,7 @@ export class TaskService {
                 status: TaskStatus.PENDING,
                 userId,
                 ...(projectId ? { projectId } : {}),
+                ...(categoryId ? { categoryId } : {}),
                 createdAt: new Date()
             };
 

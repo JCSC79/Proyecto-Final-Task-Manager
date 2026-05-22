@@ -2,6 +2,13 @@ import * as yup from 'yup';
 import { TaskStatus } from '../models/task.model.ts';
 
 /**
+ * UUID-format regex that validates hex structure without checking RFC 4122 version/variant bits.
+ * yup's built-in .uuid() is too strict — it rejects version-0 UUIDs used in seeds.
+ * Referential integrity is enforced by the PostgreSQL FK constraint instead.
+ */
+const uuidFormat = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
  * Validation schema for task creation.
  * Added projectId validation to support new database structure.
  */
@@ -13,7 +20,8 @@ export const createTaskSchema = yup.object({
     description: yup.string()
         .required('err_desc_required')
         .min(10, 'err_desc_short'),
-    projectId: yup.string().uuid().optional() // Validate as UUID if provided
+    projectId: yup.string().matches(uuidFormat).optional(),
+    categoryId: yup.string().matches(uuidFormat, 'err_categoryId_invalid').optional()
 });
 
 /**
@@ -28,5 +36,6 @@ export const updateTaskSchema = yup.object({
         .min(10, 'err_desc_short'),
     status: yup.mixed<TaskStatus>()
         .oneOf(Object.values(TaskStatus), 'err_status_invalid'),
-    projectId: yup.string().uuid().optional()
+    projectId: yup.string().matches(uuidFormat).optional(),
+    categoryId: yup.string().matches(uuidFormat, 'err_categoryId_invalid').optional()
 });

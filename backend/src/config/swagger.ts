@@ -32,6 +32,17 @@ const options: swaggerJSDoc.Options = {
             status: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'] },
             userId: { type: 'string' },
             projectId: { type: 'string', format: 'uuid', nullable: true },
+            categoryId: { type: 'string', format: 'uuid', nullable: true },
+            category: { '$ref': '#/components/schemas/Category', nullable: true },
+            createdAt: { type: 'string', format: 'date-time' }
+          }
+        },
+        Category: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string', example: 'Bug', description: 'Bug | Feature | Improvement' },
+            color: { type: 'string', example: '#e74c3c', description: '7-char hex color for the badge' },
             createdAt: { type: 'string', format: 'date-time' }
           }
         },
@@ -92,6 +103,20 @@ const options: swaggerJSDoc.Options = {
     // This adds the "Authorize" lock button globally
     security: [{ bearerAuth: [] }],
     paths: {
+      '/api/categories': {
+        get: {
+          summary: 'List all task categories',
+          description: 'Returns the global categories reference list (Bug, Feature, Improvement). Categories are seeded at startup and are read-only through the API.',
+          tags: ['Categories'],
+          responses: {
+            200: {
+              description: 'Array of all categories ordered by name',
+              content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Category' } } } }
+            },
+            401: { description: 'Missing or invalid token' }
+          }
+        }
+      },
       '/api/auth/login': {
         post: {
           summary: 'Login — get JWT cookie',
@@ -258,7 +283,8 @@ const options: swaggerJSDoc.Options = {
                   properties: {
                     title: { type: 'string' },
                     description: { type: 'string' },
-                    status: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'] }
+                    status: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'] },
+                    categoryId: { type: 'string', format: 'uuid', nullable: true }
                   }
                 }
               }
