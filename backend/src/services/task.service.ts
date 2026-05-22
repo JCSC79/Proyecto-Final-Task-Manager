@@ -87,6 +87,19 @@ export class TaskService {
                 stripUnknown: true, 
                 abortEarly: false 
             });
+
+            // Status-only payloads use the broader updateStatus path so that any project member can move a task along the board.
+            // Content edits (title, description, categoryId) remain owner-only.
+            const keys = Object.keys(validated);
+            const isStatusOnly = keys.length === 1 && keys[0] === 'status';
+
+            if (isStatusOnly) {
+                const updatedTask = await this.dao.updateStatus(id, userId, validated.status as TaskStatus);
+                if (!updatedTask) {
+                    return Result.fail<ITask>('Task not found or you are not a member of this project');
+                }
+                return Result.ok(updatedTask);
+            }
             
             const updates: Partial<ITask> = { 
                 ...(validated as Partial<ITask>), 

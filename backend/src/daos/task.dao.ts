@@ -179,6 +179,42 @@ class TaskDAO {
     }
 
     /**
+     * Updates only the status of a task.
+     *
+     * Permission model (broader than update):
+     *   - the task creator can always change status, OR
+     *   - any member of the project the task belongs to can change status.
+     *
+     * This implements the behaviour: members can move cards on the board even if they didn't create them.
+     */
+    async updateStatus(id: string, userId: string, status: TaskStatus): Promise<ITask | undefined> {
+        // First verify the user has visibility over this task (same rule as getById).
+        // This prevents a random authenticated user from changing status of task in projects they don't belong to.
+        const visible = await this.baseQuery()
+            .where('tasks.id', id)
+            .andWhere(function () {
+                this.where('tasks.userId', userId)
+                    .orWhere(function () {
+                        this.whereNotNull('tasks.projectId').whereIn(
+                            'tasks.projectId',
+                            db('project_members').select('projectId').where({ userId })
+                        );
+                    });
+            })
+            .first();
+
+        if (!visible) {
+            return undefined;
+        }
+
+        await db('tasks')
+            .where({ id })
+            .update({ status, updatedAt: new Date() });
+
+        return await this.getById(id, userId);
+    }
+
+    /**
      * Deletes a record strictly filtered by ID and Owner.
      */
     async delete(id: string, userId: string): Promise<boolean> {
