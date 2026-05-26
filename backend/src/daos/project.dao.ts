@@ -32,6 +32,10 @@ class ProjectDAO {
                     db.raw('?', [requestingUserId])
                 );
             })
+            // Only show private projects if the requesting user is already a member
+            .where(function () {
+                this.where('ps.isPublic', true).orWhereNotNull('pm.role');
+            })
             .select(
                 'p.id',
                 'p.name',
@@ -133,15 +137,20 @@ class ProjectDAO {
         return deleted > 0;
     }
 
-     // Adds a user as MEMBER of a project. Returns false if the user is already a member (idempotent-safe).
+    // Adds the requesting user as MEMBER of a project.
+    // Returns 'private' if the project is not public (must be invited by the owner instead).
+    async join(projectId: string, userId: string): Promise<'joined' | 'already_member' | 'private'> {
+        const settings = await db<IProjectSettings>('project_settings').where({ projectId }).first();
+        if (settings && !settings.isPublic) {
+            return 'private';
+        }
 
-    async join(projectId: string, userId: string): Promise<boolean> {
         const existing = await db<IProjectMember>('project_members')
             .where({ projectId, userId })
             .first();
 
         if (existing) {
-            return false; // already a member
+            return 'already_member';
         }
 
         await db<IProjectMember>('project_members').insert({
@@ -150,6 +159,87 @@ class ProjectDAO {
             role: 'MEMBER',
             joinedAt: new Date(),
         });
+        return 'joined';
+    }
+
+    // Owner directly invites a user to a private or public project by email.
+    async addMember(
+        projectId: string,
+        email: string,
+        requestingUserId: string
+    ): Promise<'added' | 'not_owner' | 'user_not_found' | 'already_member'> {
+        const ownership = await db<IProjectMember>('project_members')
+            .where({ projectId, userId: requestingUserId, role: 'OWNER' })
+            .first();
+        if (!ownership) {
+            return 'not_owner';
+        }
+
+        const user = await db('users').where({ email }).first() as { id: string } | undefined;
+        if (!user) {
+            return 'user_not_found';
+        }
+
+        const existing = await db<IProjectMember>('project_members')
+            .where({ projectId, userId: user.id })
+            .first();
+        if (existing) { 
+            return 'already_member';
+        }
+
+        await db<IProjectMember>('project_members').insert({
+            userId: user.id,
+            projectId,
+            role: 'MEMBER',
+            joinedAt: new Date(),
+        });
+        return 'added';
+    }
+
+    // Owner removes a member (non-owner) from a project.
+    async removeMember(
+        projectId: string,
+        targetUserId: string,
+        requestingUserId: string
+    ): Promise<'removed' | 'not_owner' | 'not_member' | 'cannot_remove_owner'> {
+        const ownership = await db<IProjectMember>('project_members')
+            .where({ projectId, userId: requestingUserId, role: 'OWNER' })
+            .first();
+        if (!ownership) {
+            return 'not_owner';
+        }
+
+        if (targetUserId === requestingUserId) {
+            return 'cannot_remove_owner';
+        }
+
+        const membership = await db<IProjectMember>('project_members')
+            .where({ projectId, userId: targetUserId })
+            .first();
+        if (!membership) {
+            return 'not_member';
+        }
+
+        await db<IProjectMember>('project_members')
+            .where({ projectId, userId: targetUserId })
+            .del();
+        return 'removed';
+    }
+
+    // Updates project settings (isPublic, color, description). Only the OWNER can do this.
+    async updateSettings(
+        projectId: string,
+        requestingUserId: string,
+        updates: { isPublic?: boolean; color?: string; description?: string | null }
+    ): Promise<boolean> {
+        const ownership = await db<IProjectMember>('project_members')
+            .where({ projectId, userId: requestingUserId, role: 'OWNER' })
+            .first();
+        if (!ownership) {
+            return false;
+        }
+
+        await db<IProjectSettings>('project_settings').where({ projectId }).update(updates);
         return true;
     }
 
@@ -175,8 +265,23 @@ class ProjectDAO {
     }
 
     // Returns all members of a project with their roles.
+    // Only accessible if the project is public or the requesting user is already a member.
+    async getMembers(projectId: string, requestingUserId: string): Promise<{ userId: string; name: string | null; email: string; role: string; joinedAt: Date }[] | null> {
+        const access = await db('project_settings as ps')
+            .leftJoin('project_members as pm', function () {
+                this.on('pm.projectId', '=', 'ps.projectId').andOn(
+                    'pm.userId', '=', db.raw('?', [requestingUserId])
+                );
+            })
+            .where('ps.projectId', projectId)
+            .select('ps.isPublic', 'pm.role as memberRole')
+            .first();
 
-    async getMembers(projectId: string): Promise<{ userId: string; role: string; joinedAt: Date }[]> {
+        // Project not found or user has no visibility (private + not a member)
+        if (!access || (!access.isPublic && !access.memberRole)) {
+            return null;
+        }
+
         return db('project_members as pm')
             .join('users as u', 'u.id', 'pm.userId')
             .where('pm.projectId', projectId)

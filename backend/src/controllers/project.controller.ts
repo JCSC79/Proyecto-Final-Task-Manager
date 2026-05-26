@@ -89,6 +89,7 @@ class ProjectController {
   /**
    * POST /api/projects/:id/join
    * Adds the authenticated user as a MEMBER of the project.
+   * Returns 403 if the project is private (must be invited by the owner).
    * Returns 409 if the user is already a member.
    */
   async join(req: Request, res: Response): Promise<Response | void> {
@@ -99,8 +100,11 @@ class ProjectController {
       return res.status(400).json({ error: 'Invalid project ID' });
     }
 
-    const joined = await projectDAO.join(id, authReq.user!.id);
-    if (!joined) {
+    const result = await projectDAO.join(id, authReq.user!.id);
+    if (result === 'private') {
+      return res.status(403).json({ error: 'This project is private. Ask the owner to invite you.' });
+    }
+    if (result === 'already_member') {
       return res.status(409).json({ error: 'You are already a member of this project' });
     }
     res.status(200).json({ message: 'Joined project successfully' });
@@ -124,6 +128,7 @@ class ProjectController {
     if (result === 'not_member') {
       return res.status(404).json({ error: 'You are not a member of this project' });
     }
+
     if (result === 'owner_cannot_leave') {
       return res.status(403).json({ error: 'Project owner cannot leave. Delete the project instead.' });
     }
@@ -134,16 +139,115 @@ class ProjectController {
   /**
    * GET /api/projects/:id/members
    * Returns all members of a project with their roles and join dates.
+   * Requires the project to be public OR the requester to be a member.
    */
   async getMembers(req: Request, res: Response): Promise<Response | void> {
+    const authReq = req as AuthRequest;
     const { id } = req.params;
 
     if (typeof id !== 'string') {
       return res.status(400).json({ error: 'Invalid project ID' });
     }
 
-    const members = await projectDAO.getMembers(id);
+    const members = await projectDAO.getMembers(id, authReq.user!.id);
+    if (members === null) {
+      return res.status(403).json({ error: 'Project not found or access denied' });
+    }
     res.json(members);
+  }
+
+  /**
+   * PATCH /api/projects/:id/settings
+   * Updates project settings (isPublic, color, description). Only the OWNER can do this.
+   */
+  async updateSettings(req: Request, res: Response): Promise<Response | void> {
+    const authReq = req as AuthRequest;
+    const { id } = req.params;
+
+    if (typeof id !== 'string') {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+
+    const { isPublic, color, description } = req.body as {
+      isPublic?: boolean;
+      color?: string;
+      description?: string | null;
+    };
+
+    if (color !== undefined && !/^#[0-9a-fA-F]{6}$/.test(color)) {
+      return res.status(400).json({ error: 'Color must be a valid 6-digit hex value (e.g. #4c90f0)' });
+    }
+
+    const updates: { isPublic?: boolean; color?: string; description?: string | null } = {};
+    if (isPublic !== undefined) {
+      updates.isPublic = isPublic;
+    }
+
+    if (color !== undefined) {
+      updates.color = color;
+    }
+
+    if (description !== undefined) {
+      updates.description = description;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No valid settings fields provided' });
+    }
+
+    const success = await projectDAO.updateSettings(id, authReq.user!.id, updates);
+    if (!success) {
+      return res.status(403).json({ error: 'Project not found or you are not the owner' });
+    }
+    res.status(200).json({ message: 'Settings updated' });
+  }
+
+  /**
+   * POST /api/projects/:id/members
+   * Owner invites a user to the project by email.
+   */
+  async addMember(req: Request, res: Response): Promise<Response | void> {
+    const authReq = req as AuthRequest;
+    const { id } = req.params;
+
+    if (typeof id !== 'string') {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+
+    const { email } = req.body as { email?: string };
+
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const result = await projectDAO.addMember(id, email.toLowerCase().trim(), authReq.user!.id);
+    switch (result) {
+      case 'added': return res.status(200).json({ message: 'Member added successfully' });
+      case 'not_owner': return res.status(403).json({ error: 'Only the project owner can add members' });
+      case 'user_not_found': return res.status(404).json({ error: 'No user found with that email' });
+      case 'already_member': return res.status(409).json({ error: 'User is already a member of this project' });
+    }
+  }
+
+  /**
+   * DELETE /api/projects/:id/members/:userId
+   * Owner removes a member from the project.
+   */
+  async removeMember(req: Request, res: Response): Promise<Response | void> {
+    const authReq = req as AuthRequest;
+    const { id, userId: targetUserId } = req.params;
+
+    if (typeof id !== 'string' || typeof targetUserId !== 'string') {
+      return res.status(400).json({ error: 'Invalid project or user ID' });
+    }
+
+    const result = await projectDAO.removeMember(id, targetUserId, authReq.user!.id);
+    switch (result) {
+      case 'removed': return res.status(200).json({ message: 'Member removed successfully' });
+      case 'not_owner': return res.status(403).json({ error: 'Only the project owner can remove members' });
+      case 'not_member': return res.status(404).json({ error: 'User is not a member of this project' });
+      case 'cannot_remove_owner': return res.status(400).json({ error: 'The project owner cannot be removed' });
+    }
   }
 
   /**
