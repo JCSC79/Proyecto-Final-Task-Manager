@@ -24,7 +24,7 @@ export interface ITask {
     status: TaskStatus;
     userId: string;     // Foreign key reference to User.id
     projectId?: string;  // Optional — column exists in DB but is not required by the app
-    categoryId?: string;  // FK -> categories.id — optional task type classification
+    categoryId?: string | null;  // FK -> categories.id — null explicitly clears the category
     category?: ICategory; // Populated via LEFT JOIN in read queries; absent on write operations
     createdAt: Date;
     updatedAt?: Date;

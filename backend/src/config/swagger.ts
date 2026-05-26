@@ -432,11 +432,12 @@ const options: swaggerJSDoc.Options = {
       '/api/projects/{id}/join': {
         post: {
           summary: 'Join a project as MEMBER',
-          description: 'Adds the authenticated user to the project with role MEMBER. Returns 409 if already a member.',
+          description: 'Adds the authenticated user to the project with role MEMBER. Returns 403 if the project is private (must be invited by the owner). Returns 409 if already a member.',
           tags: ['Projects'],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
           responses: {
             200: { description: 'Joined successfully' },
+            403: { description: 'Project is private — must be invited by the owner' },
             409: { description: 'Already a member of this project' },
             401: { description: 'Not authenticated' }
           }
@@ -459,7 +460,7 @@ const options: swaggerJSDoc.Options = {
       '/api/projects/{id}/members': {
         get: {
           summary: 'List members of a project',
-          description: 'Returns all members with their roles, names and join dates.',
+          description: 'Returns all members with their roles, names and join dates. Requires the project to be public or the requester to be a member.',
           tags: ['Projects'],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
           responses: {
@@ -471,6 +472,85 @@ const options: swaggerJSDoc.Options = {
                 }
               }
             },
+            403: { description: 'Project not found or access denied (private project, not a member)' },
+            401: { description: 'Not authenticated' }
+          }
+        },
+        post: {
+          summary: 'Add a member to a project (OWNER only)',
+          description: 'Owner invites an existing user by email. Works for both public and private projects.',
+          tags: ['Projects'],
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['email'],
+                  properties: {
+                    email: { type: 'string', format: 'email', example: 'user@example.com' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: { description: 'Member added successfully' },
+            400: { description: 'Email is required' },
+            403: { description: 'Only the project owner can add members' },
+            404: { description: 'No user found with that email' },
+            409: { description: 'User is already a member of this project' },
+            401: { description: 'Not authenticated' }
+          }
+        }
+      },
+      '/api/projects/{id}/members/{userId}': {
+        delete: {
+          summary: 'Remove a member from a project (OWNER only)',
+          description: 'Owner removes any non-owner member. Cannot remove the owner themselves.',
+          tags: ['Projects'],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+            { name: 'userId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            200: { description: 'Member removed successfully' },
+            400: { description: 'Cannot remove the project owner' },
+            403: { description: 'Only the project owner can remove members' },
+            404: { description: 'User is not a member of this project' },
+            401: { description: 'Not authenticated' }
+          }
+        }
+      },
+      '/api/projects/{id}/settings': {
+        patch: {
+          summary: 'Update project settings (OWNER only)',
+          description: 'Updates isPublic, color or description. Making a project private hides it from non-members immediately.',
+          tags: ['Projects'],
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    isPublic: { type: 'boolean', example: false },
+                    color: { type: 'string', example: '#e03131', description: '7-char hex color' },
+                    description: { type: 'string', nullable: true, example: 'Sprint planning board' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: { description: 'Settings updated' },
+            400: { description: 'Validation error (invalid color or no fields provided)' },
+            403: { description: 'Not the project owner' },
             401: { description: 'Not authenticated' }
           }
         }

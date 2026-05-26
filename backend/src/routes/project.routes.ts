@@ -24,4 +24,13 @@ router.patch('/:id', (req, res) => projectController.rename(req, res));
 // GET    /api/projects/:id/members — list all members with roles
 router.get('/:id/members', (req, res) => projectController.getMembers(req, res));
 
+// POST   /api/projects/:id/members — owner invites a user by email
+router.post('/:id/members', (req, res) => projectController.addMember(req, res));
+
+// DELETE /api/projects/:id/members/:userId — owner removes a member
+router.delete('/:id/members/:userId', (req, res) => projectController.removeMember(req, res));
+
+// PATCH  /api/projects/:id/settings — owner updates isPublic / color / description
+router.patch('/:id/settings', (req, res) => projectController.updateSettings(req, res));
+
 export default router;
