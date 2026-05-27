@@ -16,7 +16,7 @@ export interface Task {
   status: TaskStatus;
   userId: string;
   projectId?: string;
-  categoryId?: string;
+  categoryId?: string | null;
   category?: ICategory;
   createdAt?: string;
   updatedAt?: string;

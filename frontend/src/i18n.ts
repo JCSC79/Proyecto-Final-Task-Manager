@@ -186,7 +186,23 @@ i18n
           "category": "Category",
           "noCategory": "No category",
           "err_categoryId_invalid": "Invalid category selected",
-          "notYourTask": "You can only modify your own tasks"
+          "notYourTask": "You can only modify your own tasks",
+          "manageProject": "Manage project",
+          "publicProject": "Public",
+          "privateProject": "Private",
+          "visibilityToggle": "Visibility",
+          "public": "Public",
+          "private": "Private",
+          "membersList": "Members",
+          "addMember": "Add member",
+          "addMemberPlaceholder": "User email...",
+          "memberAdded": "Member added successfully",
+          "memberAddError": "Could not add member. Check the email and try again.",
+          "memberRemoved": "Member removed",
+          "memberRemoveError": "Could not remove member. Try again.",
+          "removeMember": "Remove member",
+          "settingsUpdated": "Settings saved",
+          "settingsUpdateError": "Could not save settings. Try again."
 
         }
       },
@@ -369,7 +385,23 @@ i18n
           "category": "Categoría",
           "noCategory": "Sin categoría",
           "err_categoryId_invalid": "Categoría seleccionada no válida",
-          "notYourTask": "Solo puedes modificar tus propias tareas"
+          "notYourTask": "Solo puedes modificar tus propias tareas",
+          "manageProject": "Gestionar proyecto",
+          "publicProject": "Público",
+          "privateProject": "Privado",
+          "visibilityToggle": "Visibilidad",
+          "public": "Público",
+          "private": "Privado",
+          "membersList": "Miembros",
+          "addMember": "Añadir miembro",
+          "addMemberPlaceholder": "Email del usuario...",
+          "memberAdded": "Miembro añadido correctamente",
+          "memberAddError": "No se pudo añadir al miembro. Verifica el email e inténtalo de nuevo.",
+          "memberRemoved": "Miembro eliminado",
+          "memberRemoveError": "No se pudo eliminar al miembro. Inténtalo de nuevo.",
+          "removeMember": "Eliminar miembro",
+          "settingsUpdated": "Configuración guardada",
+          "settingsUpdateError": "No se pudo guardar la configuración. Inténtalo de nuevo."
 
           
         }

@@ -37,5 +37,10 @@ export const updateTaskSchema = yup.object({
     status: yup.mixed<TaskStatus>()
         .oneOf(Object.values(TaskStatus), 'err_status_invalid'),
     projectId: yup.string().matches(uuidFormat).optional(),
-    categoryId: yup.string().matches(uuidFormat, 'err_categoryId_invalid').optional()
+    // null explicitly clears the category; a valid UUID assigns one; undefined leaves it unchanged
+    categoryId: yup.string().nullable().optional().test(
+        'uuid-or-null',
+        'err_categoryId_invalid',
+        (val) => val == null || uuidFormat.test(val)
+    )
 });
