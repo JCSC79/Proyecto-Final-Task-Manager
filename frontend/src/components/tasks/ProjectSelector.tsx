@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { Button, Intent, Spinner, InputGroup, Dialog, DialogBody, DialogFooter, Alert, Icon } from '@blueprintjs/core';
+import { Button, Intent, Spinner, InputGroup, Dialog, DialogBody, DialogFooter, Alert, Icon, Switch, Tag } from '@blueprintjs/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { getProjects, createProject, deleteProject, joinProject, leaveProject, renameProject } from '../../api/project.api';
+import {
+  getProjects, createProject, deleteProject, joinProject, leaveProject, renameProject,
+  getProjectMembers, addProjectMember, removeProjectMember, updateProjectSettings,
+} from '../../api/project.api';
 import { AppToaster } from '../../utils/toaster';
 import type { IProject } from '../../types/project';
 import styles from './ProjectSelector.module.css';
@@ -23,6 +26,8 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
   const [isBarExpanded, setIsBarExpanded] = useState(false);
   const [projectToJoin, setProjectToJoin] = useState<IProject | null>(null);
   const [projectToLeave, setProjectToLeave] = useState<IProject | null>(null);
+  const [projectToManage, setProjectToManage] = useState<IProject | null>(null);
+  const [memberEmailInput, setMemberEmailInput] = useState('');
 
   const { data: projects = [], isLoading } = useQuery<IProject[]>({
     queryKey: ['projects'],
@@ -103,6 +108,50 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
     },
   });
 
+  const { data: managedMembers = [] } = useQuery({
+    queryKey: ['projectMembers', projectToManage?.id],
+    queryFn: () => getProjectMembers(projectToManage!.id),
+    enabled: projectToManage !== null,
+  });
+
+  const addMemberMutation = useMutation({
+    mutationFn: ({ id, email }: { id: string; email: string }) => addProjectMember(id, email),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projectMembers', projectToManage?.id] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      AppToaster.show({ message: t('memberAdded'), intent: Intent.SUCCESS, icon: 'tick-circle' });
+      setMemberEmailInput('');
+    },
+    onError: () => {
+      AppToaster.show({ message: t('memberAddError'), intent: Intent.DANGER, icon: 'warning-sign' });
+    },
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: ({ projectId, userId }: { projectId: string; userId: string }) =>
+      removeProjectMember(projectId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projectMembers', projectToManage?.id] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      AppToaster.show({ message: t('memberRemoved'), intent: Intent.PRIMARY, icon: 'tick-circle' });
+    },
+    onError: () => {
+      AppToaster.show({ message: t('memberRemoveError'), intent: Intent.DANGER, icon: 'warning-sign' });
+    },
+  });
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: ({ id, isPublic }: { id: string; isPublic: boolean }) =>
+      updateProjectSettings(id, { isPublic }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      AppToaster.show({ message: t('settingsUpdated'), intent: Intent.SUCCESS, icon: 'tick-circle' });
+    },
+    onError: () => {
+      AppToaster.show({ message: t('settingsUpdateError'), intent: Intent.DANGER, icon: 'warning-sign' });
+    },
+  });
+
   const handleCreate = () => {
     const trimmed = newProjectName.trim();
     if (trimmed.length < 2) {
@@ -120,6 +169,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
     if (e.key === 'Enter') {
       handleCreate();
     }
+
     if (e.key === 'Escape') {
       handleCloseCreateDialog();
     }
@@ -139,6 +189,26 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
     e.stopPropagation();
     setProjectToRename(project);
     setRenameValue(project.name);
+  };
+
+  const handleManageClick = (e: React.MouseEvent, project: IProject) => {
+    e.stopPropagation();
+    setProjectToManage(project);
+    setMemberEmailInput('');
+  };
+
+  const handleAddMember = () => {
+    const email = memberEmailInput.trim();
+    if (!projectToManage || !email) {
+      return;
+    }
+    addMemberMutation.mutate({ id: projectToManage.id, email });
+  };
+
+  const handleMemberEmailKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleAddMember();
+    }
   };
 
   const handleRename = () => {
@@ -201,7 +271,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
                   >
                     <span className={styles.chipName}>{project.name}</span>
                     <span className={styles.memberBadge}>{project.memberCount}</span>
-                    <span className={styles.joinLabel}><Icon icon="add" size={15} />{t('joinProject')}</span>
+                    <span className={styles.joinLabel}><Icon icon="add" size={18} />{t('joinProject')}</span>
                   </button>
                 );
               }
@@ -223,7 +293,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
                   <span className={styles.chipName}>{project.name}</span>
                   <span className={styles.memberBadge}>{project.memberCount}</span>
 
-                  {/* OWNER - rename + delete buttons */}
+                  {/* OWNER - rename + manage + delete buttons */}
                   {role === 'OWNER' && (
                     <>
                       <span
@@ -233,7 +303,16 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
                         aria-label={`${t('renameProject')}: ${project.name}`}
                         title={t('renameProject')}
                       >
-                        <Icon icon="edit" size={16} />
+                        <Icon icon="edit" size={18} />
+                      </span>
+                      <span
+                        role="button"
+                        className={styles.editBtn}
+                        onClick={(e) => handleManageClick(e, project)}
+                        aria-label={`${t('manageProject')}: ${project.name}`}
+                        title={t('manageProject')}
+                      >
+                        <Icon icon="people" size={18} />
                       </span>
                       <span
                         role="button"
@@ -242,7 +321,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
                         aria-label={`${t('deleteProject')}: ${project.name}`}
                         title={t('deleteProject')}
                       >
-                        <Icon icon="cross" size={16} />
+                        <Icon icon="cross" size={18} />
                       </span>
                     </>
                   )}
@@ -256,7 +335,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
                       aria-label={`${t('leaveProject')}: ${project.name}`}
                       title={t('leaveProject')}
                     >
-                      <Icon icon="log-out" size={16} />
+                      <Icon icon="log-out" size={18} />
                     </span>
                   )}
                 </button>
@@ -270,9 +349,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
                 aria-label={isBarExpanded ? t('showLess') : `+${hiddenCount}`}
               >
                 {isBarExpanded ? (
-                  <><Icon icon="chevron-up" size={16} />{t('showLess')}</>
+                  <><Icon icon="chevron-up" size={18} />{t('showLess')}</>
                 ) : (
-                  <><Icon icon="chevron-down" size={16} />+{hiddenCount}</>
+                  <><Icon icon="chevron-down" size={18} />+{hiddenCount}</>
                 )}
               </button>
             )}          </>
@@ -420,6 +499,104 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
         </p>
         <p>{t('leaveProjectWarning')}</p>
       </Alert>
+
+      {/* Manage project dialog (members + privacy) — OWNER only */}
+      <Dialog
+        isOpen={projectToManage !== null}
+        icon="people"
+        onClose={() => setProjectToManage(null)}
+        title={projectToManage ? `${t('manageProject')}: ${projectToManage.name}` : t('manageProject')}
+        className={styles.manageDialog}
+      >
+        <DialogBody>
+          {/* Privacy toggle */}
+          <div className={styles.settingsRow}>
+            <span className={styles.settingsLabel}>
+              <Icon icon={projectToManage?.settings.isPublic ? 'globe' : 'lock'} size={14} />
+              {projectToManage?.settings.isPublic ? t('publicProject') : t('privateProject')}
+            </span>
+            <Switch
+              checked={projectToManage?.settings.isPublic ?? true}
+              disabled={updateSettingsMutation.isPending}
+              onChange={(e) => {
+                if (!projectToManage) {
+                  return;
+                }
+                const isPublic = (e.target as HTMLInputElement).checked;
+                updateSettingsMutation.mutate(
+                  { id: projectToManage.id, isPublic },
+                  {
+                    onSuccess: () => {
+                      setProjectToManage((prev) =>
+                        prev ? { ...prev, settings: { ...prev.settings, isPublic } } : null
+                      );
+                    },
+                  }
+                );
+              }}
+              label={t('visibilityToggle')}
+              innerLabelChecked={t('public')}
+              innerLabel={t('private')}
+            />
+          </div>
+
+          {/* Member list */}
+          <p className={styles.membersHeading}>{t('membersList')}</p>
+          <ul className={styles.memberList}>
+            {managedMembers.map((member) => (
+              <li key={member.userId} className={styles.memberItem}>
+                <span className={styles.memberInfo}>
+                  <strong>{member.name ?? member.email}</strong>
+                  <span className={styles.memberEmail}>{member.email}</span>
+                </span>
+                <Tag minimal intent={member.role === 'OWNER' ? Intent.WARNING : Intent.NONE}>
+                  {member.role}
+                </Tag>
+                {member.role === 'MEMBER' && (
+                  <Button
+                    icon="cross"
+                    variant="minimal"
+                    intent={Intent.DANGER}
+                    small
+                    loading={removeMemberMutation.isPending}
+                    onClick={() =>
+                      projectToManage &&
+                      removeMemberMutation.mutate({ projectId: projectToManage.id, userId: member.userId })
+                    }
+                    aria-label={`${t('removeMember')}: ${member.name ?? member.email}`}
+                    title={t('removeMember')}
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
+
+          {/* Add member by email */}
+          <p className={styles.membersHeading}>{t('addMember')}</p>
+          <div className={styles.addMemberRow}>
+            <InputGroup
+              placeholder={t('addMemberPlaceholder')}
+              value={memberEmailInput}
+              onChange={(e) => setMemberEmailInput(e.target.value)}
+              onKeyDown={handleMemberEmailKeyDown}
+              fill
+              leftIcon="envelope"
+              maxLength={254}
+            />
+            <Button
+              icon="add"
+              intent={Intent.PRIMARY}
+              loading={addMemberMutation.isPending}
+              disabled={!memberEmailInput.trim()}
+              onClick={handleAddMember}
+              aria-label={t('addMember')}
+            />
+          </div>
+        </DialogBody>
+        <DialogFooter
+          actions={<Button onClick={() => setProjectToManage(null)}>{t('close')}</Button>}
+        />
+      </Dialog>
     </>
   );
 };
