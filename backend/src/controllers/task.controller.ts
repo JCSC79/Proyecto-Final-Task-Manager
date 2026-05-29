@@ -34,9 +34,8 @@ class TaskController {
     const authReq = req as AuthRequest;
     const { id } = req.params;
 
-    // FIX: Ensure ID is a single string and not an array
     if (typeof id !== 'string') {
-        return res.status(400).json({ error: "Invalid ID format" });
+      return res.status(400).json({ error: 'Invalid ID format' });
     }
 
     const result = await taskService.getTaskById(id, authReq.user!.id);
@@ -67,9 +66,8 @@ class TaskController {
     const authReq = req as AuthRequest;
     const { id } = req.params;
 
-    // FIX: Ensure ID is a single string
     if (typeof id !== 'string') {
-        return res.status(400).json({ error: "Invalid ID format" });
+      return res.status(400).json({ error: 'Invalid ID format' });
     }
 
     const result = await taskService.deleteTask(id, authReq.user!.id);
@@ -104,9 +102,8 @@ class TaskController {
     const authReq = req as AuthRequest;
     const { id } = req.params;
 
-    // FIX: Ensure ID is a single string
     if (typeof id !== 'string') {
-        return res.status(400).json({ error: "Invalid ID format" });
+      return res.status(400).json({ error: 'Invalid ID format' });
     }
 
     const result = await taskService.updateTask(id, authReq.user!.id, req.body);
