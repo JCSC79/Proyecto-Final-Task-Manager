@@ -259,7 +259,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
               onClick={() => updateMutation.mutate({
                 title: editTitle,
                 description: editDescription,
-                ...(editCategoryId ? { categoryId: editCategoryId } : {}),
+                // null explicitly clears the category; a UUID assigns one
+                categoryId: editCategoryId || null,
               })}
               loading={updateMutation.isPending}
             >

@@ -3,7 +3,8 @@
   flex-direction: row;
   gap: var(--space-md); 
   width: 100%;
-  align-items: start;
+  /* stretch makes all 3 columns share the same height (tallest column wins) */
+  align-items: stretch;
   justify-content: space-between;
 }
 
@@ -17,7 +18,8 @@
   min-width: 0;
   border: 1px solid var(--border);
   transition: var(--transition);
-  height: 580px; 
+  /* No fixed height — columns size to their content; all siblings stretch to match the tallest */
+  min-height: 20rem;
 }
 
 .columnHeader {
@@ -54,9 +56,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
-  /* Internal scroll if content exceeds the 580px height */
-  overflow-y: auto; 
-  padding-right: 4px;
+  overflow-y: auto;
+  /* 4px padding on all sides: right gives scrollbar room, top/bottom prevent card clip on hover */
+  padding: var(--space-xs);
 }
 
 /* Custom scrollbar for a cleaner look in the columns */
