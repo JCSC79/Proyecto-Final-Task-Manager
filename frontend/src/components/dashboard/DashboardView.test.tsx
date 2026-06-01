@@ -36,16 +36,18 @@ const mockTasks: Task[] = [
   { 
     id: '1', 
     title: 'Task 1', 
-    description: 'Desc 1', // Added missing field
+    description: 'Desc 1',
     status: 'COMPLETED', 
+    userId: 'user-1',
     createdAt: '2026-04-10T10:00:00Z', 
     updatedAt: '2026-04-11T10:00:00Z' 
   },
   { 
     id: '2', 
     title: 'Task 2', 
-    description: 'Desc 2', // Added missing field
+    description: 'Desc 2',
     status: 'PENDING', 
+    userId: 'user-1',
     createdAt: '2026-04-12T10:00:00Z', 
     updatedAt: '2026-04-12T10:00:00Z' 
   },
@@ -71,10 +73,9 @@ describe('DashboardView', () => {
   });
 
   it('should show "healthExcellent" when completion rate is high', () => {
-    // We use "as Task" if we only want to put the minimum fields for this specific test
-    const highCompletionTasks = [
-      { id: '1', title: 'T1', description: '', status: 'COMPLETED' }
-    ] as Task[];
+    const highCompletionTasks: Task[] = [
+      { id: '1', title: 'T1', description: '', status: 'COMPLETED', userId: 'user-1' },
+    ];
 
     render(
       <ThemeContext.Provider value={{ isDark: false, toggleTheme: vi.fn() }}>
