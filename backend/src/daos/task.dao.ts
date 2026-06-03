@@ -2,6 +2,7 @@ import knex from 'knex';
 import { createRequire } from 'module';
 import type { ITask, TaskStatus } from '../models/task.model.ts';
 import type { ICategory } from '../models/category.model.ts';
+import type { ITag } from '../models/tag.model.ts';
 
 const require = createRequire(import.meta.url);
 const config = require('../../knexfile.cjs');
@@ -86,13 +87,51 @@ const TASK_SELECT = [
 class TaskDAO {
 
     /**
-     * Shared base query: tasks LEFT JOIN categories on categoryId.
-     * All read methods use this to get the embedded category object for free.
+     * Shared base query: tasks LEFT JOIN categories on categoryId. All read methods use this to get the embedded category object for free.
      */
     private baseQuery() {
         return db('tasks')
             .leftJoin('categories', 'categories.id', 'tasks.categoryId')
             .select(TASK_SELECT);
+    }
+
+    /**
+     * Fetches all tags for the given task IDs in a single query and merges  them into the task objects. Avoids N+1 queries.
+     */
+    private async enrichWithTags(tasks: ITask[]): Promise<ITask[]> {
+        if (tasks.length === 0) {
+            return tasks;
+        }
+        const taskIds = tasks.map(t => t.id);
+
+        interface TagRow {
+            taskId: string;
+            id: string;
+            name: string;
+            color: string;
+            projectId: string;
+            createdAt: Date;
+        }
+
+        const tagRows = await db('tags as tg')
+            .join('task_tags as tt', 'tt.tagId', 'tg.id')
+            .whereIn('tt.taskId', taskIds)
+            .select<TagRow[]>('tt.taskId', 'tg.id', 'tg.name', 'tg.color', 'tg.projectId', 'tg.createdAt');
+
+        const tagsByTaskId = new Map<string, ITag[]>();
+        for (const row of tagRows) {
+            const list = tagsByTaskId.get(row.taskId) ?? [];
+            list.push({ id: row.id, name: row.name, color: row.color, projectId: row.projectId, createdAt: row.createdAt });
+            tagsByTaskId.set(row.taskId, list);
+        }
+        
+        for (const task of tasks) {
+            const tags = tagsByTaskId.get(task.id);
+            if (tags && tags.length > 0) {
+                task.tags = tags;
+            }
+        }
+        return tasks;
     }
 
     /**
@@ -110,7 +149,8 @@ class TaskDAO {
                     db('project_members').select('projectId').where({ userId })
                 );
             });
-        return (rows as RawTaskRow[]).map(mapTaskRow);
+        const tasks = (rows as RawTaskRow[]).map(mapTaskRow);
+        return this.enrichWithTags(tasks);
     }
 
     /*
@@ -118,12 +158,12 @@ class TaskDAO {
      */
     async adminGetAll(): Promise<ITask[]> {
         const rows = await this.baseQuery();
-        return (rows as RawTaskRow[]).map(mapTaskRow);
+        const tasks = (rows as RawTaskRow[]).map(mapTaskRow);
+        return this.enrichWithTags(tasks);
     }
 
     /**
-     * Finds a task by ID using the same visibility rule as getAll:
-     * the user must be either the creator OR a member of the task's project.
+     * Finds a task by ID using the same visibility rule as getAll: the user must be either the creator OR a member of the task's project.
      */
     async getById(id: string, userId: string): Promise<ITask | undefined> {
         const row = await this.baseQuery()
@@ -141,12 +181,13 @@ class TaskDAO {
         if (!row) {
             return undefined;
         }
-        return mapTaskRow(row as RawTaskRow);
+        const task = mapTaskRow(row as RawTaskRow);
+        const enriched = await this.enrichWithTags([task]);
+        return enriched[0];
     }
 
     /**
-     * Inserts a new task. Only the DB columns are listed explicitly to
-     * exclude the virtual `category` field that lives only in read responses.
+     * Inserts a new task. Only the DB columns are listed explicitly to exclude the virtual `category` field that lives only in read responses.
      */
     async create(task: ITask): Promise<ITask> {
         await db('tasks').insert({
@@ -164,8 +205,7 @@ class TaskDAO {
 
     /**
      * Updates a task only if the ownership (userId) matches.
-     * Uses a Record cast so TypeScript does not complain about the virtual
-     * `category` field that Knex would never find in the DB schema.
+     * Uses a Record cast so TypeScript does not complain about the virtual `category` field that Knex would never find in the DB schema.
      */
     async update(id: string, userId: string, updates: Partial<ITask>): Promise<ITask | undefined> {
         const updatedRows = await db('tasks')

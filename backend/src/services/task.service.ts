@@ -1,6 +1,7 @@
 import { TaskStatus } from '../models/task.model.ts';
 import type { ITask } from '../models/task.model.ts'; 
 import { taskDAO } from '../daos/task.dao.ts';
+import { tagDAO } from '../daos/tag.dao.ts';
 import { messagingService } from './messaging.service.ts';
 import { Result } from '../utils/result.ts';
 import { createTaskSchema, updateTaskSchema } from '../schemas/task.schema.ts';
@@ -35,7 +36,7 @@ export class TaskService {
     }
 
     /**
-     * Creates a task and ensures it belongs to a project.
+     * Creates a task and optionally assigns tags to it in one operation.
      */
     async createTask(data: unknown, userId: string): Promise<Result<ITask>> {
         try {
@@ -43,6 +44,7 @@ export class TaskService {
             
             const projectId = (data as { projectId?: string }).projectId;
             const categoryId = (data as { categoryId?: string }).categoryId;
+            const tagIds = (data as { tagIds?: string[] }).tagIds;
 
             const newTask: ITask = {
                 id: crypto.randomUUID(),
@@ -56,6 +58,15 @@ export class TaskService {
             };
 
             const createdTask = await this.dao.create(newTask);
+
+            // Assign tags after the task exists (FK constraint requires task to exist first)
+            if (tagIds && tagIds.length > 0) {
+                for (const tagId of tagIds) {
+                    await tagDAO.assignToTask(createdTask.id, tagId);
+                }
+                createdTask.tags = await tagDAO.getByTask(createdTask.id);
+            }
+
             await this.messaging.sendTaskNotification(createdTask);
             return Result.ok(createdTask);
         } catch (err: unknown) {

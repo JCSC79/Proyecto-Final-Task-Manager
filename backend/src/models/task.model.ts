@@ -1,4 +1,5 @@
 import type { ICategory } from './category.model.ts';
+import type { ITag } from './tag.model.ts';
 
 /**
  * Task status options.
@@ -26,6 +27,7 @@ export interface ITask {
     projectId?: string;  // Optional — column exists in DB but is not required by the app
     categoryId?: string | null;  // FK -> categories.id — null explicitly clears the category
     category?: ICategory; // Populated via LEFT JOIN in read queries; absent on write operations
+    tags?: ITag[];        // Populated via task_tags JOIN in read queries; absent on write operations
     createdAt: Date;
     updatedAt?: Date;
 }
