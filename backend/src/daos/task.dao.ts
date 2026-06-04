@@ -1,6 +1,7 @@
 import knex from 'knex';
 import { createRequire } from 'module';
 import type { ITask, TaskStatus } from '../models/task.model.ts';
+import type { TaskPriority } from '../models/task.model.ts';
 import type { ICategory } from '../models/category.model.ts';
 import type { ITag } from '../models/tag.model.ts';
 
@@ -24,6 +25,7 @@ interface RawTaskRow {
     updatedAt: Date | null;
     categoryName: string | null;
     categoryColor: string | null;
+    priority: string | null;
 }
 
 /**
@@ -52,6 +54,9 @@ function mapTaskRow(row: RawTaskRow): ITask {
     if (row.updatedAt != null) {
         task.updatedAt = row.updatedAt;
     }
+    if (row.priority != null) {
+        task.priority = row.priority as TaskPriority;
+    }
     return task;
 }
 
@@ -69,6 +74,7 @@ const TASK_SELECT = [
     'tasks.categoryId',
     'tasks.createdAt',
     'tasks.updatedAt',
+    'tasks.priority',
     'categories.name as categoryName',
     'categories.color as categoryColor',
 ];
@@ -198,6 +204,7 @@ class TaskDAO {
             userId: task.userId,
             ...(task.projectId !== undefined ? { projectId: task.projectId } : {}),
             ...(task.categoryId !== undefined ? { categoryId: task.categoryId } : {}),
+            ...(task.priority !== undefined ? { priority: task.priority } : {}),
             createdAt: task.createdAt,
         });
         return task;

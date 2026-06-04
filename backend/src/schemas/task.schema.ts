@@ -1,5 +1,5 @@
 import * as yup from 'yup';
-import { TaskStatus } from '../models/task.model.ts';
+import { TaskStatus, TaskPriority } from '../models/task.model.ts';
 
 /**
  * UUID-format regex that validates hex structure without checking RFC 4122 version/variant bits.
@@ -21,7 +21,10 @@ export const createTaskSchema = yup.object({
         .required('err_desc_required')
         .min(10, 'err_desc_short'),
     projectId: yup.string().matches(uuidFormat).optional(),
-    categoryId: yup.string().matches(uuidFormat, 'err_categoryId_invalid').optional()
+    categoryId: yup.string().matches(uuidFormat, 'err_categoryId_invalid').optional(),
+    priority: yup.mixed<typeof TaskPriority[keyof typeof TaskPriority]>()
+        .oneOf([...Object.values(TaskPriority), undefined] as const, 'err_priority_invalid')
+        .optional()
 });
 
 /**
@@ -42,5 +45,9 @@ export const updateTaskSchema = yup.object({
         'uuid-or-null',
         'err_categoryId_invalid',
         (val) => val == null || uuidFormat.test(val)
-    )
+    ),
+    priority: yup.string()
+        .oneOf([...Object.values(TaskPriority)], 'err_priority_invalid')
+        .nullable()
+        .optional()
 });

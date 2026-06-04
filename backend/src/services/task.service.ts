@@ -45,6 +45,7 @@ export class TaskService {
             const projectId = (data as { projectId?: string }).projectId;
             const categoryId = (data as { categoryId?: string }).categoryId;
             const tagIds = (data as { tagIds?: string[] }).tagIds;
+            const priority = validated.priority ?? undefined;
 
             const newTask: ITask = {
                 id: crypto.randomUUID(),
@@ -54,6 +55,7 @@ export class TaskService {
                 userId,
                 ...(projectId ? { projectId } : {}),
                 ...(categoryId ? { categoryId } : {}),
+                ...(priority ? { priority } : {}),
                 createdAt: new Date()
             };
 

@@ -14,6 +14,15 @@ export const TaskStatus = {
 // This creates a type from the object values for your interfaces
 export type TaskStatus = typeof TaskStatus[keyof typeof TaskStatus];
 
+export const TaskPriority = {
+    LOW: 'LOW',
+    MEDIUM: 'MEDIUM',
+    HIGH: 'HIGH',
+    URGENT: 'URGENT',
+} as const;
+
+export type TaskPriority = typeof TaskPriority[keyof typeof TaskPriority];
+
 /**
  * Main Task Interface.
  * Updated to include userId for database relationship integrity.
@@ -28,6 +37,7 @@ export interface ITask {
     categoryId?: string | null;  // FK -> categories.id — null explicitly clears the category
     category?: ICategory; // Populated via LEFT JOIN in read queries; absent on write operations
     tags?: ITag[];        // Populated via task_tags JOIN in read queries; absent on write operations
+    priority?: TaskPriority | null;
     createdAt: Date;
     updatedAt?: Date;
 }
