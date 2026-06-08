@@ -22,7 +22,7 @@ toasterPromise.then(instance => {
  */
 export const AppToaster = {
     // REFINEMENT: Replaced 'any' with 'ToastProps' from @blueprintjs/core
-    show: (props: ToastProps) => toasterInstance?.show({ timeout: 1200, ...props }),
+    show: (props: ToastProps) => toasterInstance?.show({ timeout: 1800, ...props }),
     dismiss: (key: string) => toasterInstance?.dismiss(key),
     clear: () => toasterInstance?.clear(),
 };

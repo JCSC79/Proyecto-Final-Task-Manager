@@ -10,7 +10,7 @@ import { TaskFilters } from '../components/tasks/TaskFilters';
 import { TaskForm } from '../components/tasks/TaskForm';
 import { TaskBoard } from '../components/tasks/TaskBoard';
 import { ProjectSelector } from '../components/tasks/ProjectSelector';
-import type { Task, TaskStatus } from '../types/task';
+import type { Task, TaskStatus, TaskPriority } from '../types/task';
 import pageStyles from './pages.module.css';
 import formStyles from '../components/tasks/TaskForm.module.css';
 
@@ -21,6 +21,8 @@ const HomePage: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'ALL'>('ALL');
   // Initialize statusFilter from navigation state
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>(
     () => (location.state as { statusFilter?: TaskStatus } | null)?.statusFilter ?? 'ALL'
@@ -53,9 +55,11 @@ const HomePage: React.FC = () => {
         task.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'ALL' || task.status === statusFilter;
       const matchesProject = selectedProjectId === null || task.projectId === selectedProjectId;
-      return matchesSearch && matchesStatus && matchesProject;
+      const matchesCategory = categoryId === null || task.categoryId === categoryId;
+      const matchesPriority = priorityFilter === 'ALL' || task.priority === priorityFilter;
+      return matchesSearch && matchesStatus && matchesProject && matchesCategory && matchesPriority;
     });
-  }, [tasks, searchTerm, statusFilter, selectedProjectId]);
+  }, [tasks, searchTerm, statusFilter, selectedProjectId, categoryId, priorityFilter]);
 
   const total = tasks?.length ?? 0;
   const completed = tasks?.filter(t => t.status === 'COMPLETED').length ?? 0;
@@ -99,6 +103,10 @@ const HomePage: React.FC = () => {
               setSearchTerm={setSearchTerm}
               statusFilter={statusFilter}
               setStatusFilter={setStatusFilter}
+              categoryId={categoryId}
+              setCategoryId={setCategoryId}
+              priorityFilter={priorityFilter}
+              setPriorityFilter={setPriorityFilter}
             />
 
             {isLoading ? (
