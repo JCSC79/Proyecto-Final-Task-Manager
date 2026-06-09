@@ -16,6 +16,7 @@ import { authenticateToken } from './middlewares/auth.middleware.ts';
 import { requireAdmin } from './middlewares/admin.middleware.ts';
 
 const app = express();
+app.disable('x-powered-by'); // Prevent Express from leaking version info
 const PORT = 3000;
 
 const loginRateLimiter = rateLimit({

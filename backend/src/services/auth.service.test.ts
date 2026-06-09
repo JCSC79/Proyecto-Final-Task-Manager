@@ -32,9 +32,7 @@ describe('AuthService - Identity & Access Control', () => {
     });
 
     test('should validate user with correct credentials', async () => {
-        userDAO.getByEmail = (async (_email: string): Promise<IUser | undefined> => {
-            return mockUser;
-        }) as unknown as typeof userDAO.getByEmail;
+        userDAO.getByEmail = async (_email: string): Promise<IUser | undefined> => mockUser;
 
         const originalCompare = bcrypt.compare;
         (bcrypt as unknown as { compare: BcryptCompare }).compare = async () => true;
@@ -52,9 +50,7 @@ describe('AuthService - Identity & Access Control', () => {
     });
 
     test('should fail validation if email does not exist', async () => {
-        userDAO.getByEmail = (async (_email: string): Promise<undefined> => {
-            return undefined;
-        }) as unknown as typeof userDAO.getByEmail;
+        userDAO.getByEmail = async (_email: string): Promise<IUser | undefined> => undefined;
 
         const result = await authService.validateUser('fake@example.com', 'any_password');
 
@@ -63,9 +59,7 @@ describe('AuthService - Identity & Access Control', () => {
     });
 
     test('should block registration if email is already taken', async () => {
-        userDAO.getByEmail = (async (_email: string): Promise<IUser> => {
-            return mockUser;
-        }) as unknown as typeof userDAO.getByEmail;
+        userDAO.getByEmail = async (_email: string): Promise<IUser | undefined> => mockUser;
 
         const result = await authService.registerUser('test@example.com', 'password123');
 
@@ -74,10 +68,8 @@ describe('AuthService - Identity & Access Control', () => {
     });
 
     test('should generate a valid JWT token on successful login', async () => {
-        userDAO.getByEmail = (async (_email: string): Promise<IUser> => {
-            return mockUser;
-        }) as unknown as typeof userDAO.getByEmail;
-        
+        userDAO.getByEmail = async (_email: string): Promise<IUser | undefined> => mockUser;
+
         const originalCompare = bcrypt.compare;
         (bcrypt as unknown as { compare: BcryptCompare }).compare = async () => true;
 

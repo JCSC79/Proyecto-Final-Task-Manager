@@ -64,7 +64,7 @@ class TagController {
 
         // Verify the user is a member of this project
         const members = await projectDAO.getMembers(projectId, authReq.user!.id);
-        const isMember = members !== null && members.some((m) => m.userId === authReq.user!.id);
+        const isMember = members?.some((m) => m.userId === authReq.user!.id) ?? false;
 
         if (!isMember) {
             return res.status(403).json({ error: 'You must be a project member to create tags' });
@@ -99,7 +99,7 @@ class TagController {
         const members = await projectDAO.getMembers(projectId, authReq.user!.id);
         const member = members?.find((m) => m.userId === authReq.user!.id);
 
-        if (!member || member.role !== 'OWNER') {
+        if (member?.role !== 'OWNER') {
             return res.status(403).json({ error: 'Only the project owner can delete tags' });
         }
 

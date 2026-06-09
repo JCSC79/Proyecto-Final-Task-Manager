@@ -47,7 +47,7 @@ export const updateTaskSchema = yup.object({
         (val) => val == null || uuidFormat.test(val)
     ),
     priority: yup.string()
-        .oneOf([...Object.values(TaskPriority)], 'err_priority_invalid')
+        .oneOf(Object.values(TaskPriority), 'err_priority_invalid')
         .nullable()
         .optional()
 });

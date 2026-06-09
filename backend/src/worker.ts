@@ -82,4 +82,4 @@ function scheduleReconnect(attempt: number): Promise<void> {
     return new Promise(resolve => setTimeout(() => resolve(startWorker(attempt)), delayMs));
 }
 
-void startWorker();
+await startWorker();

@@ -14,7 +14,7 @@ export const registerSchema = yup.object({
         .required('err_password_required')
         .min(8, 'err_password_too_short')
         .matches(/[a-zA-Z]/, 'err_password_no_letter')
-        .matches(/[0-9]/, 'err_password_no_number')
+        .matches(/\d/, 'err_password_no_number')
         .matches(/[^a-zA-Z0-9]/, 'err_password_no_special'),
 
     name: yup.string()

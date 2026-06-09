@@ -1,5 +1,5 @@
 import knex from 'knex';
-import { createRequire } from 'module';
+import { createRequire } from 'node:module';
 import type { ITag, ITagWithTaskCount } from '../models/tag.model.ts';
 
 const require = createRequire(import.meta.url);

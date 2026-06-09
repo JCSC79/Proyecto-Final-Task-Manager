@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { userDAO } from '../daos/user.dao.ts';
 import { Result } from '../utils/result.ts';
 import type { IUser } from '../models/user.model.ts';
@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
     throw new Error('JWT_SECRET environment variable is required');
 }
-const JWT_SECRET_SAFE = JWT_SECRET as string;
+const JWT_SECRET_SAFE = JWT_SECRET;
 
 /**
  * AuthService - Handles the business logic for authentication and JWT generation.

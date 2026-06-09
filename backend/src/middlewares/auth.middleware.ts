@@ -17,7 +17,7 @@ interface AuthRequest extends Request {
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
     // REFINEMENT: Check both Authorization header and HttpOnly cookies
     const authHeader = req.headers['authorization'];
-    const headerToken = authHeader && authHeader.split(' ')[1];
+    const headerToken = authHeader?.split(' ')[1];
     const cookieToken = req.cookies['auth_token'];
 
     const token = cookieToken || headerToken;
@@ -28,7 +28,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     }
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET as string) as { id: string; role: string; email: string };
+        const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string; email: string };
         (req as AuthRequest).user = decoded;
         next();
     } catch (error) {

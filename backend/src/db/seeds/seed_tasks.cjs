@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 
 /**
  * UPDATED SEED: Stress Testing Engine with User Assignment.
