@@ -15,6 +15,13 @@
   cursor: pointer;
   transition: opacity 0.2s;
   height: 100%;
+  /* button reset */
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
 }
 
 .branding:hover {

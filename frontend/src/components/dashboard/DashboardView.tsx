@@ -58,7 +58,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks = [], onChar
 
   // Activity trend — counts tasks created per day over the last 7 days, oldest first
   const activityData = useMemo(() => {
-    return [...Array(7)].map((_, i) => {
+    return Array.from({ length: 7 }).map((_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateLabel = d.toLocaleDateString(undefined, { day: '2-digit', month: 'short' });

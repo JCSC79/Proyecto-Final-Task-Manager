@@ -109,17 +109,16 @@ export const Header: React.FC<{
   return (
     <Navbar className={styles.navbar}>
       <Navbar.Group align={Alignment.START}>
-        <div
+        <button
+          type="button"
           className={styles.branding}
           onClick={handleBrandingClick}
-          role="button"
-          tabIndex={0}
           onKeyDown={(e) => e.key === 'Enter' && handleBrandingClick()}
           aria-label={t('appName')}
         >
           <img src={logoImg} alt="" className={styles.logo} />
           <span className={styles.appName}>{t('appName')}</span>
-        </div>
+        </button>
       </Navbar.Group>
 
       {/* DESKTOP VIEW */}

@@ -53,13 +53,11 @@ const LoginPage: React.FC = () => {
           <Button variant="minimal" size="small" onClick={toggleLanguage}>
             {isSpanish ? (
               <>
-                <span className={`fi fi-es ${styles.flagIcon}`} />
-                Español
+                <span className={`fi fi-es ${styles.flagIcon}`} />{' '}Español
               </>
             ) : (
               <>
-                <span className={`fi fi-gb ${styles.flagIcon}`} />
-                English
+                <span className={`fi fi-gb ${styles.flagIcon}`} />{' '}English
               </>
             )}
           </Button>

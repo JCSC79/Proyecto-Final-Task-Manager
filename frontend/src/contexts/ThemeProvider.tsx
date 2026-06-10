@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ThemeContext } from './ThemeContext';
-//import type { ThemeContextType } from './ThemeContext';
-
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState<boolean>(() => {
     return localStorage.getItem('theme') === 'dark';
@@ -12,11 +10,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const body = document.body;
 
     if (isDark) {
-      root.setAttribute('data-theme', 'dark');
+      root.dataset.theme = 'dark';
       body.classList.add('bp6-dark');
       localStorage.setItem('theme', 'dark');
     } else {
-      root.removeAttribute('data-theme');
+      delete root.dataset.theme;
       body.classList.remove('bp6-dark');
       localStorage.setItem('theme', 'light');
     }
@@ -26,8 +24,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsDark(prev => !prev);
   }, []);
 
+  const value = useMemo(() => ({ isDark, toggleTheme }), [isDark, toggleTheme]);
+
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

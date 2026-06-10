@@ -81,7 +81,7 @@ const HomePage: React.FC = () => {
             <NonIdealState
               icon={<Icon icon="warning-sign" size={60} intent={Intent.DANGER} />}
               title={t('errorTitle')}
-              description={(error as Error)?.message || t('errorMessage')}
+              description={error?.message || t('errorMessage')}
               action={
                 <Button intent={Intent.PRIMARY} icon="refresh" onClick={() => refetch()} size="large">
                   {t('retry')}

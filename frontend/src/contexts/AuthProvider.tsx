@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import type { IUser } from '../types/user';
 import { loginRequest, registerRequest, updateMeRequest } from '../api/auth.api';
 import api from '../api/axiosInstance';
@@ -45,16 +45,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const value = useMemo(() => ({
+    user: auth.user,
+    isAuthenticated: !!auth.user,
+    isAdmin: auth.user?.role === 'ADMIN',
+    login,
+    register,
+    updateName,
+    logout,
+  }), [auth.user, login, register, updateName, logout]);
+
   return (
-    <AuthContext.Provider value={{
-      user: auth.user,
-      isAuthenticated: !!auth.user,
-      isAdmin: auth.user?.role === 'ADMIN',
-      login,
-      register,
-      updateName,
-      logout,
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

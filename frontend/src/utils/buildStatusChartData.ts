@@ -1,5 +1,4 @@
 import type { ChartDataPoint } from '../components/admin/charts/StatusDonutChart';
-import type { TaskStatus } from '../types/task';
 import { CHART_COLORS } from '../styles/chartColors';
 
 interface StatusStats {
@@ -32,18 +31,18 @@ export const buildStatusChartData = (
     name: labels.pending,
     value: stats.pending,
     fill: CHART_COLORS.pending,
-    ...(withStatus && { status: 'PENDING' as TaskStatus }),
+    ...(withStatus && { status: 'PENDING' }),
   },
   {
     name: labels.inProgress,
     value: stats.inProgress,
     fill: CHART_COLORS.progress,
-    ...(withStatus && { status: 'IN_PROGRESS' as TaskStatus }),
+    ...(withStatus && { status: 'IN_PROGRESS' }),
   },
   {
     name: labels.completed,
     value: stats.completed,
     fill: CHART_COLORS.done,
-    ...(withStatus && { status: 'COMPLETED' as TaskStatus }),
+    ...(withStatus && { status: 'COMPLETED' }),
   },
 ];
