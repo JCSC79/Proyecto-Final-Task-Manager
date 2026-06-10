@@ -66,7 +66,6 @@ describe('AuthForm Component', () => {
     fireEvent.change(screen.getByLabelText(/loginEmail/i), { target: { value: 'test@example.com' } });
     fireEvent.change(screen.getByLabelText(/loginPassword/i), { target: { value: 'password123' } });
     
-    //fireEvent.submit(screen.getByRole('form'));
     fireEvent.click(screen.getByText('loginButton'));
     
     expect(mockOnSubmit).toHaveBeenCalledWith({

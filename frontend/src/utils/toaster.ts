@@ -9,13 +9,11 @@ import { OverlayToaster, Position, type Toaster, type ToastProps } from "@bluepr
 let toasterInstance: Toaster | null = null;
 
 // Initialize the toaster asynchronously for BlueprintJS v5 compatibility
-const toasterPromise = typeof window !== "undefined" 
-    ? OverlayToaster.create({ position: Position.TOP_RIGHT }) 
-    : Promise.resolve(null);
+const toasterPromise = globalThis.window === undefined
+    ? Promise.resolve(null)
+    : OverlayToaster.create({ position: Position.TOP_RIGHT });
 
-toasterPromise.then(instance => {
-    toasterInstance = instance;
-});
+toasterInstance = await toasterPromise;
 
 /**
  * Proxy object to call toaster methods safely with strict typing

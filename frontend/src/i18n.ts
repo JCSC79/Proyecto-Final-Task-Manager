@@ -303,7 +303,7 @@ i18n
           "loginSubtitle": "Inicia sesión para gestionar tus tareas",
           "loginEmail": "Correo electrónico",
           "loginEmailPlaceholder": "tu@ejemplo.com",
-          "loginPassword": "Contraseña",
+          "loginPassword": "Contraseña", // NOSONAR: translation key, not a hardcoded credential
           "loginPasswordPlaceholder": "Tu contraseña",
           "loginButton": "Iniciar Sesión",
           "loginRequiredFields": "El correo y la contraseña son obligatorios",

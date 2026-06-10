@@ -1,7 +1,6 @@
 import knex from 'knex';
 import { createRequire } from 'node:module';
-import type { ITask, TaskStatus } from '../models/task.model.ts';
-import type { TaskPriority } from '../models/task.model.ts';
+import type { ITask, TaskStatus, TaskPriority } from '../models/task.model.ts';
 import type { ICategory } from '../models/category.model.ts';
 import type { ITag } from '../models/tag.model.ts';
 
@@ -202,9 +201,9 @@ class TaskDAO {
             description: task.description,
             status: task.status,
             userId: task.userId,
-            ...(task.projectId !== undefined ? { projectId: task.projectId } : {}),
-            ...(task.categoryId !== undefined ? { categoryId: task.categoryId } : {}),
-            ...(task.priority !== undefined ? { priority: task.priority } : {}),
+            ...(task.projectId === undefined ? {} : { projectId: task.projectId }),
+            ...(task.categoryId === undefined ? {} : { categoryId: task.categoryId }),
+            ...(task.priority === undefined ? {} : { priority: task.priority }),
             createdAt: task.createdAt,
         });
         return task;
