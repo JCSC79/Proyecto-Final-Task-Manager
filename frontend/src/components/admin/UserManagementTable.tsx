@@ -36,7 +36,7 @@ const SortableTh: React.FC<SortableThProps> = ({ label, col, sort, onSort }) => 
     <div className={styles.sortThContent}>
       {label}
       <Icon
-        icon={isActive ? (sort.direction === 'asc' ? 'chevron-up' : 'chevron-down') : 'double-caret-vertical'}
+        icon={isActive ? (sort.direction === 'asc' ? 'chevron-up' : 'chevron-down') : 'double-caret-vertical'} // NOSONAR: nested ternary is intentional for icon selection
         size={12}
         style={{ opacity: isActive ? 1 : 0.2 }}
       />
@@ -52,6 +52,68 @@ const SortableTh: React.FC<SortableThProps> = ({ label, col, sort, onSort }) => 
   
   }
   return <th {...thProps} aria-sort="descending">{content}</th>;
+};
+
+interface MobileUserCardProps {
+  user: IUserWithStats;
+  onOpenModal: (user: IUserWithStats) => void;
+  onPromote: (user: IUserWithStats) => void;
+  onDemote: (user: IUserWithStats) => void;
+}
+
+const MobileUserCard: React.FC<MobileUserCardProps> = ({ user, onOpenModal, onPromote, onDemote }) => {
+  const { t } = useTranslation();
+
+  const handleClick = () => onOpenModal(user);
+  const handlePromote = (e: React.MouseEvent) => { e.stopPropagation(); onPromote(user); };
+  const handleDemote = (e: React.MouseEvent) => { e.stopPropagation(); onDemote(user); };
+
+  return (
+    <div className={styles.mobileCard}>
+      <button type="button" className={styles.mobileCardClickable} onClick={handleClick}>
+        <div className={styles.mobileCardHeader}>
+          <span className={styles.mobileCardName}>{user.name ?? user.email.split('@')[0]}</span>
+          <span className={user.role === 'ADMIN' ? styles.roleAdmin : styles.roleUser}>
+            {user.role === 'ADMIN' ? t('adminRole') : t('userRole')}
+          </span>
+        </div>
+        <div className={styles.mobileCardEmail}>{user.email}</div>
+        <div className={styles.mobileCardStats}>
+          <div>
+            <div className={styles.mobileCardStatLabel}>{t('pending')}</div>
+            <div className={`${styles.mobileCardStatValue} ${styles.mobileStatPending}`}>{user.stats.pending}</div>
+          </div>
+          <div>
+            <div className={styles.mobileCardStatLabel}>{t('inProgress')}</div>
+            <div className={`${styles.mobileCardStatValue} ${styles.mobileStatProgress}`}>{user.stats.inProgress}</div>
+          </div>
+          <div>
+            <div className={styles.mobileCardStatLabel}>{t('completed')}</div>
+            <div className={`${styles.mobileCardStatValue} ${styles.mobileStatDone}`}>{user.stats.completed}</div>
+          </div>
+        </div>
+        <div className={styles.completionRateRow}>
+          <span className={styles.completionRateLabel}>{t('completionRate')}:</span>
+          <strong>{user.stats.completionRate}%</strong>
+          <progress
+            className={styles.miniBar}
+            max={100}
+            value={user.stats.completionRate}
+            aria-label={`${user.stats.completionRate}%`}
+          />
+        </div>
+      </button>
+      <div className={styles.mobileCardFooter}>
+        <ButtonGroup variant="minimal">
+          {user.role === 'USER' ? (
+            <Button size="small" icon="arrow-up" intent="warning" text={t('adminPromote')} onClick={handlePromote} />
+          ) : (
+            <Button size="small" icon="arrow-down" intent="danger" text={t('adminDemote')} onClick={handleDemote} />
+          )}
+        </ButtonGroup>
+      </div>
+    </div>
+  );
 };
 
 export const UserManagementTable: React.FC<Props> = ({
@@ -129,64 +191,7 @@ export const UserManagementTable: React.FC<Props> = ({
           </p>
         ) : (
           users.map(user => (
-            <div key={user.id} className={styles.mobileCard} onClick={() => onOpenModal(user)}>
-
-              <div className={styles.mobileCardHeader}>
-                <span className={styles.mobileCardName}>{user.name ?? user.email.split('@')[0]}</span>
-                <span className={user.role === 'ADMIN' ? styles.roleAdmin : styles.roleUser}>
-                  {user.role === 'ADMIN' ? t('adminRole') : t('userRole')}
-                </span>
-              </div>
-
-              <div className={styles.mobileCardEmail}>{user.email}</div>
-
-              {/* Stat breakdown: one column per status */}
-              <div className={styles.mobileCardStats}>
-                <div>
-                  <div className={styles.mobileCardStatLabel}>{t('pending')}</div>
-                  <div className={`${styles.mobileCardStatValue} ${styles.mobileStatPending}`}>
-                    {user.stats.pending}
-                  </div>
-                </div>
-                <div>
-                  <div className={styles.mobileCardStatLabel}>{t('inProgress')}</div>
-                  <div className={`${styles.mobileCardStatValue} ${styles.mobileStatProgress}`}>
-                    {user.stats.inProgress}
-                  </div>
-                </div>
-                <div>
-                  <div className={styles.mobileCardStatLabel}>{t('completed')}</div>
-                  <div className={`${styles.mobileCardStatValue} ${styles.mobileStatDone}`}>
-                    {user.stats.completed}
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.mobileCardFooter}>
-                <div className={styles.completionRateRow}>
-                  <span className={styles.completionRateLabel}>
-                    {t('completionRate')}:
-                  </span>
-                  <strong>{user.stats.completionRate}%</strong>
-                  <progress
-                    className={styles.miniBar}
-                    max={100}
-                    value={user.stats.completionRate}
-                    aria-label={`${user.stats.completionRate}%`}
-                  />
-                </div>
-                <ButtonGroup variant="minimal">
-                  {user.role === 'USER' ? (
-                    <Button size="small" icon="arrow-up" intent="warning" text={t('adminPromote')}
-                      onClick={(e) => { e.stopPropagation(); onPromote(user); }} />
-                  ) : (
-                    <Button size="small" icon="arrow-down" intent="danger" text={t('adminDemote')}
-                      onClick={(e) => { e.stopPropagation(); onDemote(user); }} />
-                  )}
-                </ButtonGroup>
-              </div>
-
-            </div>
+            <MobileUserCard key={user.id} user={user} onOpenModal={onOpenModal} onPromote={onPromote} onDemote={onDemote} />
           ))
         )}
       </div>

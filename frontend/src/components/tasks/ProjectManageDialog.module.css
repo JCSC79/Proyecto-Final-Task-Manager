@@ -82,3 +82,60 @@
   gap: 0.5rem;
   align-items: center;
 }
+
+/* Tag list — wrapping chips with delete buttons */
+.tagList {
+  list-style: none;
+  margin: 0 0 var(--space-sm);
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tagRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tagCount {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* Add tag row: name input + color picker + button */
+.addTagRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+/* Four fixed-intent color swatch buttons */
+.colorSwatches {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  /* Reset native <fieldset> styles */
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 480px) {
+  .addTagRow {
+    gap: 0.4rem;
+  }
+  .colorInput {
+    width: 30px;
+    height: 28px;
+  }
+}
+
+.emptyHint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+}

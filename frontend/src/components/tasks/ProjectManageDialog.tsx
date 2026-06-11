@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Dialog, DialogBody, DialogFooter, Icon, InputGroup, Intent, Switch, Tag } from '@blueprintjs/core';
+import { Alert, Button, Dialog, DialogBody, DialogFooter, Icon, InputGroup, Intent, Switch, Tag } from '@blueprintjs/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -9,6 +9,9 @@ import {
   updateProjectSettings,
 } from '../../api/project.api';
 import type { ProjectMember } from '../../api/project.api';
+import { getTagsByProject, createTag, deleteTag } from '../../api/tag.api';
+import type { ITagWithTaskCount } from '../../api/tag.api';
+import { TagBadge } from './TagBadge';
 import { AppToaster } from '../../utils/toaster';
 import type { IProject } from '../../types/project';
 import styles from './ProjectManageDialog.module.css';
@@ -27,6 +30,11 @@ export const ProjectManageDialog: React.FC<ProjectManageDialogProps> = ({ projec
   const queryClient = useQueryClient();
 
   const [memberEmailInput, setMemberEmailInput] = useState('');
+  const [newTagName, setNewTagName] = useState('');
+  // Restricted to the 4 Blueprint-intent hex values so TagBadge always maps correctly
+  const [newTagColor, setNewTagColor] = useState('#2980b9');
+  const [tagToDelete, setTagToDelete] = useState<ITagWithTaskCount | null>(null);
+  const [memberToRemove, setMemberToRemove] = useState<ProjectMember | null>(null);
   // Local isPublic tracks the Switch optimistically so updates feel instant
   const [isPublic, setIsPublic] = useState(project?.settings.isPublic ?? true);
 
@@ -38,12 +46,22 @@ export const ProjectManageDialog: React.FC<ProjectManageDialogProps> = ({ projec
     if (project) {
       setIsPublic(project.settings.isPublic);
       setMemberEmailInput('');
+      setNewTagName('');
+      setNewTagColor('#2980b9');
+      setTagToDelete(null);
+      setMemberToRemove(null);
     }
   }
 
   const { data: members = [] } = useQuery<ProjectMember[]>({
     queryKey: ['projectMembers', project?.id],
     queryFn: () => getProjectMembers(project!.id),
+    enabled: project !== null,
+  });
+
+  const { data: projectTags = [] } = useQuery<ITagWithTaskCount[]>({
+    queryKey: ['tags', project?.id],
+    queryFn: () => getTagsByProject(project!.id),
     enabled: project !== null,
   });
 
@@ -88,6 +106,45 @@ export const ProjectManageDialog: React.FC<ProjectManageDialogProps> = ({ projec
     },
   });
 
+  const createTagMutation = useMutation({
+    mutationFn: ({ name, color }: { name: string; color: string }) =>
+      createTag(project!.id, name, color),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags', project?.id] });
+      AppToaster.show({ message: t('tagCreated'), intent: Intent.SUCCESS, icon: 'tick-circle' });
+      setNewTagName('');
+      setNewTagColor('#2980b9');
+    },
+    onError: () => {
+      AppToaster.show({ message: t('tagCreateError'), intent: Intent.DANGER, icon: 'warning-sign' });
+    },
+  });
+
+  const deleteTagMutation = useMutation({
+    mutationFn: (tagId: string) => deleteTag(project!.id, tagId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags', project?.id] });
+      AppToaster.show({ message: t('tagDeleted'), intent: Intent.PRIMARY, icon: 'tick-circle' });
+    },
+    onError: () => {
+      AppToaster.show({ message: t('tagDeleteError'), intent: Intent.DANGER, icon: 'warning-sign' });
+    },
+  });
+
+  const handleCreateTag = () => {
+    const name = newTagName.trim();
+    if (!project || !name) {
+      return;
+    }
+    createTagMutation.mutate({ name, color: newTagColor });
+  };
+
+  const handleTagNameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleCreateTag();
+    }
+  };
+
   const handleAddMember = () => {
     const email = memberEmailInput.trim();
     if (!project || !email) {
@@ -106,7 +163,7 @@ export const ProjectManageDialog: React.FC<ProjectManageDialogProps> = ({ projec
     if (!project) {
         return;
     }
-    const newIsPublic = (e.target as HTMLInputElement).checked;
+    const newIsPublic = e.target.checked;
     updateSettingsMutation.mutate({ id: project.id, newIsPublic });
   };
 
@@ -153,11 +210,7 @@ export const ProjectManageDialog: React.FC<ProjectManageDialogProps> = ({ projec
                   variant="minimal"
                   intent={Intent.DANGER}
                   size="small"
-                  loading={removeMemberMutation.isPending}
-                  onClick={() =>
-                    project &&
-                    removeMemberMutation.mutate({ projectId: project.id, userId: member.userId })
-                  }
+                  onClick={() => setMemberToRemove(member)}
                   aria-label={`${t('removeMember')}: ${member.name ?? member.email}`}
                   title={t('removeMember')}
                 />
@@ -187,8 +240,116 @@ export const ProjectManageDialog: React.FC<ProjectManageDialogProps> = ({ projec
             aria-label={t('addMember')}
           />
         </div>
+
+        {/* Tags section */}
+        <p className={styles.membersHeading}>{t('tags')}</p>
+        {projectTags.length === 0 ? (
+          <p className={styles.emptyHint}>{t('noTags')}</p>
+        ) : (
+          <ul className={styles.tagList}>
+            {projectTags.map((tag) => (
+              <li key={tag.id} className={styles.tagRow}>
+                <TagBadge tag={tag} />
+                {tag.taskCount > 0 && (
+                  <span className={styles.tagCount}>×{tag.taskCount}</span>
+                )}
+                <Button
+                  icon="cross"
+                  variant="minimal"
+                  intent={Intent.DANGER}
+                  size="small"
+                  onClick={() => setTagToDelete(tag)}
+                  aria-label={`${t('deleteTag')}: ${tag.name}`}
+                  title={t('deleteTag')}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className={styles.addTagRow}>
+          <InputGroup
+            placeholder={t('tagNamePlaceholder')}
+            value={newTagName}
+            onChange={(e) => setNewTagName(e.target.value)}
+            onKeyDown={handleTagNameKeyDown}
+            fill
+            leftIcon="tag"
+            maxLength={30}
+          />
+          <fieldset className={styles.colorSwatches} aria-label={t('tagColor')}>
+            {([
+              { hex: '#2980b9', intent: 'primary'  as const },
+              { hex: '#27ae60', intent: 'success'  as const },
+              { hex: '#c0a828', intent: 'warning'  as const },
+              { hex: '#e74c3c', intent: 'danger'   as const },
+            ]).map(({ hex, intent }) => (
+              <Button
+                key={hex}
+                intent={intent}
+                variant={newTagColor === hex ? 'outlined' : 'minimal'}
+                size="small"
+                icon="full-circle"
+                onClick={() => setNewTagColor(hex)}
+                aria-label={intent}
+                aria-pressed={newTagColor === hex}
+                title={intent}
+              />
+            ))}
+          </fieldset>
+          <Button
+            icon="add"
+            intent={Intent.PRIMARY}
+            loading={createTagMutation.isPending}
+            disabled={!newTagName.trim()}
+            onClick={handleCreateTag}
+            aria-label={t('addTag')}
+            title={t('addTag')}
+          />
+        </div>
       </DialogBody>
       <DialogFooter actions={<Button onClick={onClose}>{t('close')}</Button>} />
+
+      {/* Tag delete confirmation */}
+      <Alert
+        isOpen={tagToDelete !== null}
+        icon="tag"
+        intent={Intent.DANGER}
+        confirmButtonText={t('deleteTag')}
+        cancelButtonText={t('cancel')}
+        loading={deleteTagMutation.isPending}
+        onCancel={() => setTagToDelete(null)}
+        onConfirm={() => {
+          if (tagToDelete) deleteTagMutation.mutate(tagToDelete.id);
+          setTagToDelete(null);
+        }}
+      >
+        <p>
+          {t('deleteTagWarning')} <b>{tagToDelete?.name}</b>.
+          {(tagToDelete?.taskCount ?? 0) > 0 && (
+            <> {t('deleteTagUsedIn')} {tagToDelete?.taskCount} {t('task(s)')}.</>
+          )}
+        </p>
+      </Alert>
+
+      {/* Member remove confirmation */}
+      <Alert
+        isOpen={memberToRemove !== null}
+        icon="person"
+        intent={Intent.WARNING}
+        confirmButtonText={t('removeMember')}
+        cancelButtonText={t('cancel')}
+        loading={removeMemberMutation.isPending}
+        onCancel={() => setMemberToRemove(null)}
+        onConfirm={() => {
+          if (memberToRemove && project)
+            removeMemberMutation.mutate({ projectId: project.id, userId: memberToRemove.userId });
+          setMemberToRemove(null);
+        }}
+      >
+        <p>
+          <b>{memberToRemove?.name ?? memberToRemove?.email}</b> {t('removeMemberWarning')}
+        </p>
+      </Alert>
     </Dialog>
   );
 };

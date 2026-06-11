@@ -286,13 +286,24 @@
   background-color: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: var(--space-md);
   margin-bottom: var(--space-sm);
-  cursor: pointer;
-  transition: background-color 0.15s ease;
+  overflow: hidden;
 }
 
-.mobileCard:hover {
+.mobileCardClickable {
+  display: block;
+  width: 100%;
+  padding: var(--space-md);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+}
+
+.mobileCardClickable:hover {
   background-color: var(--bg-surface-alt);
 }
 
@@ -416,11 +427,6 @@
 /* Current page indicator button */
 .paginationPageBtn {
   font-weight: bold;
-}
-
-/* When the button wraps to a new line, push it to the right */
-.mobileCardFooter > :last-child {
-  margin-left: auto;
 }
 
 /* Responsive Breakpoints */
