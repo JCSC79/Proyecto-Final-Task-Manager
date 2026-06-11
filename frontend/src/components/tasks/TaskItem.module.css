@@ -36,6 +36,13 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  /* Reset native <button> styles so it looks identical to the previous <div> */
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
 }
 
 .title {
@@ -77,11 +84,10 @@
 /* Highlight animation */
 @keyframes highlight-fade {
   0% { 
-    border-color: var(--accent) !important; 
-    box-shadow: 0 0 10px var(--accent); 
+    box-shadow: 0 0 0 2px var(--accent), 0 0 12px var(--accent); 
   }
   100% { 
-    border-color: transparent !important; 
+    box-shadow: none; 
   }
 }
 
@@ -100,6 +106,14 @@
   text-transform: uppercase;
 }
 
+/* Category + priority on the same compact row */
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35em;
+}
+
 /* Category badge: colored dot + label */
 .categoryBadge {
   display: inline-flex;
@@ -109,6 +123,15 @@
   font-weight: 600;
   color: var(--text-muted);
   letter-spacing: 0.02em;
+}
+
+.priorityBadge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  /* Keep same compact height as the category badge */
+  padding: 0 0.35em;
+  line-height: 1.4;
 }
 
 .categoryDot {
@@ -123,3 +146,37 @@
 .categoryDotBug         { background-color: #e74c3c; }
 .categoryDotFeature     { background-color: #3498db; }
 .categoryDotImprovement { background-color: #27ae60; }
+
+/* Tag chips row inside the task card */
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+
+/* Tag chips row inside the details dialog */
+.detailTagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border);
+}
+
+/* Tag checkboxes in the edit dialog */
+.editTagGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.editTagLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}

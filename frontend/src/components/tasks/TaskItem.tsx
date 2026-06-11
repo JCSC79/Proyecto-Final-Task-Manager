@@ -2,20 +2,68 @@ import React, { useState, useEffect } from 'react';
 import {
   Card, Elevation, H3, Text, Button, ButtonGroup,
   Alert, Intent, Dialog, Classes, FormGroup, InputGroup, TextArea,
-  Tag, Icon, HTMLSelect
+  Tag, Icon, HTMLSelect, Checkbox
 } from '@blueprintjs/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axiosInstance';
 import { getCategories } from '../../api/category.api';
-import type { Task, TaskStatus, ICategory } from '../../types/task';
+import { getTagsByProject, assignTag, unassignTag } from '../../api/tag.api';
+import type { Task, TaskStatus, TaskPriority, ICategory } from '../../types/task';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { AppToaster } from '../../utils/toaster';
 import clsx from 'clsx';
+import { TagBadge } from './TagBadge';
 import styles from './TaskItem.module.css';
 
 interface TaskItemProps {
   task: Task;
+}
+
+//  Extracted outside the component
+function getPriorityIntent(priority: TaskPriority): Intent {
+  if (priority === 'URGENT') {
+    return Intent.DANGER;
+  }
+  if (priority === 'HIGH') {
+    return Intent.WARNING;
+  }
+  if (priority === 'MEDIUM') {
+    return Intent.PRIMARY;
+  }
+  return Intent.NONE;
+}
+
+function getCategoryDotClass(name: string): string {
+  const key = `categoryDot${name}`;
+  return (styles as Record<string, string>)[key] ?? '';
+}
+
+function getTranslatedStatus(status: TaskStatus, t: (key: string) => string): string {
+  if (status === 'IN_PROGRESS') {
+    return t('inProgress');
+  }
+  if (status === 'PENDING') {
+    return t('pending');
+  }
+  return t('completed');
+}
+
+// Lookup tables — no branching
+const STATUS_INTENT: Record<string, Intent> = {
+  COMPLETED: Intent.SUCCESS,
+  IN_PROGRESS: Intent.PRIMARY,
+  PENDING: Intent.WARNING,
+};
+
+const STATUS_CLASS: Record<string, string> = {
+  COMPLETED: styles.statusDone,
+  IN_PROGRESS: styles.statusProgress,
+  PENDING: styles.statusPending,
+};
+
+function isContentEdit(payload: Partial<Task>): boolean {
+  return payload.title !== undefined || payload.description !== undefined;
 }
 
 export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
@@ -34,6 +82,21 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   const [editTitle, setEditTitle] = useState(task.title);
   const [editDescription, setEditDescription] = useState(task.description);
   const [editCategoryId, setEditCategoryId] = useState<string>(task.category?.id ?? '');
+  const [editPriority, setEditPriority] = useState<TaskPriority | ''>(task.priority ?? '');
+  const [editTagIds, setEditTagIds] = useState<string[]>([]);
+
+  // Reset edit state when the edit dialog opens — "setState during render" avoids useEffect
+  const [prevIsEditOpen, setPrevIsEditOpen] = useState(false);
+  if (prevIsEditOpen !== isEditOpen) {
+    setPrevIsEditOpen(isEditOpen);
+    if (isEditOpen) {
+      setEditTitle(task.title);
+      setEditDescription(task.description);
+      setEditCategoryId(task.category?.id ?? '');
+      setEditPriority(task.priority ?? '');
+      setEditTagIds(task.tags?.map(tag => tag.id) ?? []);
+    }
+  }
 
   const { data: categories = [] } = useQuery<ICategory[]>({
     queryKey: ['categories'],
@@ -41,9 +104,17 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
     staleTime: Infinity,
   });
 
+  // Fetch project tags only when the edit dialog is open and the task belongs to a project
+  const { data: projectTags = [] } = useQuery({
+    queryKey: ['tags', task.projectId],
+    queryFn: () => getTagsByProject(task.projectId!),
+    enabled: !!task.projectId && isEditOpen,
+  });
+
   const isInProgress = task.status === 'IN_PROGRESS';
   const isCompleted = task.status === 'COMPLETED';
-  const statusIntent = isCompleted ? Intent.SUCCESS : isInProgress ? Intent.PRIMARY : Intent.WARNING;
+  const statusIntent = STATUS_INTENT[task.status] ?? Intent.WARNING;
+  const cardStatusClass = STATUS_CLASS[task.status] ?? styles.statusPending;
 
   const [showHighlight, setShowHighlight] = useState(() => {
     if (!task.createdAt) {
@@ -63,7 +134,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
     mutationFn: (payload: Partial<Task>) => api.patch(`/api/tasks/${task.id}`, payload),
     onSuccess: (_, payload) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      const isEditingContent = payload.title !== undefined || payload.description !== undefined;
+      const isEditingContent = isContentEdit(payload);
       if (isEditingContent) {
         AppToaster.show({
           message: t('taskUpdated'),
@@ -101,57 +172,101 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
     },
   });
 
-  const nextStatus: TaskStatus | null = task.status === 'PENDING' ? 'IN_PROGRESS' : isInProgress ? 'COMPLETED' : null;
-  const prevStatus: TaskStatus | null = isCompleted ? 'IN_PROGRESS' : isInProgress ? 'PENDING' : null;
-
-  const getTranslatedStatus = (status: TaskStatus) => {
-    if (status === 'IN_PROGRESS') {
-      return t('inProgress');
+  const handleSaveEdit = () => {
+    // Reconcile tag changes in parallel (fire-and-forget; invalidation handles the UI refresh)
+    const originalIds = task.tags?.map(tag => tag.id) ?? [];
+    const toAdd = editTagIds.filter(id => !originalIds.includes(id));
+    const toRemove = originalIds.filter(id => !editTagIds.includes(id));
+    const hasTagChanges = toAdd.length > 0 || toRemove.length > 0;
+    if (hasTagChanges) {
+      Promise.all([
+        ...toAdd.map(id => assignTag(task.id, id)),
+        ...toRemove.map(id => unassignTag(task.id, id)),
+      ]).then(() => queryClient.invalidateQueries({ queryKey: ['tasks'] }))
+        .catch(() => AppToaster.show({ message: t('errorLoadingTasks'), intent: Intent.DANGER }));
     }
-    if (status === 'PENDING') {
-      return t('pending');
-    }
-    return t('completed');
+    // Save task fields — onSuccess shows toast and closes the dialog
+    updateMutation.mutate({
+      title: editTitle,
+      description: editDescription,
+      categoryId: editCategoryId || null,
+      ...(editPriority ? { priority: editPriority } : { priority: null }),
+    });
   };
+
+  let nextStatus: TaskStatus | null = null;
+  if (task.status === 'PENDING') {
+    nextStatus = 'IN_PROGRESS';
+  } else if (isInProgress) {
+    nextStatus = 'COMPLETED';
+  }
+
+  let prevStatus: TaskStatus | null = null;
+  if (isCompleted) {
+    prevStatus = 'IN_PROGRESS';
+  } else if (isInProgress) {
+    prevStatus = 'PENDING';
+  }
 
   return (
     <>
       <Card
         elevation={Elevation.ONE}
         interactive
-        className={clsx(
-          styles.card,
-          isCompleted ? styles.statusDone : isInProgress ? styles.statusProgress : styles.statusPending,
-          showHighlight && styles.newTaskHighlight
-        )}
+        className={clsx(styles.card, cardStatusClass, showHighlight && styles.newTaskHighlight)}
       >
-        <div className={styles.content} onClick={() => setIsDetailsOpen(true)} role="button" tabIndex={0}>
+        <button
+          type="button"
+          className={styles.content}
+          onClick={() => setIsDetailsOpen(true)}
+        >
           <H3 className={clsx(styles.title, isCompleted && styles.titleDone)}>
             {task.title}
           </H3>
           <Text ellipsize className={styles.description}>
             {task.description || t('noDescription')}
           </Text>
-          {task.category && (
-            <span className={styles.categoryBadge}>
-              <span className={`${styles.categoryDot} ${styles[`categoryDot${task.category.name}` as keyof typeof styles] ?? ''}`} />
-              {task.category.name}
-            </span>
+          {Boolean(task.category ?? task.priority) && (
+            <div className={styles.metaRow}>
+              {task.category && (
+                <span className={styles.categoryBadge}>
+                  <span className={`${styles.categoryDot} ${getCategoryDotClass(task.category.name)}`} />
+                  {task.category.name}
+                </span>
+              )}
+              {task.priority && (
+                <Tag
+                  minimal
+                  round
+                  intent={getPriorityIntent(task.priority)}
+                  className={styles.priorityBadge}
+                >
+                  {t(task.priority)}
+                </Tag>
+              )}
+            </div>
+          )}
+          {task.tags && task.tags.length > 0 && (
+            <div className={styles.tagRow}>
+              {task.tags.map((tag) => (
+                <TagBadge key={tag.id} tag={tag} />
+              ))}
+            </div>
           )}
           {task.createdAt && (
             <div className={styles.dateRow}>
-              <Icon icon="calendar" size={16} />
+              <Icon icon="calendar" size={16} aria-hidden="true" />
               <span>{new Date(task.createdAt).toLocaleDateString()}</span>
             </div>
           )}
-        </div>
+        </button>
 
         <ButtonGroup variant="minimal" className={styles.actions}>
           {prevStatus && (
             <Button 
               icon="undo" 
               /* ACCESSIBILITY FIX: Enhanced ARIA label for empty buttons */
-              aria-label={`${t('moveTo')} ${getTranslatedStatus(prevStatus)}`} 
+              aria-label={`${t('moveTo')} ${getTranslatedStatus(prevStatus, t)}`} 
               onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ status: prevStatus }); }} 
             />
           )}
@@ -159,7 +274,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
             <Button 
               icon="double-chevron-right" 
               intent="primary" 
-              aria-label={`${t('moveTo')} ${getTranslatedStatus(nextStatus)}`} 
+              aria-label={`${t('moveTo')} ${getTranslatedStatus(nextStatus, t)}`} 
               onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ status: nextStatus }); }} 
             />
           )}
@@ -192,12 +307,19 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
           <div className={styles.detailHeader}>
             <H3 className={styles.dialogTitle}>{task.title}</H3>
             <Tag intent={statusIntent} size="large" round className={styles.statusTag}>
-              {getTranslatedStatus(task.status)}
+              {getTranslatedStatus(task.status, t)}
             </Tag>
           </div>
           <div className={styles.detailBody}>
             <Text>{task.description || t('noDetails')}</Text>
           </div>
+          {task.tags && task.tags.length > 0 && (
+            <div className={styles.detailTagRow}>
+              {task.tags.map((tag) => (
+                <TagBadge key={tag.id} tag={tag} />
+              ))}
+            </div>
+          )}
           {task.createdAt && (
             <div className={styles.detailDate}>
               {t('createdOn')}: {new Date(task.createdAt).toLocaleString()}
@@ -250,18 +372,50 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
               </HTMLSelect>
             </FormGroup>
           )}
+          <FormGroup label={t('priority')} labelFor="edit-priority-select">
+            <HTMLSelect
+              id="edit-priority-select"
+              fill
+              value={editPriority}
+              onChange={(e) => setEditPriority(e.target.value as TaskPriority | '')}
+            >
+              <option value="">{t('noPriority')}</option>
+              {(['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const).map((p) => (
+                <option key={p} value={p}>{t(p)}</option>
+              ))}
+            </HTMLSelect>
+          </FormGroup>
+          {projectTags.length > 0 && (
+            <FormGroup label={t('tags')}>
+              <div className={styles.editTagGrid}>
+                {projectTags.map((tag) => {
+                  const checked = editTagIds.includes(tag.id);
+                  return (
+                    <label key={tag.id} className={styles.editTagLabel}>
+                      <Checkbox
+                        checked={checked}
+                        onChange={() =>
+                          setEditTagIds(
+                            checked
+                              ? editTagIds.filter(id => id !== tag.id)
+                              : [...editTagIds, tag.id]
+                          )
+                        }
+                      />
+                      <TagBadge tag={tag} />
+                    </label>
+                  );
+                })}
+              </div>
+            </FormGroup>
+          )}
         </div>
         <div className={Classes.DIALOG_FOOTER}>
           <div className={Classes.DIALOG_FOOTER_ACTIONS}>
             <Button onClick={() => setIsEditOpen(false)}>{t('cancel')}</Button>
             <Button
               intent="primary"
-              onClick={() => updateMutation.mutate({
-                title: editTitle,
-                description: editDescription,
-                // null explicitly clears the category; a UUID assigns one
-                categoryId: editCategoryId || null,
-              })}
+              onClick={handleSaveEdit}
               loading={updateMutation.isPending}
             >
               {t('saveChanges')}
