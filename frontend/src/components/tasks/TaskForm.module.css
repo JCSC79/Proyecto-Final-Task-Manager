@@ -61,3 +61,17 @@
     height: 50px !important;
   }
 }
+
+/* Tag multi-select in TaskForm */
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.tagCheckLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}

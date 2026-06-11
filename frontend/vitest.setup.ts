@@ -1,4 +1,3 @@
-// import '@testing-library/jest-dom';
 import '@testing-library/jest-dom';
 import { beforeAll, afterAll } from 'vitest';
 
@@ -12,7 +11,7 @@ const originalError = console.error;
 beforeAll(() => {
   console.error = (...args: unknown[]) => {
     // We convert everything to a string to make sure we don't miss anything
-    const fullMessage = args.map(arg => String(arg)).join(' ');
+    const fullMessage = args.map(String).join(' ');
 
     // Patterns that match the annoying act warnings
     const isActWarning = /act\(\.\.\.\)/i.test(fullMessage);

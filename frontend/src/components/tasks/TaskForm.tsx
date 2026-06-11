@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Button, InputGroup, TextArea, FormGroup, H4, Intent, HTMLSelect } from '@blueprintjs/core';
+import { Button, InputGroup, TextArea, FormGroup, H4, Intent, HTMLSelect, Checkbox } from '@blueprintjs/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axiosInstance';
 import { getProjects } from '../../api/project.api';
 import { getCategories } from '../../api/category.api';
+import { getTagsByProject } from '../../api/tag.api';
 import { useTranslation } from 'react-i18next';
 import { AppToaster } from '../../utils/toaster';
 import type { IProject } from '../../types/project';
-import type { ICategory } from '../../types/task';
+import type { ICategory, TaskPriority } from '../../types/task';
+import { TagBadge } from './TagBadge';
 import styles from './TaskForm.module.css';
 
 // 1. Interface for the exact shape of our API error responses
@@ -31,6 +33,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
   const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState<string>(defaultProjectId ?? '');
   const [categoryId, setCategoryId] = useState<string>('');
+  const [priority, setPriority] = useState<TaskPriority | ''>('');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
   const { data: categories = [] } = useQuery<ICategory[]>({
     queryKey: ['categories'],
@@ -43,8 +47,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
     queryFn: getProjects,
   });
 
+  const { data: projectTags = [] } = useQuery({
+    queryKey: ['tags', projectId],
+    queryFn: () => getTagsByProject(projectId),
+    enabled: !!projectId,
+  });
+
   const mutation = useMutation({
-    mutationFn: (newTask: { title: string; description: string; projectId?: string; categoryId?: string }) =>
+    mutationFn: (newTask: { title: string; description: string; projectId?: string; categoryId?: string; tagIds?: string[] }) =>
       api.post('/api/tasks', newTask),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -72,9 +82,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
     },
   });
 
-  const handleClear = () => { setTitle(''); setDescription(''); setProjectId(defaultProjectId ?? ''); setCategoryId(''); };
+  const handleClear = () => { setTitle(''); setDescription(''); setProjectId(defaultProjectId ?? ''); setCategoryId(''); setPriority(''); setSelectedTagIds([]); };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
       AppToaster.show({ message: t('requiredFieldsError'), intent: Intent.WARNING, icon: 'info-sign' });
@@ -85,6 +95,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
       description,
       ...(projectId ? { projectId } : {}),
       ...(categoryId ? { categoryId } : {}),
+      ...(priority ? { priority } : {}),
+      ...(selectedTagIds.length > 0 ? { tagIds: selectedTagIds } : {}),
     });
   };
 
@@ -118,7 +130,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
               id="project-select"
               fill
               value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
+              onChange={(e) => { setProjectId(e.target.value); setSelectedTagIds([]); }}
             >
               <option value="">{t('noProject')}</option>
               {projects.map((p) => (
@@ -140,6 +152,43 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </HTMLSelect>
+          </FormGroup>
+        )}
+        <FormGroup label={t('priority')} labelFor="priority-select">
+          <HTMLSelect
+            id="priority-select"
+            fill
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as TaskPriority | '')}
+          >
+            <option value="">{t('noPriority')}</option>
+            {(['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const).map((p) => (
+              <option key={p} value={p}>{t(p)}</option>
+            ))}
+          </HTMLSelect>
+        </FormGroup>
+        {projectTags.length > 0 && (
+          <FormGroup label={t('tags')}>
+            <div className={styles.tagList}>
+              {projectTags.map((tag) => {
+                const checked = selectedTagIds.includes(tag.id);
+                return (
+                  <label key={tag.id} className={styles.tagCheckLabel}>
+                    <Checkbox
+                      checked={checked}
+                      onChange={() =>
+                        setSelectedTagIds(
+                          checked
+                            ? selectedTagIds.filter((id) => id !== tag.id)
+                            : [...selectedTagIds, tag.id]
+                        )
+                      }
+                    />
+                    <TagBadge tag={tag} />
+                  </label>
+                );
+              })}
+            </div>
           </FormGroup>
         )}
         <div className={styles.buttonRow}>
