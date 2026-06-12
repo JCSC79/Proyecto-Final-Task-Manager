@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import {
   InputGroup, ButtonGroup, Button, Card,
-  Elevation, Alert, Intent, Popover, Position
+  Elevation, Alert, Intent, Popover, HTMLSelect
 } from '@blueprintjs/core';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axiosInstance';
-import type { TaskStatus } from '../../types/task';
+import type { TaskStatus, TaskPriority, ICategory } from '../../types/task';
 import { useTranslation } from 'react-i18next';
 import { AppToaster } from '../../utils/toaster';
+import { getCategories } from '../../api/category.api';
 import styles from './TaskFilters.module.css';
 
 interface TaskFiltersProps {
@@ -15,6 +16,10 @@ interface TaskFiltersProps {
   setSearchTerm: (val: string) => void;
   statusFilter: string;
   setStatusFilter: (val: TaskStatus | 'ALL') => void;
+  categoryId: string | null;
+  setCategoryId: (val: string | null) => void;
+  priorityFilter: TaskPriority | 'ALL';
+  setPriorityFilter: (val: TaskPriority | 'ALL') => void;
 }
 
 interface FilterButtonsProps {
@@ -26,9 +31,6 @@ interface FilterButtonsProps {
   onClearCompleted?: () => void;
 }
 
-/**
- * Sub-component for filter buttons.
- */
 const FilterButtons: React.FC<FilterButtonsProps> = ({
   isMobile = false, statusFilter, setStatusFilter, t, onSelect, onClearCompleted
 }) => {
@@ -91,15 +93,25 @@ const FilterButtons: React.FC<FilterButtonsProps> = ({
 };
 
 export const TaskFilters: React.FC<TaskFiltersProps> = ({
-  searchTerm,
+  searchTerm, 
   setSearchTerm,
-  statusFilter,
+  statusFilter, 
   setStatusFilter,
+  categoryId, 
+  setCategoryId,
+  priorityFilter, 
+  setPriorityFilter,
 }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+
+  const { data: categories = [] } = useQuery<ICategory[]>({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+    staleTime: Infinity,
+  });
 
   const clearMutation = useMutation({
     mutationFn: async (): Promise<void> => {
@@ -117,13 +129,15 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     onError: (err: Error) => {
       AppToaster.show({
         message: `${t('errorLoadingTasks')}: ${err.message}`,
-        intent: Intent.DANGER,
+        intent: Intent.DANGER
       });
     },
   });
 
   return (
-    <Card elevation={Elevation.ZERO} className={styles.wrapper}>
+    <Card elevation={Elevation.ZERO} className={styles.wrapper} >
+
+      {/* Row 1: search + status filters */}
       <div className={styles.row}>
         <div className={styles.searchWrapper}>
           <InputGroup
@@ -146,50 +160,100 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           />
         </div>
 
-        <div className={styles.controlsContainer}>
-          <div className={styles.desktopFilters}>
-            <FilterButtons
-              statusFilter={statusFilter}
-              setStatusFilter={setStatusFilter}
-              t={t}
-              onClearCompleted={() => setIsAlertOpen(true)}
-            />
-          </div>
-
-          <div className={styles.mobileFilters}>
-            <Popover
-              isOpen={isPopoverOpen}
-              onInteraction={(state) => setIsPopoverOpen(state)}
-              position={Position.BOTTOM}
-              minimal={true}
-              matchTargetWidth={true}
-              usePortal={false}
-              content={
-                <div className={styles.popoverMenu}>
-                  <FilterButtons
-                    isMobile
-                    statusFilter={statusFilter}
-                    setStatusFilter={setStatusFilter}
-                    t={t}
-                    onSelect={() => setIsPopoverOpen(false)}
-                    onClearCompleted={() => { setIsPopoverOpen(false); setIsAlertOpen(true); }}
-                  />
-                </div>
-              }
-            >
-              <Button
-                size="large"
-                fill
-                icon="filter-list"
-                text={t('statusDistribution')}
-                endIcon="caret-down"
-                className={styles.filterMenuBtn}
-                aria-label={t('statusDistribution')}
-              />
-            </Popover>
-          </div>
-
+        <div className={styles.desktopFilters}>
+          <FilterButtons
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            t={t}
+            onClearCompleted={() => setIsAlertOpen(true)}
+          />
         </div>
+
+        <div className={styles.mobileFilters}>
+          <Popover
+            isOpen={isPopoverOpen}
+            onInteraction={(state) => setIsPopoverOpen(state)}
+            placement="bottom-end"
+            usePortal={false}
+            content={
+              <div className={styles.popoverMenu}>
+                <FilterButtons
+                  isMobile
+                  statusFilter={statusFilter}
+                  setStatusFilter={setStatusFilter}
+                  t={t}
+                  onSelect={() => setIsPopoverOpen(false)}
+                  onClearCompleted={() => { setIsPopoverOpen(false); setIsAlertOpen(true); }}
+                />
+              </div>
+            }
+          >
+            <Button
+              size="large"
+              fill
+              icon="filter-list"
+              text={t('statusDistribution')}
+              endIcon="caret-down"
+              className={styles.filterMenuBtn}
+              aria-label={t('statusDistribution')}
+            />
+          </Popover>
+        </div>
+      </div>
+
+      {/* Row 2: advanced filters + clear button */}
+      <div className={styles.advancedRow}>
+        {categories.length > 0 && (
+          <div className={styles.advancedSelect}>
+            <HTMLSelect
+              value={categoryId ?? ''}
+              onChange={(e) => setCategoryId(e.target.value || null)}
+              aria-label={t('filterByCategory')}
+              fill={true}
+              iconName='caret-down'
+            >
+              <option value="">{t('filterByCategory')}</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </HTMLSelect>
+          </div>
+        )}
+
+        <div className={styles.advancedSelect}>
+          <HTMLSelect
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value as TaskPriority | 'ALL')}
+            aria-label={t('priority')}
+            fill={true}
+            iconName='caret-down'
+          >
+            <option value="ALL">{t('priority')}: {t('all')}</option>
+            <option value="URGENT">{t('URGENT')}</option>
+            <option value="HIGH">{t('HIGH')}</option>
+            <option value="MEDIUM">{t('MEDIUM')}</option>
+            <option value="LOW">{t('LOW')}</option>
+          </HTMLSelect>
+        </div>
+
+        {(searchTerm !== '' || statusFilter !== 'ALL' || categoryId !== null || priorityFilter !== 'ALL') && (
+          <Button
+            icon="filter-remove"
+            intent={Intent.PRIMARY}
+            variant="outlined"
+            className={styles.clearFiltersBtn}
+            onClick={() => {
+              setSearchTerm('');
+              setStatusFilter('ALL');
+              setCategoryId(null);
+              setPriorityFilter('ALL');
+            }}
+            aria-label={t('clearFilters')}
+            title={t('clearFilters')}
+          >
+            {t('clearFilters')}
+          </Button>
+        )}
       </div>
 
       <Alert

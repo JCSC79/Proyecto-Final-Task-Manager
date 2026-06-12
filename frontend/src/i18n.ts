@@ -226,8 +226,8 @@ i18n
           "HIGH": "High",
           "URGENT": "Urgent",
           "err_priority_invalid": "Invalid priority value",
-          "filterByCategory": "Filter by category"
-
+          "filterByCategory": "Filter by category",
+          "clearFilters": "Clear filters"
         }
       },
       es: {
@@ -449,9 +449,8 @@ i18n
           "HIGH": "Alta",
           "URGENT": "Urgente",
           "err_priority_invalid": "Valor de prioridad no válido",
-          "filterByCategory": "Filtrar por categoría"
-
-          
+          "filterByCategory": "Filtrar por categoría",
+          "clearFilters": "Limpiar filtros"
         }
       }
     },
