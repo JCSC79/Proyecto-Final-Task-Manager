@@ -174,61 +174,66 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
               ].filter(Boolean).join(' ');
 
               return (
-                <button
+                <div
                   key={project.id}
                   className={chipClass}
-                  onClick={() => onSelect(project.id)}
                   title={project.name}
                 >
-                  <span className={styles.chipName}>{project.name}</span>
-                  <span className={styles.memberBadge}>{project.memberCount}</span>
+                  <button
+                    type="button"
+                    className={styles.chipSelectArea}
+                    onClick={() => onSelect(project.id)}
+                  >
+                    <span className={styles.chipName}>{project.name}</span>
+                    <span className={styles.memberBadge}>{project.memberCount}</span>
+                  </button>
 
-                  {/* OWNER — rename + manage + delete buttons */}
+                  {/* OWNER — rename + manage + delete actions */}
                   {role === 'OWNER' && (
                     <>
-                      <span
-                        role="button"
+                      <button
+                        type="button"
                         className={styles.editBtn}
                         onClick={(e) => handleRenameClick(e, project)}
                         aria-label={`${t('renameProject')}: ${project.name}`}
                         title={t('renameProject')}
                       >
                         <Icon icon="edit" size={18} />
-                      </span>
-                      <span
-                        role="button"
+                      </button>
+                      <button
+                        type="button"
                         className={styles.editBtn}
                         onClick={(e) => handleManageClick(e, project)}
                         aria-label={`${t('manageProject')}: ${project.name}`}
                         title={t('manageProject')}
                       >
                         <Icon icon="people" size={18} />
-                      </span>
-                      <span
-                        role="button"
+                      </button>
+                      <button
+                        type="button"
                         className={styles.deleteBtn}
                         onClick={(e) => handleDeleteClick(e, project)}
                         aria-label={`${t('deleteProject')}: ${project.name}`}
                         title={t('deleteProject')}
                       >
                         <Icon icon="cross" size={18} />
-                      </span>
+                      </button>
                     </>
                   )}
 
-                  {/* MEMBER — leave button */}
+                  {/* MEMBER — leave action */}
                   {role === 'MEMBER' && (
-                    <span
-                      role="button"
+                    <button
+                      type="button"
                       className={styles.leaveBtn}
                       onClick={(e) => handleLeaveClick(e, project)}
                       aria-label={`${t('leaveProject')}: ${project.name}`}
                       title={t('leaveProject')}
                     >
                       <Icon icon="log-out" size={18} />
-                    </span>
+                    </button>
                   )}
-                </button>
+                </div>
               );
             })}
 

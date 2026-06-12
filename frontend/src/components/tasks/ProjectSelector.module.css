@@ -130,6 +130,20 @@
   background: rgba(255,255,255,0.25);
 }
 
+/* Selectable area inside member chip (avoids nested <button>) */
+.chipSelectArea {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: inherit;
+  min-width: 0;
+}
+
 /* Delete  button inside OWNER chips */
 .deleteBtn {
   display: inline-flex;
