@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import amqp from 'amqplib';
 import type { Channel, ConsumeMessage } from 'amqplib';
-import type { ITask } from './models/task.model.ts';
+import type { TaskNotificationPayload } from './models/notification.model.ts';
+import { emailService } from './services/email.service.ts';
 
 const QUEUE = 'task_notifications';
 const MAX_RETRY_DELAY_MS = 30_000;
@@ -20,6 +21,9 @@ async function startWorker(attempt = 1): Promise<void> {
         if (!rabbitmqUrl) {
             throw new Error('RABBITMQ_URL environment variable is required');
         }
+
+        // Initialize email service before consuming messages
+        await emailService.init();
 
         const connection = await amqp.connect(rabbitmqUrl);
 
@@ -52,22 +56,25 @@ async function startWorker(attempt = 1): Promise<void> {
 
         channel.consume(QUEUE, (msg: ConsumeMessage | null) => {
             if (msg && channel) {
-                try {
-                    const content = msg.content.toString();
-                    const task: ITask = JSON.parse(content);
+                void (async () => {
+                    try {
+                        const content = msg.content.toString();
+                        const payload: TaskNotificationPayload = JSON.parse(content);
+                        const { task, recipientEmail, eventType } = payload;
 
-                    console.log('--------------------------------------------');
-                    console.log(`[v] Received Task: ${task.title}`);
-                    console.log(`[i] Status: ${task.status}`);
-                    console.log(`[i] Description: ${task.description}`);
-                    console.log(`[i] ID: ${task.id}`);
-                    console.log('--------------------------------------------');
+                        console.log('--------------------------------------------');
+                        console.log(`[v] Received: ${eventType} -> ${task.title}`);
+                        console.log(`[i] Recipient: ${recipientEmail}`);
+                        console.log(`[i] Status: ${task.status}`);
+                        console.log('--------------------------------------------');
 
-                    channel.ack(msg);
-                } catch (parseError) {
-                    console.error('[-] Error parsing worker message:', parseError);
-                    channel.nack(msg, false, false);
-                }
+                        await emailService.sendTaskNotification(payload);
+                        channel.ack(msg);
+                    } catch (parseError) {
+                        console.error('[-] Error processing worker message:', parseError);
+                        channel.nack(msg, false, false);
+                    }
+                })();
             }
         }, { noAck: false });
 
