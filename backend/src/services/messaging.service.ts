@@ -1,6 +1,6 @@
 import amqp from 'amqplib';
 import type { Channel } from 'amqplib';
-import type { ITask } from '../models/task.model.ts';
+import type { TaskNotificationPayload, NotificationEventType } from '../models/notification.model.ts';
 
 /**
  * Service to handle asynchronous messaging with RabbitMQ.
@@ -39,22 +39,25 @@ class MessagingService {
 
     /**
      * Publishes a task notification to the queue.
-     * @param {ITask} taskData - The specific task record to be notified.
+     * @param taskData - The task record.
+     * @param recipientEmail - Email address of the user to notify.
+     * @param eventType - What triggered the notification.
      */
-    async sendTaskNotification(taskData: ITask): Promise<void> {
+    async sendTaskNotification(taskData: TaskNotificationPayload['task'], recipientEmail: string, eventType: NotificationEventType = 'TASK_CREATED'): Promise<void> {
         if (!this.channel) {
             console.error('[-] Messaging channel not initialized.');
             return;
         }
-        
-        const payload = JSON.stringify(taskData);
-        
+
+        const payload: TaskNotificationPayload = { task: taskData, recipientEmail, eventType };
+        const message = JSON.stringify(payload);
+
         // Convert to Buffer and send with persistence enabled for reliability
-        this.channel.sendToQueue(this.queue, Buffer.from(payload), {
+        this.channel.sendToQueue(this.queue, Buffer.from(message), {
             persistent: true 
         });
-        
-        console.log(` [x] Sent to RabbitMQ: ${taskData.title}`);
+
+        console.log(` [x] Sent to RabbitMQ: ${taskData.title} (${eventType} -> ${recipientEmail})`);
     }
 }
 

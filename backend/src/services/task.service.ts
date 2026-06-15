@@ -2,6 +2,7 @@ import { TaskStatus } from '../models/task.model.ts';
 import type { ITask } from '../models/task.model.ts'; 
 import { taskDAO } from '../daos/task.dao.ts';
 import { tagDAO } from '../daos/tag.dao.ts';
+import { userDAO } from '../daos/user.dao.ts';
 import { messagingService } from './messaging.service.ts';
 import { Result } from '../utils/result.ts';
 import { createTaskSchema, updateTaskSchema } from '../schemas/task.schema.ts';
@@ -69,7 +70,7 @@ export class TaskService {
                 createdTask.tags = await tagDAO.getByTask(createdTask.id);
             }
 
-            await this.messaging.sendTaskNotification(createdTask);
+            await this.messaging.sendTaskNotification(createdTask, await getUserEmail(userId), 'TASK_CREATED');
             return Result.ok(createdTask);
         } catch (err: unknown) {
             const error = err as { errors?: string[]; message: string };
@@ -111,6 +112,10 @@ export class TaskService {
                 if (!updatedTask) {
                     return Result.fail<ITask>('Task not found or you are not a member of this project');
                 }
+                // Fire email notification only when task reaches COMPLETED
+                if (validated.status === TaskStatus.COMPLETED) {
+                    await this.messaging.sendTaskNotification(updatedTask, await getUserEmail(userId), 'TASK_COMPLETED');
+                }
                 return Result.ok(updatedTask);
             }
             
@@ -133,3 +138,9 @@ export class TaskService {
 }
 
 export const taskService = new TaskService();
+
+/** Resolves the email for a userId, falling back to a placeholder if not found. */
+async function getUserEmail(userId: string): Promise<string> {
+    const user = await userDAO.getById(userId);
+    return user?.email ?? 'unknown@taskmanager.dev';
+}
