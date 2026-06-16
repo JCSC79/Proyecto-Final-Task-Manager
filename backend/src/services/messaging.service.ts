@@ -1,6 +1,7 @@
 import amqp from 'amqplib';
 import type { Channel } from 'amqplib';
 import type { TaskNotificationPayload, NotificationEventType } from '../models/notification.model.ts';
+import type { IAuditLogEvent } from '../models/audit.model.ts';
 
 /**
  * Service to handle asynchronous messaging with RabbitMQ.
@@ -9,6 +10,7 @@ import type { TaskNotificationPayload, NotificationEventType } from '../models/n
 class MessagingService {
     private channel?: Channel;
     private readonly queue = 'task_notifications';
+    private readonly auditQueue = 'audit_events';
 
     /**
      * Initializes the connection and creates a persistent communication channel.
@@ -28,9 +30,10 @@ class MessagingService {
             }
             
             if (this.channel) {
-                // Ensure the queue is durable (survives broker restarts)
+                // Ensure both queues are durable (survive broker restarts)
                 await this.channel.assertQueue(this.queue, { durable: true });
-                console.log(`[*] Connected to RabbitMQ. Queue ready: ${this.queue}`);
+                await this.channel.assertQueue(this.auditQueue, { durable: true });
+                console.log(`[*] Connected to RabbitMQ. Queues ready: ${this.queue}, ${this.auditQueue}`);
             }
         } catch (error) {
             console.error('[-] RabbitMQ Connection Error:', error);
@@ -58,6 +61,19 @@ class MessagingService {
         });
 
         console.log(` [x] Sent to RabbitMQ: ${taskData.title} (${eventType} -> ${recipientEmail})`);
+    }
+
+    /**
+     * Publishes an audit event to the audit_events queue.
+     * @param event - The audit log entry to persist.
+     */
+    async sendAuditEvent(event: IAuditLogEvent): Promise<void> {
+        if (!this.channel) {
+            console.error('[-] Messaging channel not initialized.');
+            return;
+        }
+        this.channel.sendToQueue(this.auditQueue, Buffer.from(JSON.stringify(event)), { persistent: true });
+        console.log(` [x] Audit event queued: ${event.action} on task ${event.taskId}`);
     }
 }
 

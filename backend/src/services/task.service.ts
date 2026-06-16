@@ -71,6 +71,13 @@ export class TaskService {
             }
 
             await this.messaging.sendTaskNotification(createdTask, await getUserEmail(userId), 'TASK_CREATED');
+            await this.messaging.sendAuditEvent({
+                taskId: createdTask.id,
+                userId,
+                action: 'TASK_CREATED',
+                oldValue: null,
+                newValue: createdTask as unknown as Record<string, unknown>,
+            });
             return Result.ok(createdTask);
         } catch (err: unknown) {
             const error = err as { errors?: string[]; message: string };
@@ -79,9 +86,19 @@ export class TaskService {
     }
 
     async deleteTask(id: string, userId: string): Promise<Result<void>> {
+        const existing = await this.dao.getById(id, userId);
         const success = await this.dao.delete(id, userId);
         if (!success) {
             return Result.fail<void>("Task not found or permission denied");
+        }
+        if (existing) {
+            await this.messaging.sendAuditEvent({
+                taskId: id,
+                userId,
+                action: 'TASK_DELETED',
+                oldValue: existing as unknown as Record<string, unknown>,
+                newValue: null,
+            });
         }
         return Result.ok(undefined);
     }
@@ -116,6 +133,13 @@ export class TaskService {
                 if (validated.status === TaskStatus.COMPLETED) {
                     await this.messaging.sendTaskNotification(updatedTask, await getUserEmail(userId), 'TASK_COMPLETED');
                 }
+                await this.messaging.sendAuditEvent({
+                    taskId: id,
+                    userId,
+                    action: validated.status === TaskStatus.COMPLETED ? 'TASK_COMPLETED' : 'TASK_UPDATED',
+                    oldValue: null,
+                    newValue: { status: validated.status },
+                });
                 return Result.ok(updatedTask);
             }
             
@@ -129,6 +153,13 @@ export class TaskService {
             if (!updatedTask) {
                 return Result.fail<ITask>("Unauthorized update attempt or task not found");
             }
+            await this.messaging.sendAuditEvent({
+                taskId: id,
+                userId,
+                action: 'TASK_UPDATED',
+                oldValue: null,
+                newValue: updates,
+            });
             return Result.ok(updatedTask);
         } catch (err: unknown) {
             const error = err as { errors?: string[]; message: string };

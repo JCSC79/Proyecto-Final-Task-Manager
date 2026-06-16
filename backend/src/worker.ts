@@ -2,9 +2,12 @@ import 'dotenv/config';
 import amqp from 'amqplib';
 import type { Channel, ConsumeMessage } from 'amqplib';
 import type { TaskNotificationPayload } from './models/notification.model.ts';
+import type { IAuditLogEvent } from './models/audit.model.ts';
 import { emailService } from './services/email.service.ts';
+import { auditDAO } from './daos/audit.dao.ts';
 
 const QUEUE = 'task_notifications';
+const AUDIT_QUEUE = 'audit_events';
 const MAX_RETRY_DELAY_MS = 30_000;
 
 /**
@@ -50,9 +53,10 @@ async function startWorker(attempt = 1): Promise<void> {
         }
 
         await channel.assertQueue(QUEUE, { durable: true });
+        await channel.assertQueue(AUDIT_QUEUE, { durable: true });
         await channel.prefetch(1);
 
-        console.log(`[*] Worker waiting for messages in ${QUEUE}. To exit press CTRL+C`);
+        console.log(`[*] Worker waiting for messages in ${QUEUE} and ${AUDIT_QUEUE}. To exit press CTRL+C`);
 
         channel.consume(QUEUE, (msg: ConsumeMessage | null) => {
             if (msg && channel) {
@@ -72,6 +76,23 @@ async function startWorker(attempt = 1): Promise<void> {
                         channel.ack(msg);
                     } catch (parseError) {
                         console.error('[-] Error processing worker message:', parseError);
+                        channel.nack(msg, false, false);
+                    }
+                })();
+            }
+        }, { noAck: false });
+
+        // ── Audit events consumer ──────────────────────────────────────────────
+        channel.consume(AUDIT_QUEUE, (msg: ConsumeMessage | null) => {
+            if (msg && channel) {
+                void (async () => {
+                    try {
+                        const event: IAuditLogEvent = JSON.parse(msg.content.toString());
+                        await auditDAO.insert(event);
+                        console.log(`[v] Audit persisted: ${event.action} on task ${event.taskId}`);
+                        channel.ack(msg);
+                    } catch (err) {
+                        console.error('[-] Error persisting audit event:', err);
                         channel.nack(msg, false, false);
                     }
                 })();

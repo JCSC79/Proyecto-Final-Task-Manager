@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { taskService } from '../services/task.service.ts';
+import { auditDAO } from '../daos/audit.dao.ts';
 
 /**
  * Interface to extend Express Request with user context.
@@ -112,6 +113,18 @@ class TaskController {
       return res.status(403).json({ error: result.error });
     }
     res.json(result.getValue());
+  }
+
+  /**
+   * GET /api/tasks/:id/history
+   */
+  async getHistory(req: Request, res: Response): Promise<Response | void> {
+    const { id } = req.params;
+    if (typeof id !== 'string') {
+      return res.status(400).json({ error: 'Invalid ID format' });
+    }
+    const logs = await auditDAO.getByTaskId(id);
+    res.json(logs);
   }
 }
 
