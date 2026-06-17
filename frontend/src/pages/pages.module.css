@@ -21,6 +21,13 @@
   color: var(--text-muted);
 }
 
+/* Board-level action bar (export, etc.) above the task board */
+.boardActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-sm);
+}
+
 .loadingLabel {
   margin-top: var(--space-md);
   font-weight: 500;

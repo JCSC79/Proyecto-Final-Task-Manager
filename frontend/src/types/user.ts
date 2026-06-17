@@ -10,6 +10,7 @@ export interface IUser {
   role: UserRole;
   name?: string;
   avatar_url?: string;
+  lang: 'en' | 'es';
   createdAt: string; // ISO string when received from JSON
 }
 

@@ -31,3 +31,15 @@ export interface Task {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export type AuditAction = 'TASK_CREATED' | 'TASK_UPDATED' | 'TASK_COMPLETED' | 'TASK_DELETED';
+
+export interface AuditLog {
+  id: string;
+  taskId: string;
+  userId: string;
+  action: AuditAction;
+  oldValue?: Record<string, unknown> | null;
+  newValue?: Record<string, unknown> | null;
+  createdAt?: string;
+}
