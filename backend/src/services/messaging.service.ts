@@ -46,13 +46,13 @@ class MessagingService {
      * @param recipientEmail - Email address of the user to notify.
      * @param eventType - What triggered the notification.
      */
-    async sendTaskNotification(taskData: TaskNotificationPayload['task'], recipientEmail: string, eventType: NotificationEventType = 'TASK_CREATED'): Promise<void> {
+    async sendTaskNotification(taskData: TaskNotificationPayload['task'], recipientEmail: string, eventType: NotificationEventType = 'TASK_CREATED', lang: 'en' | 'es' = 'en'): Promise<void> {
         if (!this.channel) {
             console.error('[-] Messaging channel not initialized.');
             return;
         }
 
-        const payload: TaskNotificationPayload = { task: taskData, recipientEmail, eventType };
+        const payload: TaskNotificationPayload = { task: taskData, recipientEmail, eventType, lang };
         const message = JSON.stringify(payload);
 
         // Convert to Buffer and send with persistence enabled for reliability

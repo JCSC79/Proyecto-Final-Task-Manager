@@ -18,6 +18,7 @@ describe('AuthService - Identity & Access Control', () => {
         email: 'test@example.com',
         password: 'hashed_password',
         role: 'USER',
+        lang: 'en',
         createdAt: new Date()
     };
 

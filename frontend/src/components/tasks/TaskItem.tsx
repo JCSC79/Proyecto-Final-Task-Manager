@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
   Card, Elevation, H3, Text, Button, ButtonGroup,
   Alert, Intent, Dialog, Classes, FormGroup, InputGroup, TextArea,
-  Tag, Icon, HTMLSelect, Checkbox
+  Tag, Icon, HTMLSelect, Checkbox, Tabs, Tab
 } from '@blueprintjs/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axiosInstance';
 import { getCategories } from '../../api/category.api';
 import { getTagsByProject, assignTag, unassignTag } from '../../api/tag.api';
-import type { Task, TaskStatus, TaskPriority, ICategory } from '../../types/task';
+import { getTaskHistory } from '../../api/task.api';
+import type { Task, TaskStatus, TaskPriority, ICategory, AuditLog } from '../../types/task';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { AppToaster } from '../../utils/toaster';
@@ -78,6 +79,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [detailsTab, setDetailsTab] = useState<string>('info');
 
   const [editTitle, setEditTitle] = useState(task.title);
   const [editDescription, setEditDescription] = useState(task.description);
@@ -109,6 +111,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
     queryKey: ['tags', task.projectId],
     queryFn: () => getTagsByProject(task.projectId!),
     enabled: !!task.projectId && isEditOpen,
+  });
+
+  const { data: auditLogs = [] } = useQuery<AuditLog[]>({
+    queryKey: ['taskHistory', task.id],
+    queryFn: () => getTaskHistory(task.id),
+    enabled: isDetailsOpen && detailsTab === 'history',
   });
 
   const isInProgress = task.status === 'IN_PROGRESS';
@@ -310,21 +318,51 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
               {getTranslatedStatus(task.status, t)}
             </Tag>
           </div>
-          <div className={styles.detailBody}>
-            <Text>{task.description || t('noDetails')}</Text>
-          </div>
-          {task.tags && task.tags.length > 0 && (
-            <div className={styles.detailTagRow}>
-              {task.tags.map((tag) => (
-                <TagBadge key={tag.id} tag={tag} />
-              ))}
-            </div>
-          )}
-          {task.createdAt && (
-            <div className={styles.detailDate}>
-              {t('createdOn')}: {new Date(task.createdAt).toLocaleString()}
-            </div>
-          )}
+          <Tabs
+            id="task-detail-tabs"
+            selectedTabId={detailsTab}
+            onChange={(newTabId) => setDetailsTab(String(newTabId))}
+          >
+            <Tab id="info" title={t('taskDetails')} panel={
+              <>
+                <div className={styles.detailBody}>
+                  <Text>{task.description || t('noDetails')}</Text>
+                </div>
+                {task.tags && task.tags.length > 0 && (
+                  <div className={styles.detailTagRow}>
+                    {task.tags.map((tag) => (
+                      <TagBadge key={tag.id} tag={tag} />
+                    ))}
+                  </div>
+                )}
+                {task.createdAt && (
+                  <div className={styles.detailDate}>
+                    {t('createdOn')}: {new Date(task.createdAt).toLocaleString()}
+                  </div>
+                )}
+              </>
+            } />
+            <Tab id="history" title={t('history')} panel={
+              <div className={styles.historyList}>
+                {auditLogs.length === 0
+                  ? <Text className={styles.noHistory}>{t('noHistory')}</Text>
+                  : auditLogs.map((log) => (
+                    <div key={log.id} className={styles.historyEntry}>
+                      <Icon icon="history" size={14} />
+                      <span className={styles.historyAction}>
+                        {t(`historyAction_${log.action}`)}
+                      </span>
+                      {log.createdAt && (
+                        <span className={styles.historyDate}>
+                          {new Date(log.createdAt).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  ))
+                }
+              </div>
+            } />
+          </Tabs>
         </div>
         <div className={Classes.DIALOG_FOOTER}>
           <div className={Classes.DIALOG_FOOTER_ACTIONS}>

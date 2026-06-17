@@ -180,3 +180,38 @@
   gap: 5px;
   cursor: pointer;
 }
+
+/* History tab */
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: var(--space-sm) 0;
+  min-height: 60px;
+}
+
+.historyEntry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--surface-subtle, rgba(128, 128, 128, 0.08));
+  font-size: 0.85rem;
+}
+
+.historyAction {
+  font-weight: 600;
+  flex: 1;
+}
+
+.historyDate {
+  color: var(--text-muted, #888);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.noHistory {
+  color: var(--text-muted, #888);
+  font-style: italic;
+}

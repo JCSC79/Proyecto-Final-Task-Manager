@@ -15,8 +15,8 @@ export const registerRequest = async (
   return response.data;
 };
 
-export const updateMeRequest = async (name: string): Promise<{ user: IUser }> => {
-  const response = await api.patch<{ user: IUser }>('/api/auth/me', { name });
+export const updateMeRequest = async (name: string, lang?: 'en' | 'es'): Promise<{ user: IUser }> => {
+  const response = await api.patch<{ user: IUser }>('/api/auth/me', { name, lang });
   return response.data;
 };
 

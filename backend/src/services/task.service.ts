@@ -70,7 +70,8 @@ export class TaskService {
                 createdTask.tags = await tagDAO.getByTask(createdTask.id);
             }
 
-            await this.messaging.sendTaskNotification(createdTask, await getUserEmail(userId), 'TASK_CREATED');
+            const { email, lang } = await getUserInfo(userId);
+            await this.messaging.sendTaskNotification(createdTask, email, 'TASK_CREATED', lang);
             await this.messaging.sendAuditEvent({
                 taskId: createdTask.id,
                 userId,
@@ -131,7 +132,8 @@ export class TaskService {
                 }
                 // Fire email notification only when task reaches COMPLETED
                 if (validated.status === TaskStatus.COMPLETED) {
-                    await this.messaging.sendTaskNotification(updatedTask, await getUserEmail(userId), 'TASK_COMPLETED');
+                    const { email, lang } = await getUserInfo(userId);
+                    await this.messaging.sendTaskNotification(updatedTask, email, 'TASK_COMPLETED', lang);
                 }
                 await this.messaging.sendAuditEvent({
                     taskId: id,
@@ -170,8 +172,11 @@ export class TaskService {
 
 export const taskService = new TaskService();
 
-/** Resolves the email for a userId, falling back to a placeholder if not found. */
-async function getUserEmail(userId: string): Promise<string> {
+/** Resolves the email and preferred lang for a userId. */
+async function getUserInfo(userId: string): Promise<{ email: string; lang: 'en' | 'es' }> {
     const user = await userDAO.getById(userId);
-    return user?.email ?? 'unknown@taskmanager.dev';
+    return {
+        email: user?.email ?? 'unknown@taskmanager.dev',
+        lang: user?.lang ?? 'en',
+    };
 }

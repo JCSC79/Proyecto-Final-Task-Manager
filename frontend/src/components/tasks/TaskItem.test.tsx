@@ -34,6 +34,7 @@ const mockUser: IUser = {
   id: 'user-1',
   email: 'test@example.com',
   role: 'USER',
+  lang: 'en',
   createdAt: new Date().toISOString(),
 };
 

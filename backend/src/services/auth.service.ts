@@ -69,6 +69,7 @@ class AuthService {
             email,
             password: hashed,
             role: 'USER',
+            lang: 'en',
             ...(name ? { name } : {}),
             createdAt: new Date(),
         };
