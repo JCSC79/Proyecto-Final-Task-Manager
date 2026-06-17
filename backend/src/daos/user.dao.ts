@@ -27,7 +27,7 @@ class UserDAO {
      * Returns all users without the password field (safe for admin panel).
      */
     async getAll(): Promise<Omit<IUser, 'password'>[]> {
-        return await db<IUser>('users').select('id', 'email', 'role', 'name', 'avatar_url', 'createdAt');
+        return await db<IUser>('users').select('id', 'email', 'role', 'name', 'avatar_url', 'lang', 'createdAt');
     }
 
     /**
@@ -38,7 +38,7 @@ class UserDAO {
         if (updated === 0) {
             return undefined;
         }
-        return await db<IUser>('users').where({ id }).select('id', 'email', 'role', 'name', 'avatar_url', 'createdAt').first();
+        return await db<IUser>('users').where({ id }).select('id', 'email', 'role', 'name', 'avatar_url', 'lang', 'createdAt').first();
     }
 
     async updateName(id: string, name: string): Promise<Omit<IUser, 'password'> | undefined> {
@@ -46,7 +46,15 @@ class UserDAO {
         if (updated === 0) {
             return undefined;
         }
-        return await db<IUser>('users').where({ id }).select('id', 'email', 'role', 'name', 'avatar_url', 'createdAt').first();
+        return await db<IUser>('users').where({ id }).select('id', 'email', 'role', 'name', 'avatar_url', 'lang', 'createdAt').first();
+    }
+
+    async updateLang(id: string, lang: 'en' | 'es'): Promise<Omit<IUser, 'password'> | undefined> {
+        const updated = await db<IUser>('users').where({ id }).update({ lang });
+        if (updated === 0) {
+            return undefined;
+        }
+        return await db<IUser>('users').where({ id }).select('id', 'email', 'role', 'name', 'avatar_url', 'lang', 'createdAt').first();
     }
 }
 

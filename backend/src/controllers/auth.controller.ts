@@ -81,9 +81,17 @@ class AuthController {
         if (!userId) {
             return res.status(401).json({ error: 'Not authenticated' });
         }
-        const { name } = req.body as { name?: string };
-        if (!await userDAO.updateName(userId, name?.trim() ?? "")) {
-            return res.status(404).json({ error: 'User not found' });
+        const { name, lang } = req.body as { name?: string; lang?: 'en' | 'es' };
+        if (lang) {
+            if (lang !== 'en' && lang !== 'es') {
+                return res.status(400).json({ error: 'Invalid lang value. Must be "en" or "es".' });
+            }
+            await userDAO.updateLang(userId, lang);
+        }
+        if (name !== undefined && name.trim() !== '') {
+            if (!await userDAO.updateName(userId, name.trim())) {
+                return res.status(404).json({ error: 'User not found' });
+            }
         }
         const user = await userDAO.getById(userId);
         return res.json({ user });

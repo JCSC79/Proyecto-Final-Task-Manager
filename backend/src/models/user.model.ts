@@ -17,5 +17,6 @@ export interface IUser {
     role: UserRole;      // Access control: ADMIN or USER
     name?: string;       // Optional display name
     avatar_url?: string; // Optional profile image link
+    lang: 'en' | 'es';   // Preferred language for notifications
     createdAt: Date;     // Registration timestamp
 }

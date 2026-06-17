@@ -82,7 +82,7 @@ async function startWorker(attempt = 1): Promise<void> {
             }
         }, { noAck: false });
 
-        // ── Audit events consumer ──────────────────────────────────────────────
+        // Audit events consumer 
         channel.consume(AUDIT_QUEUE, (msg: ConsumeMessage | null) => {
             if (msg && channel) {
                 void (async () => {

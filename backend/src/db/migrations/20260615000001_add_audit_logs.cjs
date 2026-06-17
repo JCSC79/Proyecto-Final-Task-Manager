@@ -1,8 +1,7 @@
 /**
  * Migration: add_audit_logs
  *
- * Creates the audit_logs table for tracking task change history.
- * Each row represents one discrete change event.
+ * Creates the audit_logs table for tracking task change history. Each row represents one discrete change event.
  *
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }

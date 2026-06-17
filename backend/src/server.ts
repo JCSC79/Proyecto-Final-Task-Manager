@@ -70,6 +70,7 @@ app.use('/api/tasks', authenticateToken);
 app.get('/api/tasks', (req, res) => taskController.getAll(req, res));
 app.post('/api/tasks', (req, res) => taskController.create(req, res));
 app.delete('/api/tasks', (req, res) => taskController.deleteAll(req, res));
+app.get('/api/tasks/export/pdf', (req, res) => taskController.exportPdf(req, res));
 app.get('/api/tasks/:id', (req, res) => taskController.getById(req, res));
 app.get('/api/tasks/:id/history', (req, res) => taskController.getHistory(req, res));
 app.delete('/api/tasks/:id', (req, res) => taskController.delete(req, res));
