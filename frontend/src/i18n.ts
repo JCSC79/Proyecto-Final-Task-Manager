@@ -70,9 +70,6 @@ i18n
           "taskCreated": "Task created successfully!",
           "taskUpdated": "Task updated successfully!",
           "taskDeleted": "Task removed",
-          "clearBoard": "Clear Board",
-          "boardCleared": "All tasks have been removed",
-          "clearBoardWarning": "Are you sure you want to clear the entire board? All tasks will be permanently deleted.",
           "clearCompleted": "Clear Completed",
           "completedCleared": "Completed tasks have been removed",
           "clearCompletedWarning": "Are you sure? All COMPLETED tasks will be permanently deleted.",
@@ -227,7 +224,14 @@ i18n
           "URGENT": "Urgent",
           "err_priority_invalid": "Invalid priority value",
           "filterByCategory": "Filter by category",
-          "clearFilters": "Clear filters"
+          "clearFilters": "Clear filters",
+          "exportPdf": "Export PDF",
+          "history": "History",
+          "noHistory": "No history entries yet.",
+          "historyAction_TASK_CREATED": "Task created",
+          "historyAction_TASK_UPDATED": "Task updated",
+          "historyAction_TASK_COMPLETED": "Task completed",
+          "historyAction_TASK_DELETED": "Task deleted"
         }
       },
       es: {
@@ -293,9 +297,6 @@ i18n
           "taskCreated": "¡Tarea creada con éxito!",
           "taskUpdated": "¡Tarea actualizada con éxito!",
           "taskDeleted": "Tarea eliminada",
-          "clearBoard": "Limpiar Tablero",
-          "boardCleared": "Se han eliminado todas las tareas",
-          "clearBoardWarning": "¿Estás seguro de que deseas limpiar todo el tablero? Todas las tareas se borrarán permanentemente.",
           "clearCompleted": "Limpiar Completadas",
           "completedCleared": "Las tareas completadas han sido eliminadas",
           "clearCompletedWarning": "¿Estás seguro? Todas las tareas en estado COMPLETADO se borrarán permanentemente.",
@@ -450,7 +451,14 @@ i18n
           "URGENT": "Urgente",
           "err_priority_invalid": "Valor de prioridad no válido",
           "filterByCategory": "Filtrar por categoría",
-          "clearFilters": "Limpiar filtros"
+          "clearFilters": "Limpiar filtros",
+          "exportPdf": "Exportar PDF",
+          "history": "Historial",
+          "noHistory": "Sin entradas de historial todavía.",
+          "historyAction_TASK_CREATED": "Tarea creada",
+          "historyAction_TASK_UPDATED": "Tarea actualizada",
+          "historyAction_TASK_COMPLETED": "Tarea completada",
+          "historyAction_TASK_DELETED": "Tarea eliminada"
         }
       }
     },

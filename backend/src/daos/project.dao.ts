@@ -288,6 +288,24 @@ class ProjectDAO {
             .select('pm.userId', 'u.name', 'u.email', 'pm.role', 'pm.joinedAt');
     }
 
+    /**
+     * Returns email + name + lang for every member of a project.
+     * Used internally by the notification system — no visibility check needed
+     * because this is called after a task action has already been authorised.
+     */
+    async getMembersForNotification(projectId: string): Promise<{ email: string; name: string; lang: 'en' | 'es' }[]> {
+        const rows = await db('project_members as pm')
+            .join('users as u', 'u.id', 'pm.userId')
+            .where('pm.projectId', projectId)
+            .select('u.email', 'u.name', 'u.lang');
+
+        return rows.map(r => ({
+            email: r.email as string,
+            name:  (r.name as string | null) ?? (r.email as string),
+            lang:  (r.lang as 'en' | 'es') ?? 'en',
+        }));
+    }
+
     // Renames a project. Only the OWNER can rename. Returns null if not found or not owner.
     async rename(projectId: string, name: string, userId: string): Promise<IProjectWithDetails | null> {
         const membership = await db<IProjectMember>('project_members')

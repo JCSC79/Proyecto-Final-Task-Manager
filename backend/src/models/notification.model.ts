@@ -1,6 +1,6 @@
 import type { ITask } from './task.model.ts';
 
-export type NotificationEventType = 'TASK_CREATED' | 'TASK_COMPLETED' | 'TASK_UPDATED';
+export type NotificationEventType = 'TASK_CREATED' | 'TASK_COMPLETED' | 'TASK_UPDATED' | 'MEMBER_ADDED';
 
 /**
  * Shape of every message published to the task_notifications queue.
@@ -9,6 +9,8 @@ export type NotificationEventType = 'TASK_CREATED' | 'TASK_COMPLETED' | 'TASK_UP
 export interface TaskNotificationPayload {
     task: ITask;
     recipientEmail: string;
+    recipientName?: string;   // Used for personalised greeting: "Hello, {{recipientName}}"
     eventType: NotificationEventType;
-    lang?: 'en' | 'es';   // Optional: defaults to 'en' in the template
+    lang?: 'en' | 'es';      // Optional: defaults to 'en' in the template
+    projectName?: string;     // For MEMBER_ADDED events
 }

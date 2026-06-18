@@ -3,6 +3,7 @@ import type { ITask } from '../models/task.model.ts';
 import { taskDAO } from '../daos/task.dao.ts';
 import { tagDAO } from '../daos/tag.dao.ts';
 import { userDAO } from '../daos/user.dao.ts';
+import { projectDAO } from '../daos/project.dao.ts';
 import { messagingService } from './messaging.service.ts';
 import { Result } from '../utils/result.ts';
 import { createTaskSchema, updateTaskSchema } from '../schemas/task.schema.ts';
@@ -70,8 +71,8 @@ export class TaskService {
                 createdTask.tags = await tagDAO.getByTask(createdTask.id);
             }
 
-            const { email, lang } = await getUserInfo(userId);
-            await this.messaging.sendTaskNotification(createdTask, email, 'TASK_CREATED', lang);
+            const { email, lang, name } = await getUserInfo(userId);
+            await notifyProjectOrOwner(this.messaging, createdTask, 'TASK_CREATED', { email, lang, name });
             await this.messaging.sendAuditEvent({
                 taskId: createdTask.id,
                 userId,
@@ -132,8 +133,8 @@ export class TaskService {
                 }
                 // Fire email notification only when task reaches COMPLETED
                 if (validated.status === TaskStatus.COMPLETED) {
-                    const { email, lang } = await getUserInfo(userId);
-                    await this.messaging.sendTaskNotification(updatedTask, email, 'TASK_COMPLETED', lang);
+                    const { email, lang, name } = await getUserInfo(userId);
+                    await notifyProjectOrOwner(this.messaging, updatedTask, 'TASK_COMPLETED', { email, lang, name });
                 }
                 await this.messaging.sendAuditEvent({
                     taskId: id,
@@ -172,11 +173,35 @@ export class TaskService {
 
 export const taskService = new TaskService();
 
-/** Resolves the email and preferred lang for a userId. */
-async function getUserInfo(userId: string): Promise<{ email: string; lang: 'en' | 'es' }> {
+/** Resolves the email, preferred lang and display name for a userId. */
+async function getUserInfo(userId: string): Promise<{ email: string; lang: 'en' | 'es'; name: string }> {
     const user = await userDAO.getById(userId);
     return {
         email: user?.email ?? 'unknown@taskmanager.dev',
-        lang: user?.lang ?? 'en',
+        lang:  user?.lang ?? 'en',
+        name:  user?.name ?? user?.email ?? 'there',
     };
+}
+
+/**
+ * If the task belongs to a project, sends one email per project member.
+ * Falls back to notifying only the task owner when there is no project.
+ */
+async function notifyProjectOrOwner(
+    messaging: typeof messagingService,
+    task: ITask,
+    eventType: 'TASK_CREATED' | 'TASK_COMPLETED' | 'TASK_UPDATED',
+    owner: { email: string; lang: 'en' | 'es'; name: string },
+): Promise<void> {
+    if (task.projectId) {
+        const members = await projectDAO.getMembersForNotification(task.projectId);
+        if (members.length > 0) {
+            for (const m of members) {
+                await messaging.sendTaskNotification(task, m.email, eventType, m.lang, m.name);
+            }
+            return;
+        }
+    }
+    // No project or no members found — notify owner only
+    await messaging.sendTaskNotification(task, owner.email, eventType, owner.lang, owner.name);
 }
