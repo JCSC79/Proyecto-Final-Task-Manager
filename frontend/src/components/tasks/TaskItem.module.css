@@ -142,10 +142,10 @@
   flex-shrink: 0;
 }
 
-/* One class per seeded category — avoids any inline style */
-.categoryDotBug         { background-color: #e74c3c; }
-.categoryDotFeature     { background-color: #3498db; }
-.categoryDotImprovement { background-color: #27ae60; }
+.categoryDot_primary { background-color: #2d72d2; }
+.categoryDot_success { background-color: #238551; }
+.categoryDot_danger  { background-color: #ac2f33; }
+.categoryDot_warning { background-color: #935610; }
 
 /* Tag chips row inside the task card */
 .tagRow {

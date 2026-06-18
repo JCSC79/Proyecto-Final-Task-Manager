@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { userDAO } from '../daos/user.dao.ts';
 import { taskDAO } from '../daos/task.dao.ts';
 import type { ITask } from '../models/task.model.ts';
+import { generateAdminPdf } from '../services/pdf.service.ts';
 
 /**
  * AdminController — serves the admin panel endpoints.
@@ -59,6 +60,37 @@ class AdminController {
     }
 
     return res.json({ message: `User role updated to ${role}.`, user: updated });
+  }
+
+  /**
+   * GET /api/admin/export/pdf
+   */
+  async exportPdf(req: Request, res: Response): Promise<void> {
+    const users = await userDAO.getAll();
+    const allTasks: ITask[] = await taskDAO.adminGetAll();
+
+    const usersWithStats = users.map(user => {
+      const userTasks = allTasks.filter(t => t.userId === user.id);
+      const pending    = userTasks.filter(t => t.status === 'PENDING').length;
+      const inProgress = userTasks.filter(t => t.status === 'IN_PROGRESS').length;
+      const completed  = userTasks.filter(t => t.status === 'COMPLETED').length;
+      const total      = userTasks.length;
+      const completionRate = total === 0 ? 0 : Math.round((completed / total) * 100);
+      return {
+        ...(user.name ? { name: user.name } : {}),
+        email: user.email,
+        stats: { total, pending, inProgress, completed, completionRate },
+      };
+    });
+
+    const requestingUser = (req as Request & { user?: { id: string; email?: string; name?: string } }).user;
+    const generatedBy = requestingUser?.email ?? 'Admin';
+    const lang: 'en' | 'es' = req.query['lang'] === 'es' ? 'es' : 'en';
+    const pdfBuffer = await generateAdminPdf(usersWithStats, lang, generatedBy);
+    const filename = `admin-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
   }
 }
 

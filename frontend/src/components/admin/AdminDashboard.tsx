@@ -10,9 +10,12 @@ import { UserDetailDialog } from './UserDetailDialog';
 import { UserManagementTable } from './UserManagementTable';
 import { CHART_COLORS } from '../../styles/chartColors';
 import { buildStatusChartData } from '../../utils/buildStatusChartData';
+import { downloadAdminPdf } from '../../api/task.api';
+import { useAuth } from '../../hooks/useAuth';
 import styles from './AdminDashboard.module.css';
 
 export const AdminDashboard: React.FC = () => {
+  const { user } = useAuth();
   const {
     t, isLoading, isError, search, setSearch, roleFilter, setRoleFilter,
     currentPage, setCurrentPage, totalPages, paginatedUsers, sort, handleSort,
@@ -47,6 +50,14 @@ export const AdminDashboard: React.FC = () => {
     <div className={styles.wrapper}>
       <H2 className={styles.pageTitle}>
         <Icon icon="shield" size={25} intent="warning" /> {t('adminPanel')}
+        <Button
+          icon="import"
+          intent={Intent.PRIMARY}
+          variant="outlined"
+          onClick={() => { void downloadAdminPdf(user?.lang ?? 'en'); }}
+        >
+          {t('exportPdf')}
+        </Button>
       </H2>
 
       {/* KPI Section */}

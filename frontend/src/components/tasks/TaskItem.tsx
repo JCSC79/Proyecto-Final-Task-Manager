@@ -15,6 +15,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { AppToaster } from '../../utils/toaster';
 import clsx from 'clsx';
 import { TagBadge } from './TagBadge';
+import { hexToIntent } from '../../utils/hexToIntent';
 import styles from './TaskItem.module.css';
 
 interface TaskItemProps {
@@ -35,9 +36,10 @@ function getPriorityIntent(priority: TaskPriority): Intent {
   return Intent.NONE;
 }
 
-function getCategoryDotClass(name: string): string {
-  const key = `categoryDot${name}`;
-  return (styles as Record<string, string>)[key] ?? '';
+/** Returns the CSS module class for a category color dot based on its hex value. */
+function getCategoryDotClass(color: string): string {
+  const cls = 'categoryDot_' + hexToIntent(color);
+  return (styles as Record<string, string>)[cls] ?? '';
 }
 
 function getTranslatedStatus(status: TaskStatus, t: (key: string) => string): string {
@@ -238,7 +240,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
             <div className={styles.metaRow}>
               {task.category && (
                 <span className={styles.categoryBadge}>
-                  <span className={`${styles.categoryDot} ${getCategoryDotClass(task.category.name)}`} />
+                  <span className={clsx(styles.categoryDot, getCategoryDotClass(task.category.color))} />
                   {task.category.name}
                 </span>
               )}

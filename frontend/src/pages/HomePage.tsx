@@ -4,6 +4,8 @@ import { Spinner, NonIdealState, Button, Intent, Icon, Dialog, DialogBody } from
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axiosInstance';
+import { downloadTasksPdf } from '../api/task.api';
+import { useAuth } from '../hooks/useAuth';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { TaskFilters } from '../components/tasks/TaskFilters';
@@ -16,6 +18,7 @@ import formStyles from '../components/tasks/TaskForm.module.css';
 
 const HomePage: React.FC = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -115,7 +118,20 @@ const HomePage: React.FC = () => {
                 <div className={pageStyles.loadingLabel}>{t('syncing')}</div>
               </div>
             ) : (
-              <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} />
+              <>
+                <div className={pageStyles.boardActions}>
+                  <Button
+                    icon="import"
+                    intent={Intent.PRIMARY}
+                    variant="outlined"
+                    onClick={() => { void downloadTasksPdf(user?.lang ?? 'en'); }}
+                    disabled={!tasks || tasks.length === 0}
+                  >
+                    {t('exportPdf')}
+                  </Button>
+                </div>
+                <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} />
+              </>
             )}
           </>
         )}

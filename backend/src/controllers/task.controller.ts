@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 import { taskService } from '../services/task.service.ts';
 import { auditDAO } from '../daos/audit.dao.ts';
+import { taskDAO } from '../daos/task.dao.ts';
+import { generateTasksPdf } from '../services/pdf.service.ts';
 
 /**
  * Interface to extend Express Request with user context.
@@ -125,6 +127,22 @@ class TaskController {
     }
     const logs = await auditDAO.getByTaskId(id);
     res.json(logs);
+  }
+
+  /**
+   * GET /api/tasks/export/pdf
+   */
+  async exportPdf(req: Request, res: Response): Promise<void> {
+    const authReq = req as Request & { user?: { id: string; email?: string; name?: string } };
+    const userId = authReq.user!.id;
+    const tasks = await taskDAO.getAll(userId);
+    const lang: 'en' | 'es' = req.query['lang'] === 'es' ? 'es' : 'en';
+    const generatedBy = authReq.user?.name ?? authReq.user?.email ?? '';
+    const pdfBuffer = await generateTasksPdf(tasks, lang, generatedBy);
+    const filename = `tasks-${new Date().toISOString().slice(0, 10)}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
   }
 }
 
