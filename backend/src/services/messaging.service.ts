@@ -1,6 +1,6 @@
 import amqp from 'amqplib';
 import type { Channel } from 'amqplib';
-import type { TaskNotificationPayload, NotificationEventType } from '../models/notification.model.ts';
+import type { TaskNotificationPayload, ProjectNotificationPayload, NotificationEventType } from '../models/notification.model.ts';
 import type { IAuditLogEvent } from '../models/audit.model.ts';
 
 /**
@@ -61,6 +61,33 @@ class MessagingService {
         });
 
         console.log(` [x] Sent to RabbitMQ: ${taskData.title} (${eventType} -> ${recipientEmail})`);
+    }
+
+    /**
+     * Publishes a project-membership notification (MEMBER_ADDED).
+     * Uses type: 'PROJECT' so the worker routes it to the project email handler.
+     */
+    async sendMemberNotification(
+        projectId: string,
+        projectName: string,
+        recipientEmail: string,
+        lang: 'en' | 'es' = 'en',
+        recipientName?: string,
+    ): Promise<void> {
+        if (!this.channel) {
+            console.error('[-] Messaging channel not initialized.');
+            return;
+        }
+        const payload: ProjectNotificationPayload = {
+            type: 'PROJECT',
+            projectId,
+            projectName,
+            recipientEmail,
+            lang,
+            ...(recipientName ? { recipientName } : {}),
+        };
+        this.channel.sendToQueue(this.queue, Buffer.from(JSON.stringify(payload)), { persistent: true });
+        console.log(` [x] Member notification queued: ${recipientEmail} added to "${projectName}"`);
     }
 
     /**

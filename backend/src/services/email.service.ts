@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
-import type { TaskNotificationPayload } from '../models/notification.model.ts';
-import { buildTaskEmailHtml } from '../templates/taskNotification.template.ts';
+import type { TaskNotificationPayload, ProjectNotificationPayload } from '../models/notification.model.ts';
+import { buildTaskEmailHtml, buildMemberEmailHtml } from '../templates/taskNotification.template.ts';
 
 /**
  * EmailService — sends transactional emails via SMTP.
@@ -72,16 +72,35 @@ class EmailService {
             console.log(`[v] Email sent to ${payload.recipientEmail} - id: ${info.messageId}`);
         }
     }
-}
-
-function buildSubject(payload: TaskNotificationPayload): string {
-    const titles: Record<TaskNotificationPayload['eventType'], string> = {
-        TASK_CREATED:  `New task: ${payload.task.title}`,
-        TASK_COMPLETED: `Task completed: ${payload.task.title}`,
-        TASK_UPDATED:  `Task updated: ${payload.task.title}`,
-        MEMBER_ADDED:  `You have been added to a project`,
-    };
-    return titles[payload.eventType];
+    async sendMemberNotification(payload: ProjectNotificationPayload): Promise<void> {
+        if (!this.transporter) {
+            console.error('[-] Email service not initialized.');
+            return;
+        }
+        const from = process.env.SMTP_FROM ?? '"Task Manager" <noreply@taskmanager.dev>';
+        const lang = payload.lang ?? 'en';
+        const subject = lang === 'es'
+            ? `Has sido añadido al proyecto "${payload.projectName}"`
+            : `You have been added to project "${payload.projectName}"`;
+        const html = buildMemberEmailHtml(payload);
+        const info = await this.transporter.sendMail({ from, to: payload.recipientEmail, subject, html });
+        const previewUrl = nodemailer.getTestMessageUrl(info);
+        if (previewUrl) {
+            console.log(`[v] Member email preview: ${previewUrl}`);
+        } else {
+            console.log(`[v] Member email sent to ${payload.recipientEmail} - id: ${info.messageId}`);
+        }
+    }
 }
 
 export const emailService = new EmailService();
+
+function buildSubject(payload: TaskNotificationPayload): string {
+    const titles: Record<TaskNotificationPayload['eventType'], string> = {
+        TASK_CREATED:   `New task: ${payload.task.title}`,
+        TASK_COMPLETED: `Task completed: ${payload.task.title}`,
+        TASK_UPDATED:   `Task updated: ${payload.task.title}`,
+        MEMBER_ADDED:   `You have been added to a project`,
+    };
+    return titles[payload.eventType];
+}

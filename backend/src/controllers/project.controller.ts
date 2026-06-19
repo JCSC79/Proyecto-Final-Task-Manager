@@ -1,7 +1,9 @@
 import type { Request, Response } from 'express';
 import { projectDAO } from '../daos/project.dao.ts';
+import { userDAO } from '../daos/user.dao.ts';
 import type { IProject } from '../models/project.model.ts';
 import crypto from 'node:crypto';
+import { messagingService } from '../services/messaging.service.ts';
 
 interface AuthRequest extends Request {
   user?: { id: string; role: string; email: string; };
@@ -222,7 +224,29 @@ class ProjectController {
 
     const result = await projectDAO.addMember(id, email.toLowerCase().trim(), authReq.user!.id);
     switch (result) {
-      case 'added': return res.status(200).json({ message: 'Member added successfully' });
+      case 'added': {
+        // Fire-and-forget notification to the new member
+        void (async () => {
+          try {
+            const [projectName, member] = await Promise.all([
+              projectDAO.getNameById(id),
+              userDAO.getByEmail(email.toLowerCase().trim()),
+            ]);
+            if (projectName && member) {
+              await messagingService.sendMemberNotification(
+                id,
+                projectName,
+                member.email,
+                member.lang ?? 'en',
+                member.name ?? undefined,
+              );
+            }
+          } catch (notifyErr) {
+            console.error('[-] Failed to queue member notification:', notifyErr);
+          }
+        })();
+        return res.status(200).json({ message: 'Member added successfully' });
+      }
       case 'not_owner': return res.status(403).json({ error: 'Only the project owner can add members' });
       case 'user_not_found': return res.status(404).json({ error: 'No user found with that email' });
       case 'already_member': return res.status(409).json({ error: 'User is already a member of this project' });

@@ -293,6 +293,12 @@ class ProjectDAO {
      * Used internally by the notification system — no visibility check needed
      * because this is called after a task action has already been authorised.
      */
+    /** Returns the project name for a given ID, or null if not found. */
+    async getNameById(projectId: string): Promise<string | null> {
+        const row = await db<IProject>('projects').where({ id: projectId }).select('name').first();
+        return row ? row.name : null;
+    }
+
     async getMembersForNotification(projectId: string): Promise<{ email: string; name: string; lang: 'en' | 'es' }[]> {
         const rows = await db('project_members as pm')
             .join('users as u', 'u.id', 'pm.userId')
