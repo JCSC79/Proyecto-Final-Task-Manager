@@ -1,16 +1,26 @@
 import React, { useState } from 'react';
-import { Button, Dialog, DialogBody, DialogFooter, InputGroup, Intent } from '@blueprintjs/core';
+import { Button, Dialog, DialogBody, DialogFooter, FormGroup, InputGroup, Intent } from '@blueprintjs/core';
 import { useTranslation } from 'react-i18next';
 import styles from './ProjectSelector.module.css';
 
+const PROJECT_COLORS = [
+  '#4C90F0', // blue
+  '#29A634', // green
+  '#C9372C', // red
+  '#BF7326', // orange
+  '#7157D9', // violet
+] as const;
+
+type ProjectColor = typeof PROJECT_COLORS[number];
+
 interface ProjectFormDialogProps {
-  /** 'create' shows an empty input; 'rename' pre-fills with currentName. */
+  /** 'create' shows an empty input + colour swatches; 'rename' pre-fills with currentName. */
   mode: 'create' | 'rename';
   isOpen: boolean;
   /** Required in rename mode — pre-fills the input and disables Save when unchanged. */
   currentName?: string;
   isLoading: boolean;
-  onConfirm: (value: string) => void;
+  onConfirm: (name: string, color?: string) => void;
   onClose: () => void;
 }
 
@@ -28,6 +38,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
 }) => {
   const { t } = useTranslation();
   const [value, setValue] = useState('');
+  const [color, setColor] = useState<ProjectColor>(PROJECT_COLORS[0]);
 
   // Adjust input value during render when the dialog transitions from closed to open.
   // This is the React-recommended alternative to useEffect for derived state.
@@ -36,6 +47,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
     setPrevIsOpen(isOpen);
     if (isOpen) {
       setValue(mode === 'rename' ? currentName : '');
+      setColor(PROJECT_COLORS[0]);
     }
   }
 
@@ -47,7 +59,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
     if (isDisabled) {
         return;
     }
-    onConfirm(trimmed);
+    onConfirm(trimmed, isCreate ? color : undefined);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -88,6 +100,23 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
             ) : undefined
           }
         />
+
+        {isCreate && (
+          <FormGroup label={t('projectColor')} style={{ marginTop: '0.75rem', marginBottom: 0 }}>
+            <div className={styles.swatchRow} aria-label={t('projectColor')}>
+              {PROJECT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  aria-label={c}
+                  className={`${styles.swatch} ${color === c ? styles.swatchSelected : ''}`}
+                  style={{ backgroundColor: c }}
+                  onClick={() => setColor(c)}
+                />
+              ))}
+            </div>
+          </FormGroup>
+        )}
       </DialogBody>
       <DialogFooter
         actions={

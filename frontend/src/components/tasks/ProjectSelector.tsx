@@ -33,7 +33,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
   });
 
   const createMutation = useMutation({
-    mutationFn: (name: string) => createProject(name),
+    mutationFn: ({ name, color }: { name: string; color?: string }) => createProject(name, color),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       AppToaster.show({ message: t('projectCreated'), intent: Intent.SUCCESS, icon: 'tick-circle' });
@@ -184,6 +184,13 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
                     className={styles.chipSelectArea}
                     onClick={() => onSelect(project.id)}
                   >
+                    {project.settings?.color && (
+                      <span
+                        className={styles.colorDot}
+                        style={{ backgroundColor: project.settings.color }}
+                        aria-hidden="true"
+                      />
+                    )}
                     <span className={styles.chipName}>{project.name}</span>
                     <span className={styles.memberBadge}>{project.memberCount}</span>
                   </button>
@@ -271,7 +278,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
         mode="create"
         isOpen={isCreateDialogOpen}
         isLoading={createMutation.isPending}
-        onConfirm={(name) => createMutation.mutate(name)}
+        onConfirm={(name, color) => createMutation.mutate({ name, color })}
         onClose={() => setIsCreateDialogOpen(false)}
       />
       <ProjectFormDialog

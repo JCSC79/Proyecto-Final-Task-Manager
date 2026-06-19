@@ -14,8 +14,8 @@ export const getProjects = async (): Promise<IProject[]> => {
   return response.data;
 };
 
-export const createProject = async (name: string): Promise<IProject> => {
-  const response = await api.post<IProject>('/api/projects', { name });
+export const createProject = async (name: string, color?: string): Promise<IProject> => {
+  const response = await api.post<IProject>('/api/projects', { name, ...(color ? { color } : {}) });
   return response.data;
 };
 

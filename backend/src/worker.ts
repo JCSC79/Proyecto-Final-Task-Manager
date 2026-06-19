@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import amqp from 'amqplib';
 import type { Channel, ConsumeMessage } from 'amqplib';
-import type { TaskNotificationPayload } from './models/notification.model.ts';
+import type { NotificationMessage } from './models/notification.model.ts';
 import type { IAuditLogEvent } from './models/audit.model.ts';
 import { emailService } from './services/email.service.ts';
 import { auditDAO } from './daos/audit.dao.ts';
@@ -63,16 +63,28 @@ async function startWorker(attempt = 1): Promise<void> {
                 void (async () => {
                     try {
                         const content = msg.content.toString();
-                        const payload: TaskNotificationPayload = JSON.parse(content);
-                        const { task, recipientEmail, eventType } = payload;
+                        const message: NotificationMessage = JSON.parse(content);
 
-                        console.log('--------------------------------------------');
-                        console.log(`[v] Received: ${eventType} -> ${task.title}`);
-                        console.log(`[i] Recipient: ${recipientEmail}`);
-                        console.log(`[i] Status: ${task.status}`);
-                        console.log('--------------------------------------------');
+                        if (message.type === 'PROJECT') {
+                            // Project membership notification
+                            const payload = message;
+                            console.log('--------------------------------------------');
+                            console.log(`[v] MEMBER_ADDED -> "${payload.projectName}"`);
+                            console.log(`[i] Recipient: ${payload.recipientEmail}`);
+                            console.log('--------------------------------------------');
+                            await emailService.sendMemberNotification(payload);
+                        } else {
+                            // Task event notification (TASK_CREATED / TASK_COMPLETED / TASK_UPDATED)
+                            const payload = message;
+                            const { task, recipientEmail, eventType } = payload;
+                            console.log('--------------------------------------------');
+                            console.log(`[v] Received: ${eventType} -> ${task.title}`);
+                            console.log(`[i] Recipient: ${recipientEmail}`);
+                            console.log(`[i] Status: ${task.status}`);
+                            console.log('--------------------------------------------');
+                            await emailService.sendTaskNotification(payload);
+                        }
 
-                        await emailService.sendTaskNotification(payload);
                         channel.ack(msg);
                     } catch (parseError) {
                         console.error('[-] Error processing worker message:', parseError);
