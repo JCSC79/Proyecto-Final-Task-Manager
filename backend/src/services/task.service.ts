@@ -49,6 +49,14 @@ export class TaskService {
             const tagIds = (data as { tagIds?: string[] }).tagIds;
             const priority = validated.priority ?? undefined;
 
+            // Guard: if a projectId is supplied, the user must be a member of that project
+            if (projectId) {
+                const role = await projectDAO.getMemberRole(projectId, userId);
+                if (role === null) {
+                    return Result.fail<ITask>('notProjectMember');
+                }
+            }
+
             const newTask: ITask = {
                 id: crypto.randomUUID(),
                 title: validated.title,

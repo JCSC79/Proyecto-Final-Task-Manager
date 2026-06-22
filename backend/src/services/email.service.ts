@@ -79,10 +79,14 @@ class EmailService {
         }
         const from = process.env.SMTP_FROM ?? '"Task Manager" <noreply@taskmanager.dev>';
         const lang = payload.lang ?? 'en';
-        const subject = lang === 'es'
-            ? `Has sido añadido al proyecto "${payload.projectName}"`
+        const isJoined = payload.eventType === 'JOINED';
+        const subjectEs = isJoined
+            ? `${payload.recipientName ?? 'Alguien'} se ha unido a tu proyecto "${payload.projectName}"`
+            : `Has sido añadido al proyecto "${payload.projectName}"`;
+        const subjectEn = isJoined
+            ? `${payload.recipientName ?? 'Someone'} joined your project "${payload.projectName}"`
             : `You have been added to project "${payload.projectName}"`;
-        const html = buildMemberEmailHtml(payload);
+        const subject = lang === 'es' ? subjectEs : subjectEn;        const html = buildMemberEmailHtml(payload);
         const info = await this.transporter.sendMail({ from, to: payload.recipientEmail, subject, html });
         const previewUrl = nodemailer.getTestMessageUrl(info);
         if (previewUrl) {

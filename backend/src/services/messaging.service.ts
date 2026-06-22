@@ -73,6 +73,7 @@ class MessagingService {
         recipientEmail: string,
         lang: 'en' | 'es' = 'en',
         recipientName?: string,
+        eventType: 'ADDED' | 'JOINED' = 'ADDED',
     ): Promise<void> {
         if (!this.channel) {
             console.error('[-] Messaging channel not initialized.');
@@ -80,6 +81,7 @@ class MessagingService {
         }
         const payload: ProjectNotificationPayload = {
             type: 'PROJECT',
+            eventType,
             projectId,
             projectName,
             recipientEmail,
@@ -87,7 +89,7 @@ class MessagingService {
             ...(recipientName ? { recipientName } : {}),
         };
         this.channel.sendToQueue(this.queue, Buffer.from(JSON.stringify(payload)), { persistent: true });
-        console.log(` [x] Member notification queued: ${recipientEmail} added to "${projectName}"`);
+        console.log(` [x] Member notification queued (${eventType}): ${recipientEmail} — "${projectName}"`);
     }
 
     /**
