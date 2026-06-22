@@ -109,6 +109,28 @@ class ProjectController {
     if (result === 'already_member') {
       return res.status(409).json({ error: 'You are already a member of this project' });
     }
+
+    // Notify the project OWNER that a new member has joined
+    void (async () => {
+      try {
+        const [projectName, joiner, ownerInfo] = await Promise.all([
+          projectDAO.getNameById(id),
+          userDAO.getById(authReq.user!.id),
+          projectDAO.getOwner(id),
+        ]);
+        if (ownerInfo && projectName) {
+          await messagingService.sendMemberNotification(
+            id,
+            projectName,
+            ownerInfo.email,
+            ownerInfo.lang ?? 'en',
+            joiner?.name ?? joiner?.email ?? 'Someone',
+            'JOINED',
+          );
+        }
+      } catch { /* non-critical — do not fail the request */ }
+    })();
+
     res.status(200).json({ message: 'Joined project successfully' });
   }
 

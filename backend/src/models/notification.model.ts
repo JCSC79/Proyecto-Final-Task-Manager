@@ -22,6 +22,8 @@ export interface TaskNotificationPayload {
  */
 export interface ProjectNotificationPayload {
     type: 'PROJECT';
+    /** ADDED = owner invited user;  JOINED = user joined on their own (owner is notified) */
+    eventType?: 'ADDED' | 'JOINED';
     projectId: string;
     projectName: string;
     recipientEmail: string;

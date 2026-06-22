@@ -25,6 +25,8 @@ interface RawTaskRow {
     categoryName: string | null;
     categoryColor: string | null;
     priority: string | null;
+    projectName: string | null;
+    creatorName: string | null;
 }
 
 /**
@@ -56,6 +58,12 @@ function mapTaskRow(row: RawTaskRow): ITask {
     if (row.priority != null) {
         task.priority = row.priority as TaskPriority;
     }
+    if (row.projectName != null) {
+        task.projectName = row.projectName;
+    }
+    if (row.creatorName != null) {
+        task.creatorName = row.creatorName;
+    }
     return task;
 }
 
@@ -76,6 +84,8 @@ const TASK_SELECT = [
     'tasks.priority',
     'categories.name as categoryName',
     'categories.color as categoryColor',
+    'projects.name as projectName',
+    'task_creators.name as creatorName',
 ];
 
 /**
@@ -97,6 +107,8 @@ class TaskDAO {
     private baseQuery() {
         return db('tasks')
             .leftJoin('categories', 'categories.id', 'tasks.categoryId')
+            .leftJoin('projects', 'projects.id', 'tasks.projectId')
+            .leftJoin('users as task_creators', 'task_creators.id', 'tasks.userId')
             .select(TASK_SELECT);
     }
 

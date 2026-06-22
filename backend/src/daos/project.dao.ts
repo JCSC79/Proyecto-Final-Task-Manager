@@ -2,6 +2,8 @@ import knex from 'knex';
 import { createRequire } from 'node:module';
 import type { IProject, IProjectMember, IProjectSettings, IProjectWithDetails } from '../models/project.model.ts';
 
+type MemberRole = 'OWNER' | 'MEMBER' | null;
+
 const require = createRequire(import.meta.url);
 const config = require('../../knexfile.cjs');
 const db = knex(config.development);
@@ -69,7 +71,7 @@ class ProjectDAO {
                 isPublic: row.isPublic as boolean,
                 createdAt: row.createdAt as Date,
             },
-            memberRole: (row.memberRole as 'OWNER' | 'MEMBER' | null) ?? null,
+            memberRole: (row.memberRole as MemberRole) ?? null,
             memberCount: countMap.get(row.id as string) ?? 0,
         }));
     }
@@ -123,8 +125,16 @@ class ProjectDAO {
      * Deletes a project only if the requesting user is the OWNER.
      * The CASCADE constraints in the DB handle removing tasks, tags, settings, and memberships automatically.
      */
+    /** Returns the role of a user in a project, or null if they are not a member. */
+    async getMemberRole(projectId: string, userId: string): Promise<MemberRole> {
+        const row = await db<IProjectMember>('project_members')
+            .where({ projectId, userId })
+            .select('role')
+            .first();
+        return (row?.role as 'OWNER' | 'MEMBER') ?? null;
+    }
+
     async delete(projectId: string, requestingUserId: string): Promise<boolean> {
-        // Verify ownership before deleting
         const membership = await db<IProjectMember>('project_members')
             .where({ projectId, userId: requestingUserId, role: 'OWNER' })
             .first();
@@ -299,6 +309,16 @@ class ProjectDAO {
         return row ? row.name : null;
     }
 
+    /** Returns the OWNER of a project with their email and preferred lang. */
+    async getOwner(projectId: string): Promise<{ email: string; lang: 'en' | 'es'; name: string | null } | null> {
+        const row = await db('project_members as pm')
+            .join('users as u', 'u.id', 'pm.userId')
+            .where({ 'pm.projectId': projectId, 'pm.role': 'OWNER' })
+            .select('u.email', 'u.lang', 'u.name')
+            .first();
+        return row ? { email: row.email, lang: row.lang ?? 'en', name: row.name ?? null } : null;
+    }
+
     async getMembersForNotification(projectId: string): Promise<{ email: string; name: string; lang: 'en' | 'es' }[]> {
         const rows = await db('project_members as pm')
             .join('users as u', 'u.id', 'pm.userId')
@@ -358,7 +378,7 @@ class ProjectDAO {
                 isPublic: updated.isPublic as boolean,
                 createdAt: updated.createdAt as Date,
             },
-            memberRole: (updated.memberRole as 'OWNER' | 'MEMBER' | null) ?? null,
+            memberRole: (updated.memberRole as MemberRole) ?? null,
             memberCount: Number(countRow?.memberCount ?? 0),
         };
     }
