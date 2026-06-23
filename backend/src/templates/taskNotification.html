@@ -1,18 +1,140 @@
 <!DOCTYPE html>
+<!-- NOSONAR: Email HTML requires inline styles — external CSS is ignored by mail clients -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{eventLabel}}</title>
 </head>
-<body>
-  <h2>Task Manager &mdash; {{eventLabel}}</h2>
-  <hr />
-  <p><strong>{{taskTitle}}</strong></p>
-  <p>{{labelStatus}}: {{taskStatus}}</p>
-  <p>{{labelDescription}}: {{taskDescription}}</p>
-  <p>{{labelCreated}}: {{taskCreatedAt}}</p>
-  <hr />
-  <p><small>{{footerNote}}</small></p>
+<body style="margin:0;padding:0;background-color:#f4f6fb;font-family:Arial,Helvetica,sans-serif;">
+
+  <!-- Outer wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6fb;padding:32px 0;">
+    <tr>
+      <td align="center">
+
+        <!-- Card -->
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);max-width:600px;width:100%;">
+
+          <!-- Header band -->
+          <tr>
+            <td style="background-color:#1a73e8;padding:24px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="vertical-align:middle;">
+                    <img src="{{logoBase64}}" alt="Task Manager" width="40" height="40"
+                         style="display:inline-block;vertical-align:middle;border-radius:6px;" />
+                    <span style="display:inline-block;vertical-align:middle;margin-left:12px;font-size:20px;font-weight:bold;color:#ffffff;">
+                      Task Manager
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Event label banner -->
+          <tr>
+            <td style="background-color:#e8f0fe;padding:12px 32px;border-bottom:3px solid #1a73e8;">
+              <p style="margin:0;font-size:14px;font-weight:600;color:#1a73e8;letter-spacing:0.03em;">
+                {{eventLabel}}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style="padding:28px 32px 8px 32px;">
+              <p style="margin:0;font-size:16px;color:#1a1d23;">
+                {{greeting}} <strong>{{recipientName}}</strong>,
+              </p>
+            </td>
+          </tr>
+
+          <!-- Intro line -->
+          <tr>
+            <td style="padding:8px 32px 24px 32px;">
+              <p style="margin:0;font-size:14px;color:#6b7280;">
+                {{introLine}}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Task card -->
+          <tr>
+            <td style="padding:0 32px 28px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0"
+                     style="background-color:#f8f9fc;border-radius:6px;border:1px solid #dde1ea;overflow:hidden;">
+                <!-- Task title row -->
+                <tr>
+                  <td style="padding:16px 20px 12px 20px;border-bottom:1px solid #dde1ea;">
+                    <p style="margin:0;font-size:17px;font-weight:bold;color:#1a1d23;">
+                      {{taskTitle}}
+                    </p>
+                  </td>
+                </tr>
+                <!-- Status row -->
+                <tr>
+                  <td style="padding:10px 20px;">
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="font-size:12px;color:#6b7280;width:110px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">
+                          {{labelStatus}}
+                        </td>
+                        <td>
+                          <span style="{{statusBadgeStyle}}">
+                            {{taskStatus}}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <!-- Description row -->
+                <tr>
+                  <td style="padding:10px 20px;">
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="font-size:12px;color:#6b7280;width:110px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;vertical-align:top;padding-top:2px;">
+                          {{labelDescription}}
+                        </td>
+                        <td style="font-size:14px;color:#374151;">{{taskDescription}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <!-- Date row -->
+                <tr>
+                  <td style="padding:10px 20px 16px 20px;">
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="font-size:12px;color:#6b7280;width:110px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">
+                          {{labelCreated}}
+                        </td>
+                        <td style="font-size:14px;color:#374151;">{{taskCreatedAt}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f8f9fc;padding:16px 32px;border-top:1px solid #dde1ea;">
+              <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">
+                {{footerNote}}
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /Card -->
+
+      </td>
+    </tr>
+  </table>
+
 </body>
 </html>

@@ -1,30 +1,50 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { TaskNotificationPayload } from '../models/notification.model.ts';
+import type { TaskNotificationPayload, ProjectNotificationPayload } from '../models/notification.model.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const HTML_TEMPLATE = readFileSync(join(__dirname, 'taskNotification.html'), 'utf-8');
 
-// Translations 
-// EN is the default. ES will be used when payload.lang === 'es'.
+// Logo embedded as base64 so it works in any email client without a public URL
+const LOGO_PATH = join(__dirname, '../../../frontend/src/assets/Logo.png');
+let LOGO_BASE64 = '';
+try {
+    const raw = readFileSync(LOGO_PATH);
+    LOGO_BASE64 = `data:image/png;base64,${raw.toString('base64')}`;
+} catch {
+    // Logo file not found — leave empty; <img> will degrade gracefully
+}
 
+//  i18n 
 type Lang = 'en' | 'es';
 
 const i18n: Record<Lang, Record<string, string>> = {
     en: {
-        TASK_CREATED:   'A new task has been created',
-        TASK_COMPLETED: 'A task has been completed',
-        TASK_UPDATED:   'A task has been updated',
+        TASK_CREATED:   'New task created',
+        TASK_COMPLETED: 'Task completed',
+        TASK_UPDATED:   'Task updated',
+        MEMBER_ADDED:   'You have been added to a project',
+        greeting:         'Hello',
+        introCreated:     'A new task has been assigned to your project:',
+        introCompleted:   'Great news! The following task has been completed:',
+        introUpdated:     'The following task has been updated:',
+        introMemberAdded: 'You have been added as a member of project',
         labelStatus:      'Status',
         labelDescription: 'Description',
         labelCreated:     'Created',
         footerNote: 'This is an automated notification from Task Manager. Do not reply to this email.',
     },
     es: {
-        TASK_CREATED:   'Se ha creado una nueva tarea',
-        TASK_COMPLETED: 'Una tarea ha sido completada',
-        TASK_UPDATED:   'Una tarea ha sido actualizada',
+        TASK_CREATED:   'Nueva tarea creada',
+        TASK_COMPLETED: 'Tarea completada',
+        TASK_UPDATED:   'Tarea actualizada',
+        MEMBER_ADDED:   'Has sido añadido a un proyecto',
+        greeting:         'Hola',
+        introCreated:     'Se ha creado una nueva tarea en tu proyecto:',
+        introCompleted:   '¡Buenas noticias! La siguiente tarea ha sido completada:',
+        introUpdated:     'La siguiente tarea ha sido actualizada:',
+        introMemberAdded: 'Has sido añadido como miembro del proyecto',
         labelStatus:      'Estado',
         labelDescription: 'Descripción',
         labelCreated:     'Creada el',
@@ -32,9 +52,14 @@ const i18n: Record<Lang, Record<string, string>> = {
     },
 };
 
-//  Status colours 
+// Status colours (badge background / text) 
+const STATUS_COLORS: Record<string, { bg: string; fg: string }> = {
+    PENDING:     { bg: '#fff7e6', fg: '#b45309' },
+    IN_PROGRESS: { bg: '#eff6ff', fg: '#1d4ed8' },
+    COMPLETED:   { bg: '#f0fdf4', fg: '#15803d' },
+};
 
-//  Public API 
+// Public API 
 
 /**
  * Builds the HTML body for a task notification email.
@@ -43,18 +68,34 @@ const i18n: Record<Lang, Record<string, string>> = {
 export function buildTaskEmailHtml(payload: TaskNotificationPayload): string {
     const { task, eventType } = payload;
     const lang: Lang = payload.lang ?? 'en';
-    const t = i18n[lang] ?? i18n.en;
+    const t = i18n[lang];
 
+    const recipientName  = payload.recipientName ?? payload.recipientEmail;
     const taskStatus     = task.status.replace('_', ' ');
+    const statusColors   = STATUS_COLORS[task.status] ?? { bg: '#f3f4f6', fg: '#374151' };
     const taskDescription = task.description ?? '—';
+    const dateLocale     = lang === 'es' ? 'es-ES' : 'en-GB';
     const taskCreatedAt  = task.createdAt
-        ? new Date(task.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+        ? new Date(task.createdAt).toLocaleDateString(dateLocale, {
+            day: '2-digit', month: 'short', year: 'numeric',
+          })
         : '—';
 
+    // Build the intro line depending on event type
+    let introLine = t[`intro${eventType.charAt(0) + eventType.slice(1).toLowerCase().replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())}`] ?? '';
+    if (eventType === 'MEMBER_ADDED' && payload.projectName) {
+        introLine = `${t.introMemberAdded} "${payload.projectName}".`;
+    }
+
     const vars: Record<string, string> = {
+        logoBase64:       LOGO_BASE64,
         eventLabel:       t[eventType] ?? eventType,
+        greeting:         t.greeting ?? 'Hello',
+        recipientName,
+        introLine,
         taskTitle:        task.title,
         taskStatus,
+        statusBadgeStyle: `display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;background-color:${statusColors.bg};color:${statusColors.fg};`,
         taskDescription,
         taskCreatedAt,
         labelStatus:      t.labelStatus ?? '',
@@ -70,4 +111,35 @@ export function buildTaskEmailHtml(payload: TaskNotificationPayload): string {
 
 function replacePlaceholders(template: string, vars: Record<string, string>): string {
     return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => vars[key] ?? '');
+}
+
+/**
+ * Builds the HTML body for a MEMBER_ADDED project notification email.
+ * Reuses the same HTML template but passes simplified vars:
+ * the task card shows the project name and hides irrelevant fields.
+ */
+export function buildMemberEmailHtml(payload: ProjectNotificationPayload): string {
+    const lang: Lang = payload.lang ?? 'en';
+    const t = i18n[lang];
+    const recipientName = payload.recipientName ?? payload.recipientEmail;
+    const introLine = `${t.introMemberAdded} "${payload.projectName}".`;
+
+    const vars: Record<string, string> = {
+        logoBase64:       LOGO_BASE64,
+        eventLabel:       t.MEMBER_ADDED ?? 'Added to project',
+        greeting:         t.greeting ?? 'Hello',
+        recipientName,
+        introLine,
+        taskTitle:        payload.projectName,
+        taskStatus:       '',
+        statusBadgeStyle: 'display:none;',
+        taskDescription:  '',
+        taskCreatedAt:    '',
+        labelStatus:      '',
+        labelDescription: '',
+        labelCreated:     '',
+        footerNote:       t.footerNote ?? '',
+    };
+
+    return replacePlaceholders(HTML_TEMPLATE, vars);
 }
