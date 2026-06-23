@@ -28,6 +28,8 @@ export interface Task {
   category?: ICategory;
   tags?: ITag[];
   priority?: TaskPriority | null;
+  projectName?: string;  // Denormalised from server JOIN — display only
+  creatorName?: string;  // Denormalised from server JOIN — display only
   createdAt?: string;
   updatedAt?: string;
 }

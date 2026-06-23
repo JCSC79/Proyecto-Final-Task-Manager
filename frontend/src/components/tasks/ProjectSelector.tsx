@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { Alert, Button, Icon, Intent, Spinner } from '@blueprintjs/core';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import {
-  createProject, deleteProject, getProjects, joinProject, leaveProject, renameProject,
-} from '../../api/project.api';
-import { AppToaster } from '../../utils/toaster';
+import { getProjects } from '../../api/project.api';
 import type { IProject } from '../../types/project';
+import { useProjectActions } from '../../hooks/useProjectActions';
 import { ProjectFormDialog } from './ProjectFormDialog';
 import { ProjectManageDialog } from './ProjectManageDialog';
 import styles from './ProjectSelector.module.css';
@@ -18,7 +16,6 @@ interface ProjectSelectorProps {
 
 export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjectId, onSelect }) => {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<IProject | null>(null);
   const [projectToRename, setProjectToRename] = useState<IProject | null>(null);
@@ -32,77 +29,8 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
     queryFn: getProjects,
   });
 
-  const createMutation = useMutation({
-    mutationFn: ({ name, color }: { name: string; color?: string }) => createProject(name, color),
-    onSuccess: (created) => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      AppToaster.show({ message: t('projectCreated'), intent: Intent.SUCCESS, icon: 'tick-circle' });
-      setIsCreateDialogOpen(false);
-      onSelect(created.id);
-    },
-    onError: () => {
-      AppToaster.show({ message: t('projectCreateError'), intent: Intent.DANGER, icon: 'warning-sign' });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteProject(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      AppToaster.show({ message: t('projectDeleted'), intent: Intent.SUCCESS, icon: 'tick-circle' });
-      if (selectedProjectId === projectToDelete?.id) {
-        onSelect(null);
-      }
-      setProjectToDelete(null);
-    },
-    onError: () => {
-      AppToaster.show({ message: t('projectDeleteError'), intent: Intent.DANGER, icon: 'warning-sign' });
-      setProjectToDelete(null);
-    },
-  });
-
-  const joinMutation = useMutation({
-    mutationFn: (id: string) => joinProject(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      AppToaster.show({ message: t('projectJoined'), intent: Intent.SUCCESS, icon: 'tick-circle' });
-      setProjectToJoin(null);
-    },
-    onError: () => {
-      AppToaster.show({ message: t('projectJoinError'), intent: Intent.DANGER, icon: 'warning-sign' });
-      setProjectToJoin(null);
-    },
-  });
-
-  const leaveMutation = useMutation({
-    mutationFn: (id: string) => leaveProject(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      AppToaster.show({ message: t('projectLeft'), intent: Intent.PRIMARY, icon: 'log-out' });
-      if (selectedProjectId === id) {
-        onSelect(null);
-      }
-      setProjectToLeave(null);
-    },
-    onError: () => {
-      AppToaster.show({ message: t('projectLeaveError'), intent: Intent.DANGER, icon: 'warning-sign' });
-      setProjectToLeave(null);
-    },
-  });
-
-  const renameMutation = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) => renameProject(id, name),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      AppToaster.show({ message: t('projectRenamed'), intent: Intent.SUCCESS, icon: 'tick-circle' });
-      setProjectToRename(null);
-    },
-    onError: () => {
-      AppToaster.show({ message: t('projectRenameError'), intent: Intent.DANGER, icon: 'warning-sign' });
-    },
-  });
+  const { createMutation, deleteMutation, joinMutation, leaveMutation, renameMutation } =
+    useProjectActions(selectedProjectId, onSelect);
 
   const COLLAPSE_THRESHOLD = 3;
   const visibleProjects = isBarExpanded ? projects : projects.slice(0, COLLAPSE_THRESHOLD);
@@ -278,7 +206,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
         mode="create"
         isOpen={isCreateDialogOpen}
         isLoading={createMutation.isPending}
-        onConfirm={(name, color) => createMutation.mutate({ name, color })}
+        onConfirm={(name, color) => createMutation.mutate(
+          { name, color }, 
+          { onSuccess: () => setIsCreateDialogOpen(false) }
+        )}
         onClose={() => setIsCreateDialogOpen(false)}
       />
       <ProjectFormDialog
@@ -286,7 +217,11 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
         isOpen={projectToRename !== null}
         currentName={projectToRename?.name ?? ''}
         isLoading={renameMutation.isPending}
-        onConfirm={(name) => projectToRename && renameMutation.mutate({ id: projectToRename.id, name })}
+        onConfirm={(name) => projectToRename && renameMutation.mutate(
+          { id: projectToRename.id, name }, 
+          { onSuccess: () => setProjectToRename(null), 
+            onError: () => setProjectToRename(null) }
+        )}
         onClose={() => setProjectToRename(null)}
       />
 
@@ -298,7 +233,11 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
         confirmButtonText={t('deleteProjectConfirm')}
         cancelButtonText={t('cancel')}
         loading={deleteMutation.isPending}
-        onConfirm={() => projectToDelete && deleteMutation.mutate(projectToDelete.id)}
+        onConfirm={() => projectToDelete && deleteMutation.mutate(
+          projectToDelete.id, 
+          { onSuccess: () => setProjectToDelete(null), 
+            onError: () => setProjectToDelete(null) }
+          )}
         onCancel={() => setProjectToDelete(null)}
       >
         <p><strong>{projectToDelete?.name}</strong></p>
@@ -313,7 +252,11 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
         confirmButtonText={t('joinProjectConfirm')}
         cancelButtonText={t('cancel')}
         loading={joinMutation.isPending}
-        onConfirm={() => projectToJoin && joinMutation.mutate(projectToJoin.id)}
+        onConfirm={() => projectToJoin && joinMutation.mutate(
+          projectToJoin.id, 
+          { onSuccess: () => setProjectToJoin(null), 
+            onError: () => setProjectToJoin(null) }
+          )}
         onCancel={() => setProjectToJoin(null)}
       >
         <p><strong>{projectToJoin?.name}</strong></p>
@@ -328,7 +271,11 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
         confirmButtonText={t('leaveProjectConfirm')}
         cancelButtonText={t('cancel')}
         loading={leaveMutation.isPending}
-        onConfirm={() => projectToLeave && leaveMutation.mutate(projectToLeave.id)}
+        onConfirm={() => projectToLeave && leaveMutation.mutate(
+          projectToLeave.id, 
+          { onSuccess: () => setProjectToLeave(null), 
+            onError: () => setProjectToLeave(null) }
+          )}
         onCancel={() => setProjectToLeave(null)}
       >
         <p><strong>{projectToLeave?.name}</strong></p>
