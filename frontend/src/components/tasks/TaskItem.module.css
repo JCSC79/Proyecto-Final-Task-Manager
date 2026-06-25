@@ -75,6 +75,24 @@
   font-size: 0.7rem; /* raised from 9px — below 10px triggers WAVE very small text alert */
 }
 
+.footerRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-subtle, rgba(0,0,0,0.08));
+}
+
+.footerMeta {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-subtle);
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
 .actions {
   flex-shrink: 0;
   display: flex;
@@ -93,6 +111,13 @@
 
 .newTaskHighlight {
   animation: highlight-fade 2s ease-out forwards;
+}
+
+/* Ghost card shown inside DragOverlay while dragging */
+.cardOverlay {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  cursor: grabbing;
+  pointer-events: none;
 }
 
 /* Dialog detail header: title + status tag side by side */

@@ -42,10 +42,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
     staleTime: Infinity,
   });
 
-  const { data: projects = [] } = useQuery<IProject[]>({
+  const { data: allProjects = [] } = useQuery<IProject[]>({
     queryKey: ['projects'],
     queryFn: getProjects,
   });
+  // Only projects where the current user is a member or owner can receive tasks
+  const projects = allProjects.filter((p) => p.memberRole !== null);
 
   const { data: projectTags = [] } = useQuery({
     queryKey: ['tags', projectId],
