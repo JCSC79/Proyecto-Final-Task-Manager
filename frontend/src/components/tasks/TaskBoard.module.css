@@ -112,3 +112,11 @@
     padding: var(--space-sm);
   }
 }
+
+/* Drag & Drop styles  */
+
+/* Column highlighted when a card is hovering over it */
+.columnDropTarget {
+  border-color: var(--accent-color, #2d72d2);
+  background-color: var(--bg-hover, rgba(45, 114, 210, 0.06));
+}
