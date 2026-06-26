@@ -8,9 +8,9 @@ const options: swaggerJSDoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Task Manager API - PRO',
-      version: '1.2.0',
-      description: 'Distributed task management with User Isolation and RabbitMQ.',
+      title: 'Task Manager API',
+      version: '2.0.0',
+      description: 'Distributed task management with JWT auth, RBAC, projects, tags, priorities, Drag & Drop kanban, RabbitMQ notifications and PDF export.',
     },
     servers: [{ url: 'http://localhost:3000', description: 'Development Server' }],
     components: {
@@ -30,11 +30,16 @@ const options: swaggerJSDoc.Options = {
             title: { type: 'string' },
             description: { type: 'string' },
             status: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'] },
-            userId: { type: 'string' },
+            priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'], nullable: true },
+            userId: { type: 'string', format: 'uuid' },
             projectId: { type: 'string', format: 'uuid', nullable: true },
+            projectName: { type: 'string', nullable: true, description: 'Denormalised project name (read-only, from JOIN)' },
+            creatorName: { type: 'string', nullable: true, description: 'Denormalised creator display name (read-only, from JOIN)' },
             categoryId: { type: 'string', format: 'uuid', nullable: true },
             category: { '$ref': '#/components/schemas/Category', nullable: true },
-            createdAt: { type: 'string', format: 'date-time' }
+            tags: { type: 'array', items: { '$ref': '#/components/schemas/Tag' }, description: 'Tags assigned to this task' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time', nullable: true }
           }
         },
         Category: {
@@ -138,7 +143,7 @@ const options: swaggerJSDoc.Options = {
             }
           },
           responses: {
-            200: { description: 'JWT set as HttpOnly cookie + user info returned' },
+            200: { description: 'JWT set as HttpOnly Cookie + user info returned' },
             401: { description: 'Invalid credentials' },
             429: { description: 'Too many login attempts' }
           }
@@ -230,7 +235,11 @@ const options: swaggerJSDoc.Options = {
                   required: ['title', 'description'],
                   properties: {
                     title: { type: 'string', example: 'Fix login bug' },
-                    description: { type: 'string', example: 'Users cannot log in on Safari' }
+                    description: { type: 'string', example: 'Users cannot log in on Safari' },
+                    projectId: { type: 'string', format: 'uuid', nullable: true, description: 'Must be a project the user is a member of' },
+                    categoryId: { type: 'string', format: 'uuid', nullable: true },
+                    priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'], nullable: true },
+                    tagIds: { type: 'array', items: { type: 'string', format: 'uuid' }, description: 'Tag IDs to assign (must belong to the same project)' }
                   }
                 }
               }
@@ -239,6 +248,7 @@ const options: swaggerJSDoc.Options = {
           responses: {
             201: { description: 'Task created', content: { 'application/json': { schema: { $ref: '#/components/schemas/Task' } } } },
             400: { description: 'Validation error' },
+            403: { description: 'Forbidden — user is not a member of the specified project' },
             401: { description: 'Not authenticated' }
           }
         },
@@ -258,6 +268,51 @@ const options: swaggerJSDoc.Options = {
             204: { description: 'Tasks deleted' },
             400: { description: 'Invalid status value' },
             401: { description: 'Not authenticated' }
+          }
+        }
+      },
+      '/api/tasks/{id}/history': {
+        get: {
+          summary: 'Get audit history of a task',
+          description: 'Returns a chronological list of audit log entries for the task (created, updated, completed, deleted). Used by the History tab in the task detail dialog.',
+          tags: ['Tasks'],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+          responses: {
+            200: {
+              description: 'Array of audit log entries',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        taskId: { type: 'string', format: 'uuid' },
+                        userId: { type: 'string', format: 'uuid' },
+                        action: { type: 'string', enum: ['TASK_CREATED', 'TASK_UPDATED', 'TASK_COMPLETED', 'TASK_DELETED'] },
+                        oldValue: { type: 'object', nullable: true },
+                        newValue: { type: 'object', nullable: true },
+                        createdAt: { type: 'string', format: 'date-time' }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            401: { description: 'Not authenticated' },
+            404: { description: 'Task not found or access denied' }
+          }
+        }
+      },
+      '/health': {
+        get: {
+          summary: 'API health check',
+          description: 'Returns 200 OK when the API is running. No authentication required. Used by Docker Compose healthchecks.',
+          tags: ['System'],
+          security: [],
+          responses: {
+            200: { description: 'API is healthy', content: { 'application/json': { schema: { type: 'object', properties: { status: { type: 'string', example: 'ok' } } } } } }
           }
         }
       },
@@ -284,7 +339,8 @@ const options: swaggerJSDoc.Options = {
                     title: { type: 'string' },
                     description: { type: 'string' },
                     status: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'] },
-                    categoryId: { type: 'string', format: 'uuid', nullable: true }
+                    categoryId: { type: 'string', format: 'uuid', nullable: true },
+                    priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'], nullable: true }
                   }
                 }
               }
@@ -312,6 +368,53 @@ const options: swaggerJSDoc.Options = {
           tags: ['Admin'],
           responses: {
             200: { description: 'Array of users with aggregated task counts' },
+            401: { description: 'Not authenticated' },
+            403: { description: 'Admin role required' }
+          }
+        }
+      },
+      '/api/tasks/export/pdf': {
+        get: {
+          summary: 'Export authenticated user tasks as PDF',
+          description: 'Generates and downloads a PDF report of all tasks visible to the authenticated user. Pass `?lang=es` for a Spanish report.',
+          tags: ['Tasks'],
+          parameters: [
+            {
+              name: 'lang',
+              in: 'query',
+              required: false,
+              description: 'Language for the PDF content (en or es)',
+              schema: { type: 'string', enum: ['en', 'es'], default: 'en' }
+            }
+          ],
+          responses: {
+            200: {
+              description: 'PDF file download',
+              content: { 'application/pdf': { schema: { type: 'string', format: 'binary' } } }
+            },
+            401: { description: 'Not authenticated' }
+          }
+        }
+      },
+      '/api/admin/export/pdf': {
+        get: {
+          summary: 'Export full admin report as PDF (Admin only)',
+          description: 'Generates a PDF with all users and their task statistics. Admin role required.',
+          tags: ['Admin'],
+          parameters: [
+            {
+              name: 'lang',
+              in: 'query',
+              required: false,
+              description: 'Language for the PDF content (en or es)',
+              schema: { type: 'string', enum: ['en', 'es'], default: 'en' }
+            }
+          ],
+          responses: {
+            200: {
+              description: 'PDF file download',
+              content: { 'application/pdf': { schema: { type: 'string', format: 'binary' } } }
+            },
             401: { description: 'Not authenticated' },
             403: { description: 'Admin role required' }
           }
@@ -373,7 +476,7 @@ const options: swaggerJSDoc.Options = {
                   required: ['name'],
                   properties: {
                     name: { type: 'string', minLength: 2, maxLength: 50, example: 'Backend Refactor' },
-                    color: { type: 'string', example: '#e d6c02', description: '7-char hex. Defaults to #4c90f0' },
+                    color: { type: 'string', example: '#4C90F0', description: '7-char hex. Defaults to #4c90f0' },
                     description: { type: 'string', nullable: true, example: 'Refactor the API layer' },
                     isPublic: { type: 'boolean', default: true }
                   }
