@@ -1,6 +1,6 @@
 # Task Manager — Frontend
 
-React 19 SPA built with **Vite 7**, **TypeScript** (strict), **BlueprintJS v6**, and **TanStack Query v5**. Features JWT authentication via httpOnly cookie, dark/light theme, full i18n (EN/ES), a kanban task board, KPI analytics dashboard, and an admin panel.
+React 19 SPA built with **Vite 7**, **TypeScript** (strict), **BlueprintJS v6**, and **TanStack Query v5**. Features JWT authentication via httpOnly cookie, dark/light theme, full i18n (EN/ES), a kanban task board with drag-and-drop, project workspaces, KPI analytics dashboard, and an admin panel.
 
 > This README covers the frontend in isolation. For the full project setup (Docker Compose, environment variables, backend) see the [root README](../README.md).
 
@@ -15,10 +15,13 @@ src/
 ├── i18n.ts                 react-i18next config + EN/ES translation strings
 ├── api/
 │   ├── axiosInstance.ts    Axios instance (withCredentials: true for cookies)
-│   ├── auth.api.ts         login / register / updateMe / logout calls
-│   └── admin.api.ts        fetchAdminUsers / updateUserRole calls
+│   ├── auth.api.ts         login / register / updateMe / logout
+│   ├── project.api.ts      project CRUD + join/leave/member management
+│   ├── category.api.ts     fetchCategories
+│   ├── tag.api.ts          tag CRUD + assign/unassign to tasks
+│   └── admin.api.ts        fetchAdminUsers / updateUserRole
 ├── contexts/
-│   ├── AuthContext.tsx     Auth state shape (user, isAdmin, login, logout…)
+│   ├── AuthContext.tsx     Auth state shape
 │   ├── AuthProvider.tsx    JWT cookie session management
 │   ├── ThemeContext.tsx    Dark/Light theme state
 │   └── ThemeProvider.tsx   Sets data-theme on <html> + bp6-dark on <body>
@@ -29,40 +32,46 @@ src/
 ├── pages/
 │   ├── LoginPage.tsx
 │   ├── RegisterPage.tsx
-│   ├── HomePage.tsx        Kanban task board
+│   ├── HomePage.tsx        Kanban board + project selector
 │   ├── DashboardPage.tsx   KPI analytics view
 │   └── AdminPage.tsx       User management (ADMIN only)
 ├── components/
 │   ├── layout/
-│   │   ├── Header.tsx      Navbar — navigation, avatar, theme, language
+│   │   ├── Header.tsx      Navbar — navigation, avatar, theme, language toggle
 │   │   └── Footer.tsx
 │   ├── tasks/
-│   │   ├── TaskBoard.tsx   Three-column paginated kanban board
-│   │   ├── TaskForm.tsx    Create / edit task modal
-│   │   ├── TaskFilters.tsx Search input + status filter buttons
-│   │   └── TaskItem.tsx    Individual task card with inline actions
+│   │   ├── ProjectSelector.tsx   Project chip bar — create/rename/delete/join/leave
+│   │   ├── TaskBoard.tsx         Three-column DnD kanban board
+│   │   ├── TaskForm.tsx          Create task modal (project, category, priority, tags)
+│   │   ├── TaskFilters.tsx       Search + status filter + category filter
+│   │   ├── TaskItem.tsx          Task card with move arrows, delete, DnD handle
+│   │   ├── TaskDetailsDialog.tsx Task detail view with info tab + history tab
+│   │   ├── TaskEditDialog.tsx    Edit form dialog (title, description, priority, tags)
+│   │   └── taskUtils.ts          Shared helpers (getTranslatedStatus)
 │   ├── dashboard/
-│   │   └── DashboardView.tsx  KPI cards + Recharts (donut, bar, line)
+│   │   └── DashboardView.tsx     KPI cards + Recharts (donut, bar, line) + PDF button
 │   └── admin/
-│       └── AdminDashboard.tsx User stats table + charts + promote/demote
+│       └── AdminDashboard.tsx    User stats table + charts + promote/demote + PDF button
 ├── hooks/
-│   ├── useAuth.ts          Consumes AuthContext
-│   ├── useTheme.ts         Consumes ThemeContext
-│   ├── useAdminDashboard.ts Admin data + search/pagination logic
-│   ├── useChartColors.ts   Resolves CSS tokens to JS strings for Recharts
-│   └── useLanguageToggle.ts EN ↔ ES switcher
+│   ├── useAuth.ts              Consumes AuthContext
+│   ├── useTheme.ts             Consumes ThemeContext
+│   ├── useProjectActions.ts    Project mutation bundle (create/delete/join/leave/rename)
+│   ├── useAdminDashboard.ts    Admin data + search/pagination logic
+│   ├── useChartColors.ts       Resolves CSS tokens to JS strings for Recharts
+│   └── useLanguageToggle.ts    EN ↔ ES switcher
 ├── styles/
-│   ├── variables.css       All design tokens (colors, spacing, radii, shadows)
-│   ├── globals.css         CSS reset + base styles + .sr-only utility class
-│   ├── blueprint-overrides.css  Adapts Blueprint v6 classes to our tokens
-│   └── index.css           Import order entry point
+│   ├── variables.css           All design tokens (colors, spacing, radii, shadows)
+│   ├── globals.css             CSS reset + base styles + .sr-only utility
+│   ├── blueprint-overrides.css Adapts Blueprint v6 to our design tokens
+│   └── index.css               Import order entry point
 ├── types/
-│   ├── task.ts             Task, TaskStatus
-│   ├── user.ts             IUser, UserRole, LoginResponse
-│   └── admin.ts            IUserStats, IUserWithStats
+│   ├── task.ts                 Task, TaskStatus, TaskPriority, ITag, ICategory
+│   ├── user.ts                 IUser, UserRole, LoginResponse
+│   ├── project.ts              IProject, ProjectMember, MemberRole
+│   └── admin.ts                IUserStats, IUserWithStats
 └── utils/
-    ├── toaster.ts          Singleton Blueprint toaster for app-wide notifications
-    └── gravatar.ts         SHA-256 Gravatar URL generator (Web Crypto API)
+    ├── toaster.ts              Singleton Blueprint toaster for app-wide notifications
+    └── gravatar.ts             SHA-256 Gravatar URL generator (Web Crypto API)
 ```
 
 ---
@@ -96,99 +105,41 @@ Open **<http://localhost:5173>**
 npm run build
 ```
 
-Output goes to `dist/`. In Docker this is served by Nginx (see `frontend/Dockerfile` and `frontend/nginx.conf`).
+Output goes to `dist/`. In Docker this folder is served by Nginx (see `frontend/Dockerfile` and `frontend/nginx.conf`).
 
 ---
 
 ## Running Tests
 
-Uses Vitest with jsdom and Testing Library:
-
 ```bash
 npx vitest run
 ```
 
-Expected output: **27 tests, 0 failures** across 11 test files.
-
-| Suite | File | What it tests |
-| --- | --- | --- |
-| Auth form | `AuthForm.test.tsx` | Login / register form rendering and submission |
-| Header | `Header.test.tsx` | Navigation, avatar button, progress bar |
-| TaskItem | `TaskItem.test.tsx` | Card rendering, dialogs, delete alert |
-| DashboardView | `DashboardView.test.tsx` | KPI calculation, health score |
-| HomePage | `HomePage.test.tsx` | Board renders after data load |
-| LoginPage | `LoginPage.test.tsx` | Form fields present |
-| RegisterPage | `RegisterPage.test.tsx` | Registration fields present |
-| AdminPage | `AdminPage.test.tsx` | Admin layout renders |
-| DashboardPage | `DashboardPage.test.tsx` | Dashboard layout renders |
-| Gravatar | `gravatar.test.ts` | SHA-256 hashing + URL format |
-| Toaster | `toaster.test.ts` | Singleton methods defined |
+Expected output: **27 tests, 0 failures**. Tests are co-located next to the component they cover (e.g. `LoginPage.test.tsx`, `AuthForm.test.tsx`).
 
 ---
 
-## Route Map
+## Key UI Features
 
-| Path | Access | Component |
-| --- | --- | --- |
-| `/login` | Public | `LoginPage` |
-| `/register` | Public | `RegisterPage` |
-| `/` | Protected (any role) | `HomePage` — kanban task board |
-| `/dashboard` | Protected (any role) | `DashboardPage` — KPI analytics |
-| `/admin` | Protected (ADMIN only) | `AdminPage` — user management |
+### Kanban board with drag-and-drop
 
----
+Tasks are organised in three columns (Pending / In Progress / Completed). Cards can be dragged between columns using **dnd-kit**; the status is updated immediately on drop with an optimistic mutation.
 
-## Authentication Flow
+### Project workspaces
 
-1. User submits login form → POST `/api/auth/login`
-2. The API sets an **httpOnly cookie** (`auth_token`) and returns `{ token, user }` in the response body
-3. `AuthProvider` stores the user object in `localStorage` (`auth_user`) for UI rendering (name, role, avatar)
-4. Every Axios request uses `withCredentials: true`, so the browser sends the cookie automatically — no manual header management
-5. A 401 response from the API clears `localStorage` and redirects to `/login`
-6. `AuthProvider` reads `localStorage` on mount so the session survives a page refresh
+The chip bar at the top of the board lets you switch between projects. Each project has its own tasks, tags, and member list. The active project ID is persisted in `localStorage` across sessions.
 
----
+### Task detail & history
 
-## Theme System
+Clicking a task card opens a detail dialog with two tabs:
 
-- All colors, spacing, radii, and shadows are defined as **CSS Custom Properties** in `styles/variables.css` under `:root` (light theme) and `[data-theme="dark"]` (dark theme)
-- Toggling dark mode sets `data-theme="dark"` on `<html>` **and** `bp6-dark` on `<body>` (both are required by BlueprintJS v6)
-- `styles/blueprint-overrides.css` bridges Blueprint's own classes to our tokens using `bp6-` class selectors
-- Every component uses **CSS Modules** — no inline styles, no hardcoded color values anywhere
+- **Info** — title, description, priority, category, tags, creator, project.
+- **History** — chronological audit log fetched from `GET /api/tasks/:id/history`.
 
----
+### PDF export
 
-## Internationalisation
+The dashboard and admin panel each have a "Download PDF" button that calls the corresponding export endpoint and triggers a browser file download.
 
-All user-visible strings live in `src/i18n.ts` under `en.translation` and `es.translation`.
+### Theming & i18n
 
-- The language switcher button (in the header) shows the **current** language's flag — click it to toggle
-- The selected language is persisted via `i18next-browser-languagedetector`
-- To add a new language: add a locale block in `i18n.ts` and update the toggle logic in `Header.tsx`
-
----
-
-## Dashboard — Chart Click Navigation
-
-Clicking a sector of the **donut chart** or a bar in the **workload bar chart** on the Dashboard navigates to the Home page and automatically filters the kanban board to show only the corresponding status column:
-
-- Donut / bar → `navigate('/', { state: { statusFilter: 'PENDING' } })` (or `IN_PROGRESS` / `COMPLETED`)
-- `HomePage` reads `location.state` on mount via a lazy `useState` initializer and applies the filter immediately, then clears the navigation state so a manual refresh resets the board to "All"
-
----
-
-## Key Dependencies
-
-| Package | Version | Purpose |
-| --- | --- | --- |
-| `react` | 19 | UI framework |
-| `vite` | 7 | Build tool / dev server |
-| `@blueprintjs/core` | 6 | UI component library |
-| `@tanstack/react-query` | 5 | Server state, caching, refetch |
-| `axios` | 1 | HTTP client |
-| `react-router-dom` | 7 | Client-side routing |
-| `react-i18next` | 16 | Internationalisation |
-| `recharts` | 3 | Charts (dashboard + admin) |
-| `flag-icons` | 7 | SVG country flag sprites |
-| `vitest` | 4 | Unit test runner |
-| `@testing-library/react` | 16 | Component test utilities |
+Theme (dark/light) and language (EN/ES) toggles are in the header. Preferences are stored in `localStorage`. All user-facing strings run through `react-i18next`.

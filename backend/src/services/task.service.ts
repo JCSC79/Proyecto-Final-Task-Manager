@@ -15,13 +15,16 @@ import crypto from 'node:crypto';
 export class TaskService {
     private readonly dao: typeof taskDAO;
     private readonly messaging: typeof messagingService;
+    private readonly userDao: typeof userDAO;
     
     constructor(
         dao: typeof taskDAO = taskDAO,
-        messaging: typeof messagingService = messagingService
+        messaging: typeof messagingService = messagingService,
+        userDao: typeof userDAO = userDAO
     ) {
         this.dao = dao;
         this.messaging = messaging;
+        this.userDao = userDao;
     }
 
     async getAllTasks(user: { id: string, role: string }): Promise<Result<ITask[]>> {
@@ -79,7 +82,7 @@ export class TaskService {
                 createdTask.tags = await tagDAO.getByTask(createdTask.id);
             }
 
-            const { email, lang, name } = await getUserInfo(userId);
+            const { email, lang, name } = await getUserInfo(userId, this.userDao);
             await notifyProjectOrOwner(this.messaging, createdTask, 'TASK_CREATED', { email, lang, name });
             await this.messaging.sendAuditEvent({
                 taskId: createdTask.id,
@@ -141,7 +144,7 @@ export class TaskService {
                 }
                 // Fire email notification only when task reaches COMPLETED
                 if (validated.status === TaskStatus.COMPLETED) {
-                    const { email, lang, name } = await getUserInfo(userId);
+                    const { email, lang, name } = await getUserInfo(userId, this.userDao);
                     await notifyProjectOrOwner(this.messaging, updatedTask, 'TASK_COMPLETED', { email, lang, name });
                 }
                 await this.messaging.sendAuditEvent({
@@ -182,8 +185,8 @@ export class TaskService {
 export const taskService = new TaskService();
 
 /** Resolves the email, preferred lang and display name for a userId. */
-async function getUserInfo(userId: string): Promise<{ email: string; lang: 'en' | 'es'; name: string }> {
-    const user = await userDAO.getById(userId);
+async function getUserInfo(userId: string, dao: typeof userDAO): Promise<{ email: string; lang: 'en' | 'es'; name: string }> {
+    const user = await dao.getById(userId);
     return {
         email: user?.email ?? 'unknown@taskmanager.dev',
         lang:  user?.lang ?? 'en',
