@@ -52,6 +52,19 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { id: 'user-1', email: 'test@example.com', role: 'USER', lang: 'en', createdAt: new Date().toISOString() },
+    isAuthenticated: true,
+    isAdmin: false,
+    login: () => {},
+    logout: () => {},
+  }),
+}));
+
+/**
+ * 2. Component Mocks
+ */
 describe('HomePage', () => {
   it('should render the main layout and task-related sub-components after loading', async () => {
     render(
@@ -67,8 +80,7 @@ describe('HomePage', () => {
     expect(screen.getByTestId('mock-footer')).toBeInTheDocument();
 
     /**
-     * Now that API is mocked to succeed, findByTestId will find the board
-     * once the internal loading state finishes.
+     * Now that API is mocked to succeed, findByTestId will find the board once the internal loading state finishes.
      */
     const board = await screen.findByTestId('mock-board');
     const filters = await screen.findByTestId('mock-filters');

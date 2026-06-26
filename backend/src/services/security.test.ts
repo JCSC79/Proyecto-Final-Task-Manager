@@ -2,6 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert';
 import { TaskService } from './task.service.ts';
 import { taskDAO } from '../daos/task.dao.ts';
+import { userDAO } from '../daos/user.dao.ts';
 import { messagingService } from './messaging.service.ts';
 import type { ITask } from '../models/task.model.ts';
 import { TaskStatus } from '../models/task.model.ts';
@@ -38,10 +39,15 @@ describe('Security - User Context Integrity', () => {
     } as unknown as typeof taskDAO;
 
     const mockMessaging = {
-        sendTaskNotification: async (_task: ITask): Promise<void> => {}
+        sendTaskNotification: async (_task: ITask): Promise<void> => {},
+        sendAuditEvent: async (): Promise<void> => {}
     } as unknown as typeof messagingService;
 
-    const service = new TaskService(mockDao, mockMessaging);
+    const mockUserDao = {
+        getById: async (_id: string) => ({ id: _id, email: 'test@test.com', lang: 'en' as const, name: 'Test User', role: 'USER', createdAt: new Date() })
+    } as unknown as typeof userDAO;
+
+    const service = new TaskService(mockDao, mockMessaging, mockUserDao);
 
     // 2. SCENARIO: Cross-user deletion attempt
     test('should reject deletion if the task does not belong to the requester', async () => {

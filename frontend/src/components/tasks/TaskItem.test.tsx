@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TaskItem } from './TaskItem';
@@ -91,8 +90,9 @@ describe('TaskItem Component', () => {
 
     fireEvent.click(screen.getByText('Test Task'));
 
-    // findByText waits for the Blueprint Portal/Dialog to render
-    expect(await screen.findByText('taskDetails')).toBeInTheDocument();
+    // Wait for the dialog heading to appear (Blueprint renders via Portal)
+    const dialogHeading = await screen.findByRole('heading', { name: 'taskDetails' });
+    expect(dialogHeading).toBeInTheDocument();
   });
 
   it('should open the delete alert when clicking the trash button', async () => {

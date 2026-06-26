@@ -4,6 +4,7 @@ import { TaskService } from './task.service.ts';
 import { TaskStatus } from '../models/task.model.ts';
 import type { ITask } from '../models/task.model.ts';
 import type { taskDAO } from '../daos/task.dao.ts';
+import type { userDAO } from '../daos/user.dao.ts';
 import type { messagingService } from './messaging.service.ts';
 
 /**
@@ -48,10 +49,15 @@ describe('TaskService - Business Logic & Security', () => {
     } as unknown as typeof taskDAO;
 
     const mockMessaging = {
-        sendTaskNotification: async (_task: ITask): Promise<void> => {}
+        sendTaskNotification: async (_task: ITask): Promise<void> => {},
+        sendAuditEvent: async (): Promise<void> => {}
     } as unknown as typeof messagingService;
 
-    const service = new TaskService(mockDao, mockMessaging);
+    const mockUserDao = {
+        getById: async (_id: string) => ({ id: _id, email: 'owner@test.com', lang: 'en' as const, name: 'Owner', role: 'USER', createdAt: new Date() })
+    } as unknown as typeof userDAO;
+
+    const service = new TaskService(mockDao, mockMessaging, mockUserDao);
 
     // 2. VALIDATION TESTS
     test('should validate mandatory fields (Title required)', async () => {
@@ -99,10 +105,11 @@ describe('TaskService - Business Logic & Security', () => {
         const spyMessaging = {
             sendTaskNotification: async (_task: ITask): Promise<void> => { 
                 notificationSent = true; 
-            }
+            },
+            sendAuditEvent: async (): Promise<void> => {}
         } as unknown as typeof messagingService;
         
-        const serviceWithSpy = new TaskService(mockDao, spyMessaging);
+        const serviceWithSpy = new TaskService(mockDao, spyMessaging, mockUserDao);
         await serviceWithSpy.createTask({ title: 'New Task', description: 'A valid description' }, 'owner-1');
 
         assert.strictEqual(notificationSent, true);
