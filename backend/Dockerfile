@@ -5,16 +5,20 @@ FROM node:24-alpine3.23
 WORKDIR /usr/src/app
 
 # Copy package management files to leverage Docker layer caching
-COPY package*.json ./
+COPY --chown=node:node package*.json ./
 
 # Install project dependencies
 RUN npm install
 
-# Copy the rest of the application source code
-COPY . .
+# Copy only the required source files (avoids accidentally including sensitive data)
+COPY --chown=node:node src/ ./src/
+COPY --chown=node:node knexfile.cjs tsconfig.json ./
 
 # Expose the API port
 EXPOSE 3000
+
+# Run as non-root user for security
+USER node
 
 # Start the application in development mode using tsx
 CMD ["npm", "run", "dev"]

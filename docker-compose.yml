@@ -52,9 +52,34 @@ services:
     networks:
       - app-network
 
+  worker:
+    build: ./backend
+    container_name: final_task_worker
+    command: ["npm", "run", "worker"]
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+      SMTP_SECURE: ${SMTP_SECURE}
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - app-network
+
   frontend:
     build: ./frontend
-    container_name: final_task_frontend  # <--- CAMBIADO (antes task_frontend)
+    container_name: final_task_frontend
     ports:
       - "5173:80"
     depends_on:
