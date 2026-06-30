@@ -264,6 +264,17 @@
   transform: scale(1.15);
 }
 
+/* Delete confirmation dialog — summary list */
+.deleteSummaryList {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.deleteSummaryNote {
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
 @media (max-width: 480px) {
   .bar {
     padding: 0.5rem var(--space-md, 1rem);

@@ -12,6 +12,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../../api/project.api', () => ({
   getProjects: vi.fn(() => Promise.resolve([])),
+  getProjectSummary: vi.fn(() => Promise.resolve({ taskCount: 0, memberCount: 0 })),
 }));
 
 // Mock the heavy sub-dialogs to keep tests focused on the chip bar
