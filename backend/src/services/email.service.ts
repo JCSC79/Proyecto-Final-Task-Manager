@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
-import type { TaskNotificationPayload, ProjectNotificationPayload } from '../models/notification.model.ts';
-import { buildTaskEmailHtml, buildMemberEmailHtml } from '../templates/taskNotification.template.ts';
+import type { TaskNotificationPayload, ProjectNotificationPayload, ProjectDeletedPayload } from '../models/notification.model.ts';
+import { buildTaskEmailHtml, buildMemberEmailHtml, buildProjectDeletedEmailHtml } from '../templates/taskNotification.template.ts';
 
 /**
  * EmailService — sends transactional emails via SMTP.
@@ -72,6 +72,7 @@ class EmailService {
             console.log(`[v] Email sent to ${payload.recipientEmail} - id: ${info.messageId}`);
         }
     }
+
     async sendMemberNotification(payload: ProjectNotificationPayload): Promise<void> {
         if (!this.transporter) {
             console.error('[-] Email service not initialized.');
@@ -86,7 +87,8 @@ class EmailService {
         const subjectEn = isJoined
             ? `${payload.recipientName ?? 'Someone'} joined your project "${payload.projectName}"`
             : `You have been added to project "${payload.projectName}"`;
-        const subject = lang === 'es' ? subjectEs : subjectEn;        const html = buildMemberEmailHtml(payload);
+        const subject = lang === 'es' ? subjectEs : subjectEn; 
+        const html = buildMemberEmailHtml(payload);
         const info = await this.transporter.sendMail({ from, to: payload.recipientEmail, subject, html });
         const previewUrl = nodemailer.getTestMessageUrl(info);
         if (previewUrl) {
@@ -95,16 +97,43 @@ class EmailService {
             console.log(`[v] Member email sent to ${payload.recipientEmail} - id: ${info.messageId}`);
         }
     }
+
+    async sendProjectDeletedNotification(payload: ProjectDeletedPayload): Promise<void> {
+        if (!this.transporter) {
+            console.error('[-] Email service not initialized.');
+            return;
+        }
+        const from = process.env.SMTP_FROM ?? '"Task Manager" <noreply@taskmanager.dev>';
+        for (const recipient of payload.recipients) {
+            const lang = recipient.lang;
+            const subject = lang === 'es'
+                ? `El proyecto "${payload.projectName}" ha sido eliminado`
+                : `Project "${payload.projectName}" has been deleted`;
+            const html = buildProjectDeletedEmailHtml(
+                payload.projectName,
+                payload.taskCount,
+                recipient.name ?? recipient.email,
+                lang,
+            );
+            const info = await this.transporter.sendMail({ from, to: recipient.email, subject, html });
+            const previewUrl = nodemailer.getTestMessageUrl(info);
+            if (previewUrl) {
+                console.log(`[v] PROJECT_DELETED email preview (${recipient.email}): ${previewUrl}`);
+            } else {
+                console.log(`[v] PROJECT_DELETED email sent to ${recipient.email}`);
+            }
+        }
+    }
 }
 
 export const emailService = new EmailService();
 
 function buildSubject(payload: TaskNotificationPayload): string {
     const titles: Record<TaskNotificationPayload['eventType'], string> = {
-        TASK_CREATED:   `New task: ${payload.task.title}`,
+        TASK_CREATED: `New task: ${payload.task.title}`,
         TASK_COMPLETED: `Task completed: ${payload.task.title}`,
-        TASK_UPDATED:   `Task updated: ${payload.task.title}`,
-        MEMBER_ADDED:   `You have been added to a project`,
+        TASK_UPDATED: `Task updated: ${payload.task.title}`,
+        MEMBER_ADDED: `You have been added to a project`,
     };
     return titles[payload.eventType];
 }

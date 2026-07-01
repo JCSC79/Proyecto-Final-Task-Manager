@@ -332,6 +332,21 @@ class ProjectDAO {
         }));
     }
 
+    /**
+     * Returns the task count and member count for a project.
+     * Used by the delete confirmation dialog to warn the owner.
+     */
+    async getSummary(projectId: string): Promise<{ taskCount: number; memberCount: number }> {
+        const [taskRow, memberRow] = await Promise.all([
+            db('tasks').where({ projectId }).count('id as taskCount').first(),
+            db('project_members').where({ projectId }).count('userId as memberCount').first(),
+        ]);
+        return {
+            taskCount: Number(taskRow?.taskCount ?? 0),
+            memberCount: Number(memberRow?.memberCount ?? 0),
+        };
+    }
+
     // Renames a project. Only the OWNER can rename. Returns null if not found or not owner.
     async rename(projectId: string, name: string, userId: string): Promise<IProjectWithDetails | null> {
         const membership = await db<IProjectMember>('project_members')

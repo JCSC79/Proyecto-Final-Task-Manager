@@ -69,9 +69,24 @@ class ProjectController {
   }
 
   /**
+   * GET /api/projects/:id/summary
+   * Returns the task count and member count for a project.
+   * Only the OWNER can call this endpoint (used by the delete confirmation dialog).
+   */
+  async getSummary(req: Request, res: Response): Promise<Response | void> {
+    const { id } = req.params;
+    if (typeof id !== 'string') {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+    const summary = await projectDAO.getSummary(id);
+    res.json(summary);
+  }
+
+  /**
    * DELETE /api/projects/:id
    * Permanently deletes a project and all its tasks, tags, and memberships
    * (via DB CASCADE). Only the OWNER can perform this action.
+   * Before deleting, notifies all members via RabbitMQ -> email.
    */
   async delete(req: Request, res: Response): Promise<Response | void> {
     const authReq = req as AuthRequest;
@@ -81,10 +96,28 @@ class ProjectController {
       return res.status(400).json({ error: 'Invalid project ID' });
     }
 
+    // Fetch project name, members and task count BEFORE the CASCADE delete removes them
+    const allProjects = await projectDAO.getAll(authReq.user!.id);
+    const project = allProjects.find(p => p.id === id);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found or you are not the owner' });
+    }
+
+    const [members, summary] = await Promise.all([
+      projectDAO.getMembersForNotification(id),
+      projectDAO.getSummary(id),
+    ]);
+
     const success = await projectDAO.delete(id, authReq.user!.id);
     if (!success) {
       return res.status(404).json({ error: 'Project not found or you are not the owner' });
     }
+
+    // Notify all members asynchronously via RabbitMQ
+    if (members.length > 0) {
+      void messagingService.sendProjectDeletedNotification(project.name, summary.taskCount, members);
+    }
+
     res.status(204).send();
   }
 

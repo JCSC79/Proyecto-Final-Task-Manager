@@ -31,5 +31,16 @@ export interface ProjectNotificationPayload {
     lang?: 'en' | 'es';
 }
 
+/**
+ * Shape of a project-deleted notification. Sent to every member before the
+ * project (and all its tasks) are permanently removed by CASCADE.
+ */
+export interface ProjectDeletedPayload {
+    type: 'PROJECT_DELETED';
+    projectName: string;
+    taskCount: number;
+    recipients: { email: string; name: string; lang: 'en' | 'es' }[];
+}
+
 /** Union of all message types the worker can receive on task_notifications. */
-export type NotificationMessage = TaskNotificationPayload | ProjectNotificationPayload;
+export type NotificationMessage = TaskNotificationPayload | ProjectNotificationPayload | ProjectDeletedPayload;

@@ -25,6 +25,7 @@ const i18n: Record<Lang, Record<string, string>> = {
         TASK_COMPLETED: 'Task completed',
         TASK_UPDATED:   'Task updated',
         MEMBER_ADDED:   'You have been added to a project',
+        appName:          'Task Manager',
         greeting:         'Hello',
         introCreated:     'A new task has been assigned to your project:',
         introCompleted:   'Great news! The following task has been completed:',
@@ -40,6 +41,7 @@ const i18n: Record<Lang, Record<string, string>> = {
         TASK_COMPLETED: 'Tarea completada',
         TASK_UPDATED:   'Tarea actualizada',
         MEMBER_ADDED:   'Has sido añadido a un proyecto',
+        appName:          'Gestor de Tareas',
         greeting:         'Hola',
         introCreated:     'Se ha creado una nueva tarea en tu proyecto:',
         introCompleted:   '¡Buenas noticias! La siguiente tarea ha sido completada:',
@@ -89,6 +91,7 @@ export function buildTaskEmailHtml(payload: TaskNotificationPayload): string {
 
     const vars: Record<string, string> = {
         logoBase64:       LOGO_BASE64,
+        appName:          t.appName ?? 'Task Manager',
         eventLabel:       t[eventType] ?? eventType,
         greeting:         t.greeting ?? 'Hello',
         recipientName,
@@ -107,7 +110,55 @@ export function buildTaskEmailHtml(payload: TaskNotificationPayload): string {
     return replacePlaceholders(HTML_TEMPLATE, vars);
 }
 
-// Helpers 
+/**
+ * Builds the HTML body for a PROJECT_DELETED email notification.
+ * Reuses the same HTML template — the "task card" shows project name + task count.
+ */
+export function buildProjectDeletedEmailHtml(
+    projectName: string,
+    taskCount: number,
+    recipientName: string,
+    lang: Lang = 'en',
+): string {
+    const t = i18n[lang];
+
+    const labels: Record<Lang, { eventLabel: string; intro: string; taskCountLine: string; closing: string }> = {
+        en: {
+            eventLabel:    'Project deleted',
+            intro:         `The project has been deleted by its owner.`,
+            taskCountLine: `${taskCount} associated task(s) have been removed.`,
+            closing:       'Thank you for using Task Manager.',
+        },
+        es: {
+            eventLabel:    'Proyecto eliminado',
+            intro:         `El proyecto ha sido eliminado por su propietario.`,
+            taskCountLine: `Se han eliminado ${taskCount} tarea(s) asociadas a este proyecto.`,
+            closing:       'Gracias por usar el Gestor de Tareas.',
+        },
+    };
+
+    const lbl = labels[lang];
+
+    const vars: Record<string, string> = {
+        logoBase64:       LOGO_BASE64,
+        appName:          t.appName ?? 'Task Manager',
+        eventLabel:       lbl.eventLabel,
+        greeting:         t.greeting ?? 'Hello',
+        recipientName,
+        introLine:        `${lbl.intro} ${lbl.taskCountLine}`,
+        taskTitle:        projectName,
+        taskStatus:       '',
+        statusBadgeStyle: 'display:none;',
+        taskDescription:  lbl.closing,
+        taskCreatedAt:    '',
+        labelStatus:      '',
+        labelDescription: '',
+        labelCreated:     '',
+        footerNote:       t.footerNote ?? '',
+    };
+
+    return replacePlaceholders(HTML_TEMPLATE, vars);
+}
 
 function replacePlaceholders(template: string, vars: Record<string, string>): string {
     return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => vars[key] ?? '');
@@ -126,6 +177,7 @@ export function buildMemberEmailHtml(payload: ProjectNotificationPayload): strin
 
     const vars: Record<string, string> = {
         logoBase64:       LOGO_BASE64,
+        appName:          t.appName ?? 'Task Manager',
         eventLabel:       t.MEMBER_ADDED ?? 'Added to project',
         greeting:         t.greeting ?? 'Hello',
         recipientName,

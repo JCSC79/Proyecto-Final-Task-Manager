@@ -1,6 +1,6 @@
 import amqp from 'amqplib';
 import type { Channel } from 'amqplib';
-import type { TaskNotificationPayload, ProjectNotificationPayload, NotificationEventType } from '../models/notification.model.ts';
+import type { TaskNotificationPayload, ProjectNotificationPayload, ProjectDeletedPayload, NotificationEventType } from '../models/notification.model.ts';
 import type { IAuditLogEvent } from '../models/audit.model.ts';
 
 /**
@@ -90,6 +90,29 @@ class MessagingService {
         };
         this.channel.sendToQueue(this.queue, Buffer.from(JSON.stringify(payload)), { persistent: true });
         console.log(` [x] Member notification queued (${eventType}): ${recipientEmail} — "${projectName}"`);
+    }
+
+    /**
+     * Publishes a PROJECT_DELETED notification for all project members.
+     * The worker sends one email per recipient.
+     */
+    async sendProjectDeletedNotification(
+        projectName: string,
+        taskCount: number,
+        recipients: { email: string; name: string; lang: 'en' | 'es' }[],
+    ): Promise<void> {
+        if (!this.channel) {
+            console.error('[-] Messaging channel not initialized.');
+            return;
+        }
+        const payload: ProjectDeletedPayload = {
+            type: 'PROJECT_DELETED',
+            projectName,
+            taskCount,
+            recipients,
+        };
+        this.channel.sendToQueue(this.queue, Buffer.from(JSON.stringify(payload)), { persistent: true });
+        console.log(` [x] PROJECT_DELETED notification queued: "${projectName}" — ${recipients.length} recipient(s)`);
     }
 
     /**

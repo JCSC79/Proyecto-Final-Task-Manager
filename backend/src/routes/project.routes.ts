@@ -9,6 +9,9 @@ router.get('/', (req, res) => projectController.getAll(req, res));
 // POST /api/projects — create a new project (creator becomes OWNER)
 router.post('/', (req, res) => projectController.create(req, res));
 
+// GET  /api/projects/:id/summary — task & member counts (used by delete dialog)
+router.get('/:id/summary', (req, res) => projectController.getSummary(req, res));
+
 // DELETE /api/projects/:id — delete project (OWNER only, cascades to tasks/tags)
 router.delete('/:id', (req, res) => projectController.delete(req, res));
 
