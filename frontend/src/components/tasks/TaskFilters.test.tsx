@@ -40,6 +40,7 @@ interface Props {
   statusFilter?: TaskStatus | 'ALL';
   categoryId?: string | null;
   priorityFilter?: TaskPriority | 'ALL';
+  onlyMyTasks?: boolean;
 }
 
 function renderFilters(overrides: Props = {}) {
@@ -52,6 +53,8 @@ function renderFilters(overrides: Props = {}) {
     setCategoryId: vi.fn(),
     priorityFilter: overrides.priorityFilter ?? 'ALL',
     setPriorityFilter: vi.fn(),
+    onlyMyTasks: overrides.onlyMyTasks ?? false,
+    setOnlyMyTasks: vi.fn(),
   };
 
   render(
