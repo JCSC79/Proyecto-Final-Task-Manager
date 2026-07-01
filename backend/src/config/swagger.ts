@@ -560,6 +560,32 @@ const options: swaggerJSDoc.Options = {
           }
         }
       },
+      '/api/projects/{id}/summary': {
+        get: {
+          summary: 'Get project task and member counts',
+          description: 'Returns the number of tasks and members in a project. Used by the delete confirmation dialog to warn the owner before a destructive action.',
+          tags: ['Projects'],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+          responses: {
+            200: {
+              description: 'Summary counts',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      taskCount: { type: 'integer', example: 12 },
+                      memberCount: { type: 'integer', example: 3 }
+                    }
+                  }
+                }
+              }
+            },
+            400: { description: 'Invalid project ID' },
+            401: { description: 'Not authenticated' }
+          }
+        }
+      },
       '/api/projects/{id}/members': {
         get: {
           summary: 'List members of a project',

@@ -65,7 +65,13 @@ async function startWorker(attempt = 1): Promise<void> {
                         const content = msg.content.toString();
                         const message: NotificationMessage = JSON.parse(content);
 
-                        if (message.type === 'PROJECT') {
+                        if (message.type === 'PROJECT_DELETED') {
+                            // Project deletion notification — email all members
+                            console.log('--------------------------------------------');
+                            console.log(`[v] PROJECT_DELETED -> "${message.projectName}" (${message.recipients.length} recipient(s))`);
+                            console.log('--------------------------------------------');
+                            await emailService.sendProjectDeletedNotification(message);
+                        } else if (message.type === 'PROJECT') {
                             // Project membership notification
                             const payload = message;
                             console.log('--------------------------------------------');

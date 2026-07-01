@@ -28,7 +28,8 @@ npm-debug.log*
 .DS_Store
 
 # Diagnostics (Repomix)
-repomix-output.xml
+#repomix-output.xml
+*.xml
 *.pdf
 
 # Stale root lockfile (project uses backend/ and frontend/ sub-packages)
