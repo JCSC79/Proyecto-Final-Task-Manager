@@ -26,6 +26,7 @@ const HomePage: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'ALL'>('ALL');
+  const [onlyMyTasks, setOnlyMyTasks] = useState(false);
   // Initialize statusFilter from navigation state
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>(
     () => (location.state as { statusFilter?: TaskStatus } | null)?.statusFilter ?? 'ALL'
@@ -60,9 +61,10 @@ const HomePage: React.FC = () => {
       const matchesProject = selectedProjectId === null || task.projectId === selectedProjectId;
       const matchesCategory = categoryId === null || task.categoryId === categoryId;
       const matchesPriority = priorityFilter === 'ALL' || task.priority === priorityFilter;
-      return matchesSearch && matchesStatus && matchesProject && matchesCategory && matchesPriority;
+      const matchesOwner = !onlyMyTasks || task.userId === user?.id;
+      return matchesSearch && matchesStatus && matchesProject && matchesCategory && matchesPriority && matchesOwner;
     });
-  }, [tasks, searchTerm, statusFilter, selectedProjectId, categoryId, priorityFilter]);
+  }, [tasks, searchTerm, statusFilter, selectedProjectId, categoryId, priorityFilter, onlyMyTasks, user?.id]);
 
   const total = tasks?.length ?? 0;
   const completed = tasks?.filter(t => t.status === 'COMPLETED').length ?? 0;
@@ -110,6 +112,8 @@ const HomePage: React.FC = () => {
               setCategoryId={setCategoryId}
               priorityFilter={priorityFilter}
               setPriorityFilter={setPriorityFilter}
+              onlyMyTasks={onlyMyTasks}
+              setOnlyMyTasks={setOnlyMyTasks}
             />
 
             {isLoading ? (

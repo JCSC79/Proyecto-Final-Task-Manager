@@ -20,6 +20,8 @@ interface TaskFiltersProps {
   setCategoryId: (val: string | null) => void;
   priorityFilter: TaskPriority | 'ALL';
   setPriorityFilter: (val: TaskPriority | 'ALL') => void;
+  onlyMyTasks: boolean;
+  setOnlyMyTasks: (val: boolean) => void;
 }
 
 interface FilterButtonsProps {
@@ -101,6 +103,8 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   setCategoryId,
   priorityFilter, 
   setPriorityFilter,
+  onlyMyTasks,
+  setOnlyMyTasks,
 }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -236,7 +240,20 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           </HTMLSelect>
         </div>
 
-        {(searchTerm !== '' || statusFilter !== 'ALL' || categoryId !== null || priorityFilter !== 'ALL') && (
+        <Button
+          icon="person"
+          intent={onlyMyTasks ? Intent.PRIMARY : Intent.NONE}
+          active={onlyMyTasks}
+          variant={onlyMyTasks ? 'solid' : 'outlined'}
+          className={styles.myTasksBtn}
+          onClick={() => setOnlyMyTasks(!onlyMyTasks)}
+          aria-pressed={onlyMyTasks}
+          title={onlyMyTasks ? t('allTasks') : t('onlyMyTasks')}
+        >
+          {t('onlyMyTasks')}
+        </Button>
+
+        {(searchTerm !== '' || statusFilter !== 'ALL' || categoryId !== null || priorityFilter !== 'ALL' || onlyMyTasks) && (
           <Button
             icon="filter-remove"
             intent={Intent.PRIMARY}
@@ -247,6 +264,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               setStatusFilter('ALL');
               setCategoryId(null);
               setPriorityFilter('ALL');
+              setOnlyMyTasks(false);
             }}
             aria-label={t('clearFilters')}
             title={t('clearFilters')}

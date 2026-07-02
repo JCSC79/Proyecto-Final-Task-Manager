@@ -175,6 +175,15 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter }) => 
         </div>
 
         <div className={styles.pagination}>
+          {totalPages > 2 && (
+            <Button
+              icon="double-chevron-left"
+              disabled={validPage === 1}
+              onClick={() => setPage(status, 1)}
+              variant="minimal"
+              aria-label={t('firstPage')}
+            />
+          )}
           <Button
             icon="chevron-left"
             disabled={validPage === 1}
@@ -190,6 +199,15 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter }) => 
             variant="minimal"
             aria-label={t('next')}
           />
+          {totalPages > 2 && (
+            <Button
+              icon="double-chevron-right"
+              disabled={validPage === totalPages}
+              onClick={() => setPage(status, totalPages)}
+              variant="minimal"
+              aria-label={t('lastPage')}
+            />
+          )}
         </div>
       </>
     );

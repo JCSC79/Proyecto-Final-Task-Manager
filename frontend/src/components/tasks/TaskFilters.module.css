@@ -38,6 +38,12 @@
   white-space: nowrap;
 }
 
+.myTasksBtn {
+  flex: 0 0 auto;
+  align-self: stretch;
+  white-space: nowrap;
+}
+
 .desktopFilters { 
   display: block; 
 }
