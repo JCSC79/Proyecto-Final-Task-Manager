@@ -9,6 +9,16 @@ export interface ProjectMember {
   joinedAt: string;
 }
 
+export interface ProjectSummary {
+  taskCount: number;
+  memberCount: number;
+}
+
+export const getProjectSummary = async (id: string): Promise<ProjectSummary> => {
+  const response = await api.get<ProjectSummary>(`/api/projects/${id}/summary`);
+  return response.data;
+};
+
 export const getProjects = async (): Promise<IProject[]> => {
   const response = await api.get<IProject[]>('/api/projects');
   return response.data;

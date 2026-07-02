@@ -111,6 +111,11 @@ export const AdminDashboard: React.FC = () => {
               value={search}
               aria-label={t('adminSearchUsers')}
               onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+              rightElement={
+                search
+                  ? <Button icon="cross" variant="minimal" aria-label={t('clear')} onClick={() => { setSearch(''); setCurrentPage(1); }} />
+                  : undefined
+              }
             />
           </div>
           <ButtonGroup variant='minimal'>

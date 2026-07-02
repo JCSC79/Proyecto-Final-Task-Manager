@@ -4,11 +4,11 @@
   gap: 0.5rem;
   padding: 0.5rem var(--space-lg);
   background-color: var(--bg-surface);
-  border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  border: 1.5px solid var(--border-color, rgba(255,255,255,0.15));
+  border-radius: var(--radius-sm);
   flex-wrap: wrap;
   row-gap: 0.4rem;
   min-height: 3rem;
-  border-radius: 4px;
 }
 
 /* Dialog width override — Blueprint Dialog ignores CSS width without this */
@@ -23,7 +23,7 @@
   gap: 0.35rem;
   padding: 0.3rem 0.85rem;
   border-radius: 1rem;
-  border: 1px solid var(--border-color, rgba(255,255,255,0.2));
+  border: 1.5px solid var(--border-color, rgba(255,255,255,0.2));
   background: transparent;
   color: var(--text-subtle, #516070);
   font-size: 0.9rem;
@@ -225,6 +225,11 @@
 /* New project button */
 .newBtn {
   font-size: 0.82rem !important;
+  flex-shrink: 0 !important;
+}
+
+/* Sort toggle button — pushed to right by preceding auto-margin */
+.sortBtn {
   margin-left: auto !important;
   flex-shrink: 0 !important;
 }

@@ -230,6 +230,11 @@ export const ProjectManageDialog: React.FC<ProjectManageDialogProps> = ({ projec
             fill
             leftIcon="envelope"
             maxLength={254}
+            rightElement={
+              memberEmailInput
+                ? <Button icon="cross" variant="minimal" aria-label={t('clear')} onClick={() => setMemberEmailInput('')} />
+                : undefined
+            }
           />
           <Button
             icon="add"
@@ -275,6 +280,11 @@ export const ProjectManageDialog: React.FC<ProjectManageDialogProps> = ({ projec
             fill
             leftIcon="tag"
             maxLength={30}
+            rightElement={
+              newTagName
+                ? <Button icon="cross" variant="minimal" aria-label={t('clear')} onClick={() => setNewTagName('')} />
+                : undefined
+            }
           />
           <fieldset className={styles.colorSwatches} aria-label={t('tagColor')}>
             {([

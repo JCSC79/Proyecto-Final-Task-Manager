@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Alert, Button, Icon, Intent, Spinner } from '@blueprintjs/core';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { getProjects } from '../../api/project.api';
+import { getProjects, getProjectSummary } from '../../api/project.api';
+import type { ProjectSummary } from '../../api/project.api';
 import type { IProject } from '../../types/project';
 import { useProjectActions } from '../../hooks/useProjectActions';
 import { ProjectFormDialog } from './ProjectFormDialog';
@@ -18,11 +19,14 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
   const { t } = useTranslation();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<IProject | null>(null);
+  const [deleteSummary, setDeleteSummary] = useState<ProjectSummary | null>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
   const [projectToRename, setProjectToRename] = useState<IProject | null>(null);
   const [isBarExpanded, setIsBarExpanded] = useState(false);
   const [projectToJoin, setProjectToJoin] = useState<IProject | null>(null);
   const [projectToLeave, setProjectToLeave] = useState<IProject | null>(null);
   const [projectToManage, setProjectToManage] = useState<IProject | null>(null);
+  const [sortMode, setSortMode] = useState<'recent' | 'alpha'>('recent');
 
   const { data: projects = [], isLoading } = useQuery<IProject[]>({
     queryKey: ['projects'],
@@ -32,14 +36,26 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
   const { createMutation, deleteMutation, joinMutation, leaveMutation, renameMutation } =
     useProjectActions(selectedProjectId, onSelect);
 
-  const COLLAPSE_THRESHOLD = 3;
-  const visibleProjects = isBarExpanded ? projects : projects.slice(0, COLLAPSE_THRESHOLD);
-  const hiddenCount = Math.max(0, projects.length - COLLAPSE_THRESHOLD);
-  const showToggle = !isLoading && projects.length > COLLAPSE_THRESHOLD;
+  const sortedProjects = sortMode === 'alpha'
+    ? [...projects].sort((a, b) => a.name.localeCompare(b.name))
+    : projects;
 
-  const handleDeleteClick = (e: React.MouseEvent, project: IProject) => {
+  const COLLAPSE_THRESHOLD = 3;
+  const visibleProjects = isBarExpanded ? sortedProjects : sortedProjects.slice(0, COLLAPSE_THRESHOLD);
+  const hiddenCount = Math.max(0, sortedProjects.length - COLLAPSE_THRESHOLD);
+  const showToggle = !isLoading && sortedProjects.length > COLLAPSE_THRESHOLD;
+
+  const handleDeleteClick = async (e: React.MouseEvent, project: IProject) => {
     e.stopPropagation();
     setProjectToDelete(project);
+    setDeleteSummary(null);
+    setIsSummaryLoading(true);
+    try {
+      const summary = await getProjectSummary(project.id);
+      setDeleteSummary(summary);
+    } finally {
+      setIsSummaryLoading(false);
+    }
   };
 
   const handleLeaveClick = (e: React.MouseEvent, project: IProject) => {
@@ -89,7 +105,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
                   >
                     <span className={styles.chipName}>{project.name}</span>
                     <span className={styles.memberBadge}>{project.memberCount}</span>
-                    <span className={styles.joinLabel}><Icon icon="add" size={18} />{t('joinProject')}</span>
+                    <span className={styles.joinLabel}><Icon icon="follower" size={18} />{t('joinProject')}</span>
                   </button>
                 );
               }
@@ -190,6 +206,15 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
         )}
 
         <Button
+          icon={sortMode === 'alpha' ? 'sort-alphabetical' : 'sort-desc'}
+          variant="minimal"
+          onClick={() => setSortMode(m => m === 'recent' ? 'alpha' : 'recent')}
+          className={styles.sortBtn}
+          title={sortMode === 'alpha' ? t('sortRecent') : t('sortAlpha')}
+          aria-label={sortMode === 'alpha' ? t('sortRecent') : t('sortAlpha')}
+        />
+
+        <Button
           icon="plus"
           variant="solid"
           intent={Intent.PRIMARY}
@@ -235,13 +260,23 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
         loading={deleteMutation.isPending}
         onConfirm={() => projectToDelete && deleteMutation.mutate(
           projectToDelete.id, 
-          { onSuccess: () => setProjectToDelete(null), 
-            onError: () => setProjectToDelete(null) }
+          { onSuccess: () => { setProjectToDelete(null); setDeleteSummary(null); }, 
+            onError: () => { setProjectToDelete(null); setDeleteSummary(null); } }
           )}
-        onCancel={() => setProjectToDelete(null)}
+        onCancel={() => { setProjectToDelete(null); setDeleteSummary(null); }}
       >
         <p><strong>{projectToDelete?.name}</strong></p>
         <p>{t('deleteProjectWarning')}</p>
+        {isSummaryLoading && <Spinner size={16} />}
+        {deleteSummary && (
+          <ul className={styles.deleteSummaryList}>
+            <li>{t('deleteProjectWarningTasks')} <strong>{deleteSummary.taskCount}</strong></li>
+            <li>{t('deleteProjectWarningMembers')} <strong>{deleteSummary.memberCount}</strong></li>
+            {deleteSummary.memberCount > 0 && (
+              <li className={styles.deleteSummaryNote}>{t('deleteProjectNotifyNote')}</li>
+            )}
+          </ul>
+        )}
       </Alert>
 
       {/* Join confirmation */}
