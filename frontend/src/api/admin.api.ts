@@ -18,3 +18,20 @@ export const updateUserRole = async (
   );
   return res.data;
 };
+
+/** Blocks or unblocks a user. */
+export const blockUser = async (
+  userId: string,
+  blocked: boolean
+): Promise<{ message: string; user: IUserWithStats }> => {
+  const res = await api.patch<{ message: string; user: IUserWithStats }>(
+    `/api/admin/users/${userId}/block`,
+    { blocked }
+  );
+  return res.data;
+};
+
+/** Permanently deletes a user (CASCADE in DB). */
+export const deleteUser = async (userId: string): Promise<void> => {
+  await api.delete(`/api/admin/users/${userId}`);
+};

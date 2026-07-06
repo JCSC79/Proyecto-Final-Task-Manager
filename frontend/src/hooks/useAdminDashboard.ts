@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { fetchAdminUsers, updateUserRole } from '../api/admin.api';
+import { fetchAdminUsers, updateUserRole, blockUser, deleteUser } from '../api/admin.api';
 import type { IUserWithStats } from '../types/admin';
 import { AppToaster } from '../utils/toaster';
 import { Intent } from '@blueprintjs/core';
@@ -27,6 +27,8 @@ export const useAdminDashboard = () => {
   });
   const [pendingChange, setPendingChange] = useState<{ user: IUserWithStats; targetRole: 'ADMIN' | 'USER' } | null>(null);
   const [selectedUser, setSelectedUser] = useState<IUserWithStats | null>(null);
+  const [userToDelete, setUserToDelete] = useState<IUserWithStats | null>(null);
+  const [userToBlock, setUserToBlock] = useState<IUserWithStats | null>(null);
 
   const pageSize = 10;
 
@@ -54,6 +56,39 @@ export const useAdminDashboard = () => {
     onError: (err: Error) => {
       AppToaster.show({ message: err.message, intent: Intent.DANGER, icon: 'warning-sign' });
       setPendingChange(null);
+    },
+  });
+
+  const blockMutation = useMutation({
+    mutationFn: ({ userId, blocked }: { userId: string; blocked: boolean }) =>
+      blockUser(userId, blocked),
+    onSuccess: (_, { blocked }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      AppToaster.show({
+        message: blocked ? t('userBlocked') : t('userUnblocked'),
+        intent: blocked ? Intent.DANGER : Intent.SUCCESS,
+        icon: blocked ? 'lock' : 'unlock',
+      });
+      setUserToBlock(null);
+    },
+    onError: (err: Error) => {
+      AppToaster.show({ message: err.message, intent: Intent.DANGER, icon: 'warning-sign' });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (userId: string) => deleteUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      AppToaster.show({
+        message: t('userDeleted'),
+        intent: Intent.DANGER,
+        icon: 'trash',
+      });
+      setUserToDelete(null);
+    },
+    onError: (err: Error) => {
+      AppToaster.show({ message: err.message, intent: Intent.DANGER, icon: 'warning-sign' });
     },
   });
 
@@ -119,6 +154,8 @@ export const useAdminDashboard = () => {
     t, isLoading, isError, search, setSearch, roleFilter, setRoleFilter,
     currentPage, setCurrentPage, totalPages, paginatedUsers, sort, handleSort,
     pendingChange, setPendingChange, selectedUser, setSelectedUser, roleMutation,
+    userToDelete, setUserToDelete, blockMutation, deleteMutation,
+    userToBlock, setUserToBlock,
     users, // for bar chart
     globalStats: { total: globalTotal, pending: globalPending, inProgress: globalInProgress, completed: globalCompleted, rate: globalRate }
   };

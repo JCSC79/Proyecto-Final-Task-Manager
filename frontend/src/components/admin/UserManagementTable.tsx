@@ -12,6 +12,9 @@ interface Props {
   onOpenModal: (user: IUserWithStats) => void;
   onPromote: (user: IUserWithStats) => void;
   onDemote: (user: IUserWithStats) => void;
+  onBlock: (user: IUserWithStats) => void;
+  onDelete: (user: IUserWithStats) => void;
+  currentUserId: string;
 }
 
 // Extracted as a named component so each branch returns a <th> with a literal
@@ -59,14 +62,19 @@ interface MobileUserCardProps {
   onOpenModal: (user: IUserWithStats) => void;
   onPromote: (user: IUserWithStats) => void;
   onDemote: (user: IUserWithStats) => void;
+  onBlock: (user: IUserWithStats) => void;
+  onDelete: (user: IUserWithStats) => void;
+  currentUserId: string;
 }
 
-const MobileUserCard: React.FC<MobileUserCardProps> = ({ user, onOpenModal, onPromote, onDemote }) => {
+const MobileUserCard: React.FC<MobileUserCardProps> = ({ user, onOpenModal, onPromote, onDemote, onBlock, onDelete, currentUserId }) => {
   const { t } = useTranslation();
 
   const handleClick = () => onOpenModal(user);
   const handlePromote = (e: React.MouseEvent) => { e.stopPropagation(); onPromote(user); };
   const handleDemote = (e: React.MouseEvent) => { e.stopPropagation(); onDemote(user); };
+  const handleBlock = (e: React.MouseEvent) => { e.stopPropagation(); onBlock(user); };
+  const handleDelete = (e: React.MouseEvent) => { e.stopPropagation(); onDelete(user); };
 
   return (
     <div className={styles.mobileCard}>
@@ -106,9 +114,29 @@ const MobileUserCard: React.FC<MobileUserCardProps> = ({ user, onOpenModal, onPr
       <div className={styles.mobileCardFooter}>
         <ButtonGroup variant="minimal">
           {user.role === 'USER' ? (
-            <Button size="small" icon="arrow-up" intent="warning" text={t('adminPromote')} onClick={handlePromote} />
+            <Button size="small" icon="arrow-up" intent="warning" aria-label={t('adminPromote')} title={t('adminPromote')} onClick={handlePromote} />
           ) : (
-            <Button size="small" icon="arrow-down" intent="danger" text={t('adminDemote')} onClick={handleDemote} />
+            <Button size="small" icon="arrow-down" intent="danger" aria-label={t('adminDemote')} title={t('adminDemote')} onClick={handleDemote} />
+          )}
+          {user.id !== currentUserId && (
+            <>
+              <Button
+                size="small"
+                icon={user.is_blocked ? 'unlock' : 'lock'}
+                intent={user.is_blocked ? 'success' : 'warning'}
+                aria-label={user.is_blocked ? t('unblockUser') : t('blockUser')}
+                title={user.is_blocked ? t('unblockUser') : t('blockUser')}
+                onClick={handleBlock}
+              />
+              <Button
+                size="small"
+                icon="trash"
+                intent="danger"
+                aria-label={t('deleteUser')}
+                title={t('deleteUser')}
+                onClick={handleDelete}
+              />
+            </>
           )}
         </ButtonGroup>
       </div>
@@ -117,7 +145,7 @@ const MobileUserCard: React.FC<MobileUserCardProps> = ({ user, onOpenModal, onPr
 };
 
 export const UserManagementTable: React.FC<Props> = ({
-  users, sort, onSort, onOpenModal, onPromote, onDemote
+  users, sort, onSort, onOpenModal, onPromote, onDemote, onBlock, onDelete, currentUserId
 }) => {
   const { t } = useTranslation();
 
@@ -165,14 +193,36 @@ export const UserManagementTable: React.FC<Props> = ({
                       aria-label={`${user.stats.completionRate}%`}
                     />
                   </td>
-                  <td>
-                    <ButtonGroup variant="minimal"> {/* We use ButtonGroup to fix the error */}
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <ButtonGroup variant="minimal">
                       {user.role === 'USER' ? (
-                        <Button size="small" icon="arrow-up" intent="warning" text={t('adminPromote')} 
+                        <Button size="small" icon="arrow-up" intent="warning"
+                          aria-label={t('adminPromote')} title={t('adminPromote')}
                           onClick={(e) => { e.stopPropagation(); onPromote(user); }} />
                       ) : (
-                        <Button size="small" icon="arrow-down" intent="danger" text={t('adminDemote')} 
+                        <Button size="small" icon="arrow-down" intent="danger"
+                          aria-label={t('adminDemote')} title={t('adminDemote')}
                           onClick={(e) => { e.stopPropagation(); onDemote(user); }} />
+                      )}
+                      {user.id !== currentUserId && (
+                        <>
+                          <Button
+                            size="small"
+                            icon={user.is_blocked ? 'unlock' : 'lock'}
+                            intent={user.is_blocked ? 'success' : 'warning'}
+                            aria-label={user.is_blocked ? t('unblockUser') : t('blockUser')}
+                            title={user.is_blocked ? t('unblockUser') : t('blockUser')}
+                            onClick={(e) => { e.stopPropagation(); onBlock(user); }}
+                          />
+                          <Button
+                            size="small"
+                            icon="trash"
+                            intent="danger"
+                            aria-label={t('deleteUser')}
+                            title={t('deleteUser')}
+                            onClick={(e) => { e.stopPropagation(); onDelete(user); }}
+                          />
+                        </>
                       )}
                     </ButtonGroup>
                   </td>
@@ -191,7 +241,7 @@ export const UserManagementTable: React.FC<Props> = ({
           </p>
         ) : (
           users.map(user => (
-            <MobileUserCard key={user.id} user={user} onOpenModal={onOpenModal} onPromote={onPromote} onDemote={onDemote} />
+            <MobileUserCard key={user.id} user={user} onOpenModal={onOpenModal} onPromote={onPromote} onDemote={onDemote} onBlock={onBlock} onDelete={onDelete} currentUserId={currentUserId} />
           ))
         )}
       </div>

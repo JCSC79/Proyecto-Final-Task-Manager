@@ -11,6 +11,7 @@ export interface IUser {
   name?: string;
   avatar_url?: string;
   lang: 'en' | 'es';
+  is_blocked: boolean;
   createdAt: string; // ISO string when received from JSON
 }
 

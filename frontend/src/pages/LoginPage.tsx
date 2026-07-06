@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@blueprintjs/core';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.ts';
 import { useLanguageToggle } from '../hooks/useLanguageToggle';
 import AuthForm from '../components/AuthForm';
@@ -12,6 +12,8 @@ const LoginPage: React.FC = () => {
   const { t } = useTranslation();
   const { login } = useAuth();
   const { toggleLanguage, isSpanish } = useLanguageToggle();
+  const [searchParams] = useSearchParams();
+  const isBlocked = searchParams.get('blocked') === '1';
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,6 +44,7 @@ const LoginPage: React.FC = () => {
           <p className={styles.subtitle}>{t('loginSubtitle')}</p>
         </header>
 
+        {isBlocked && <div className={styles.blockedBanner}>{t('accountBlocked')}</div>}
         {error && <div className={styles.errorBanner}>{error}</div>}
 
         <AuthForm mode="login" onSubmit={handleLogin} isLoading={isLoading} />

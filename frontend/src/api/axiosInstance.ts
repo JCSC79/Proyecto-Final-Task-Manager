@@ -23,10 +23,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // We clear user info but the cookie is handled by the browser/server
+    const status = error.response?.status;
+    if (status === 401) {
       localStorage.removeItem('auth_user');
       globalThis.location.href = '/login';
+    } else if (status === 403) {
+      // 403 means the account was blocked by an admin
+      localStorage.removeItem('auth_user');
+      globalThis.location.href = '/login?blocked=1';
     }
     return Promise.reject(error);
   }

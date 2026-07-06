@@ -8,6 +8,7 @@ import {
 import { useAdminDashboard } from '../../hooks/useAdminDashboard';
 import { UserDetailDialog } from './UserDetailDialog';
 import { UserManagementTable } from './UserManagementTable';
+import { DeleteUserDialog } from './DeleteUserDialog';
 import { CHART_COLORS } from '../../styles/chartColors';
 import { buildStatusChartData } from '../../utils/buildStatusChartData';
 import { downloadAdminPdf } from '../../api/task.api';
@@ -20,6 +21,8 @@ export const AdminDashboard: React.FC = () => {
     t, isLoading, isError, search, setSearch, roleFilter, setRoleFilter,
     currentPage, setCurrentPage, totalPages, paginatedUsers, sort, handleSort,
     pendingChange, setPendingChange, selectedUser, setSelectedUser, roleMutation,
+    userToDelete, setUserToDelete, blockMutation, deleteMutation,
+    userToBlock, setUserToBlock,
     users, globalStats
   } = useAdminDashboard();
 
@@ -133,15 +136,24 @@ export const AdminDashboard: React.FC = () => {
           onOpenModal={setSelectedUser}
           onPromote={(user) => setPendingChange({ user, targetRole: 'ADMIN' })}
           onDemote={(user) => setPendingChange({ user, targetRole: 'USER' })}
+          onBlock={setUserToBlock}
+          onDelete={setUserToDelete}
+          currentUserId={user?.id ?? ''}
         />
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
           <div className={styles.paginationWrapper}>
             <ButtonGroup>
+              {totalPages > 2 && (
+                <Button icon="double-chevron-left" disabled={currentPage === 1} aria-label={t('firstPage')} onClick={() => setCurrentPage(1)} />
+              )}
               <Button icon="chevron-left" disabled={currentPage === 1} aria-label={t('prev')} onClick={() => setCurrentPage(prev => prev - 1)} />
               <Button variant='minimal' disabled className={styles.paginationPageBtn}>{t('page')} {currentPage} / {totalPages}</Button>
               <Button icon="chevron-right" disabled={currentPage === totalPages} aria-label={t('next')} onClick={() => setCurrentPage(prev => prev + 1)} />
+              {totalPages > 2 && (
+                <Button icon="double-chevron-right" disabled={currentPage === totalPages} aria-label={t('lastPage')} onClick={() => setCurrentPage(totalPages)} />
+              )}
             </ButtonGroup>
           </div>
         )}
@@ -169,6 +181,34 @@ export const AdminDashboard: React.FC = () => {
         loading={roleMutation.isPending}
       >
         <p>{pendingChange?.targetRole === 'ADMIN' ? t('adminPromoteConfirm', { name: pendingChange.user.name ?? pendingChange.user.email }) : t('adminDemoteConfirm', { name: pendingChange?.user.name ?? pendingChange?.user.email })}</p>
+      </Alert>
+
+      <DeleteUserDialog
+        user={userToDelete}
+        isLoading={deleteMutation.isPending}
+        onConfirm={() => { if (userToDelete) deleteMutation.mutate(userToDelete.id); }}
+        onClose={() => setUserToDelete(null)}
+      />
+
+      <Alert
+        isOpen={userToBlock !== null}
+        icon={userToBlock?.is_blocked ? 'unlock' : 'lock'}
+        intent={userToBlock?.is_blocked ? Intent.SUCCESS : Intent.WARNING}
+        confirmButtonText={userToBlock?.is_blocked ? t('unblockUser') : t('blockUser')}
+        cancelButtonText={t('cancel')}
+        loading={blockMutation.isPending}
+        onCancel={() => setUserToBlock(null)}
+        onConfirm={() => {
+          if (userToBlock) {
+            blockMutation.mutate({ userId: userToBlock.id, blocked: !userToBlock.is_blocked });
+          }
+        }}
+      >
+        <p>
+          {userToBlock?.is_blocked
+            ? t('unblockUserConfirm', { name: userToBlock.name ?? userToBlock.email })
+            : t('blockUserConfirm', { name: userToBlock?.name ?? userToBlock?.email })}
+        </p>
       </Alert>
     </div>
   );

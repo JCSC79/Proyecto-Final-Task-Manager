@@ -23,6 +23,11 @@ class AuthController {
 
             const { user, token } = result.getValue();
 
+            // SECURITY: Prevent blocked users from obtaining a new session
+            if (user.is_blocked) {
+                return res.status(403).json({ error: 'Your account has been blocked. Contact an administrator.' });
+            }
+
             // SECURITY: Set HttpOnly cookie with the JWT token
             res.cookie('auth_token', token, {
                 httpOnly: true, // Prevents JS access (XSS protection)

@@ -127,7 +127,7 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem; /* raised from 14px — 14px triggers WAVE at some zoom levels; rem scales with user prefs */
+  font-size: 0.875rem;
 }
 
 .table th {
@@ -355,15 +355,17 @@
 .mobileCardFooter {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   flex-wrap: wrap;
-  gap: var(--space-xs);
-  padding-top: var(--space-sm);
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid var(--border);
 }
 
-/* When the button wraps to a new line, push it to the right */
-.mobileCardFooter > :last-child {
-  margin-left: auto;
+/* Make action buttons in mobile footer slightly larger for touch targets */
+.mobileCardFooter button {
+  min-width: 36px;
+  min-height: 36px;
 }
 
 /* Status colors for mobile stat values */
