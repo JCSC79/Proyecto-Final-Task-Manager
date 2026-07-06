@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { userDAO } from '../daos/user.dao.ts';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -14,8 +15,8 @@ interface AuthRequest extends Request {
     };
 }
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
-    // REFINEMENT: Check both Authorization header and HttpOnly cookies
+export const authenticateToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    // Check both Authorization header and HttpOnly cookies
     const authHeader = req.headers['authorization'];
     const headerToken = authHeader?.split(' ')[1];
     const cookieToken = req.cookies['auth_token'];
@@ -27,12 +28,26 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
         return;
     }
 
+    let decoded: { id: string; role: string; email: string };
     try {
-        const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string; email: string };
-        (req as AuthRequest).user = decoded;
-        next();
+        decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string; email: string };
     } catch (error) {
         console.error('JWT verification error:', error);
         res.status(403).json({ error: 'Invalid or expired token.' });
+        return;
     }
+
+    // Check if the user has been blocked since the token was issued
+    const user = await userDAO.getById(decoded.id);
+    if (!user) {
+        res.status(401).json({ error: 'User not found.' });
+        return;
+    }
+    if (user.is_blocked) {
+        res.status(403).json({ error: 'Your account has been blocked. Contact an administrator.' });
+        return;
+    }
+
+    (req as AuthRequest).user = decoded;
+    next();
 };

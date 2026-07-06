@@ -27,7 +27,7 @@ class UserDAO {
      * Returns all users without the password field (safe for admin panel).
      */
     async getAll(): Promise<Omit<IUser, 'password'>[]> {
-        return await db<IUser>('users').select('id', 'email', 'role', 'name', 'avatar_url', 'lang', 'createdAt');
+        return await db<IUser>('users').select('id', 'email', 'role', 'name', 'avatar_url', 'lang', 'is_blocked', 'createdAt');
     }
 
     /**
@@ -38,7 +38,12 @@ class UserDAO {
         if (updated === 0) {
             return undefined;
         }
-        return await db<IUser>('users').where({ id }).select('id', 'email', 'role', 'name', 'avatar_url', 'lang', 'createdAt').first();
+        const row = await db<IUser>('users').where({ id }).first();
+        if (!row) {
+            return undefined;
+        }
+        const { password: _pw, ...rest } = row;
+        return rest;
     }
 
     async updateName(id: string, name: string): Promise<Omit<IUser, 'password'> | undefined> {
@@ -46,7 +51,12 @@ class UserDAO {
         if (updated === 0) {
             return undefined;
         }
-        return await db<IUser>('users').where({ id }).select('id', 'email', 'role', 'name', 'avatar_url', 'lang', 'createdAt').first();
+        const row = await db<IUser>('users').where({ id }).first();
+        if (!row) {
+            return undefined;
+        }
+        const { password: _pw, ...rest } = row;
+        return rest;
     }
 
     async updateLang(id: string, lang: 'en' | 'es'): Promise<Omit<IUser, 'password'> | undefined> {
@@ -54,7 +64,30 @@ class UserDAO {
         if (updated === 0) {
             return undefined;
         }
-        return await db<IUser>('users').where({ id }).select('id', 'email', 'role', 'name', 'avatar_url', 'lang', 'createdAt').first();
+        const row = await db<IUser>('users').where({ id }).first();
+        if (!row) {
+            return undefined;
+        }
+        const { password: _pw, ...rest } = row;
+        return rest;
+    }
+
+    async setBlocked(id: string, blocked: boolean): Promise<Omit<IUser, 'password'> | undefined> {
+        const updated = await db<IUser>('users').where({ id }).update({ is_blocked: blocked });
+        if (updated === 0) {
+            return undefined;
+        }
+        return await db<IUser>('users').where({ id }).select('id', 'email', 'role', 'name', 'avatar_url', 'lang', 'is_blocked', 'createdAt').first();
+    }
+
+    async getTaskCount(id: string): Promise<number> {
+        const result = await db('tasks').where({ userId: id }).count('id as count').first();
+        return Number(result?.count ?? 0);
+    }
+
+    async deleteUser(id: string): Promise<boolean> {
+        const deleted = await db<IUser>('users').where({ id }).delete();
+        return deleted > 0;
     }
 }
 

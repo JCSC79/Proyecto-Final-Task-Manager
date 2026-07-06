@@ -63,6 +63,53 @@ class AdminController {
   }
 
   /**
+   * PATCH /api/admin/users/:id/block
+   * Blocks or unblocks a user. Body: { blocked: boolean }
+   * An admin cannot block themselves.
+   */
+  async blockUser(req: Request, res: Response): Promise<Response | void> {
+    const id = String(req.params['id']);
+    const { blocked } = req.body as { blocked?: unknown };
+
+    const requestingUser = (req as Request & { user?: { id: string } }).user;
+    if (requestingUser?.id === id) {
+      return res.status(400).json({ error: 'Admins cannot block themselves.' });
+    }
+
+    if (typeof blocked !== 'boolean') {
+      return res.status(400).json({ error: 'blocked must be a boolean.' });
+    }
+
+    const updated = await userDAO.setBlocked(id, blocked);
+    if (!updated) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    return res.json({ message: `User ${blocked ? 'blocked' : 'unblocked'}.`, user: updated });
+  }
+
+  /**
+   * DELETE /api/admin/users/:id
+   * Permanently deletes a user and all their data (CASCADE in DB).
+   * An admin cannot delete themselves.
+   */
+  async deleteUser(req: Request, res: Response): Promise<Response | void> {
+    const id = String(req.params['id']);
+
+    const requestingUser = (req as Request & { user?: { id: string } }).user;
+    if (requestingUser?.id === id) {
+      return res.status(400).json({ error: 'Admins cannot delete their own account.' });
+    }
+
+    const deleted = await userDAO.deleteUser(id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    return res.status(204).send();
+  }
+
+  /**
    * GET /api/admin/export/pdf
    */
   async exportPdf(req: Request, res: Response): Promise<void> {

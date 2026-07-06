@@ -18,5 +18,6 @@ export interface IUser {
     name?: string;       // Optional display name
     avatar_url?: string; // Optional profile image link
     lang: 'en' | 'es';   // Preferred language for notifications
+    is_blocked?: boolean; // When true, auth middleware rejects next request (default: false)
     createdAt: Date;     // Registration timestamp
 }
