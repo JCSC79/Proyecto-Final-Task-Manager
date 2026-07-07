@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { createServer } from 'node:http';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -7,11 +8,13 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger.ts';
 import { taskController } from './controllers/task.controller.ts';
 import { messagingService } from './services/messaging.service.ts';
+import { socketService } from './services/socket.service.ts';
 import authRoutes from './routes/auth.routes.ts';
 import adminRoutes from './routes/admin.routes.ts';
-import projectRoutes from './routes/project.routes.ts'; // NEW: Added projects routing
+import projectRoutes from './routes/project.routes.ts';
 import { projectTagRouter, taskTagRouter } from './routes/tag.routes.ts';
 import categoryRouter from './routes/category.routes.ts';
+import commentRouter from './routes/comment.routes.ts';
 import { authenticateToken } from './middlewares/auth.middleware.ts';
 import { requireAdmin } from './middlewares/admin.middleware.ts';
 
@@ -90,12 +93,18 @@ app.use('/api/projects/:id/tags', authenticateToken, projectTagRouter);
 // TAGS (task-scoped: assign/unassign tags on a task)
 app.use('/api/tasks/:id/tags', authenticateToken, taskTagRouter);
 
+// COMMENTS (task-scoped: list and post comments)
+app.use('/api/tasks/:id/comments', authenticateToken, commentRouter);
+
 // 3. ADMIN ROUTES
 app.use('/api/admin', authenticateToken, requireAdmin, adminRoutes);
 
 // SERVER STARTUP
-const server = app.listen(PORT, async () => {
+const httpServer = createServer(app);
+
+const server = httpServer.listen(PORT, async () => {
     await messagingService.init();
+    socketService.init(httpServer);
     console.log(`[OK] Server running at http://localhost:${PORT}`);
     console.log(`[SECURE] Tasks & Projects routes are now protected by JWT middleware`);
     console.log(`[DOCS] Swagger available at http://localhost:${PORT}/api-docs`);
