@@ -3,6 +3,7 @@ import { taskService } from '../services/task.service.ts';
 import { auditDAO } from '../daos/audit.dao.ts';
 import { taskDAO } from '../daos/task.dao.ts';
 import { generateTasksPdf } from '../services/pdf.service.ts';
+import { socketService } from '../services/socket.service.ts';
 
 /**
  * Interface to extend Express Request with user context.
@@ -59,7 +60,9 @@ class TaskController {
     if (result.isFailure) {
       return res.status(400).json({ error: result.error });
     }
-    res.status(201).json(result.getValue());
+    const newTask = result.getValue();
+    socketService.broadcastTaskUpdate(newTask); // reuse task-updated — frontend handles both create and update
+    res.status(201).json(newTask);
   }
 
   /**
@@ -78,6 +81,7 @@ class TaskController {
     if (result.isFailure) {
       return res.status(403).json({ error: result.error });
     }
+    socketService.broadcastTaskDeleted(id);
     res.status(204).send();
   }
 
@@ -114,7 +118,10 @@ class TaskController {
     if (result.isFailure) {
       return res.status(403).json({ error: result.error });
     }
-    res.json(result.getValue());
+    const updatedTask = result.getValue();
+    // Broadcast to all connected clients so any open TaskBoard updates instantly
+    socketService.broadcastTaskUpdate(updatedTask);
+    res.json(updatedTask);
   }
 
   /**

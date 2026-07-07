@@ -4,6 +4,7 @@ import { userDAO } from '../daos/user.dao.ts';
 import type { IProject } from '../models/project.model.ts';
 import crypto from 'node:crypto';
 import { messagingService } from '../services/messaging.service.ts';
+import { socketService } from '../services/socket.service.ts';
 
 interface AuthRequest extends Request {
   user?: { id: string; role: string; email: string; };
@@ -45,9 +46,11 @@ class ProjectController {
     if (!name || name.trim().length < 2) {
       return res.status(400).json({ error: 'Project name must be at least 2 characters' });
     }
+
     if (name.trim().length > 50) {
       return res.status(400).json({ error: 'Project name cannot exceed 50 characters' });
     }
+
     if (color !== undefined && !/^#[0-9a-fA-F]{6}$/.test(color)) {
       return res.status(400).json({ error: 'Color must be a valid 6-digit hex value (e.g. #4c90f0)' });
     }
@@ -65,6 +68,7 @@ class ProjectController {
       isPublic: isPublic ?? true,
     });
 
+    socketService.broadcastProjectEvent('project-created', created);
     res.status(201).json(created);
   }
 
@@ -118,6 +122,7 @@ class ProjectController {
       void messagingService.sendProjectDeletedNotification(project.name, summary.taskCount, members);
     }
 
+    socketService.broadcastProjectEvent('project-deleted', { id });
     res.status(204).send();
   }
 
@@ -139,6 +144,7 @@ class ProjectController {
     if (result === 'private') {
       return res.status(403).json({ error: 'This project is private. Ask the owner to invite you.' });
     }
+
     if (result === 'already_member') {
       return res.status(409).json({ error: 'You are already a member of this project' });
     }
@@ -165,6 +171,7 @@ class ProjectController {
     })();
 
     res.status(200).json({ message: 'Joined project successfully' });
+    socketService.broadcastProjectEvent('project-members-changed', { id });
   }
 
   /**
@@ -191,6 +198,7 @@ class ProjectController {
     }
 
     res.status(200).json({ message: 'Left project successfully' });
+    socketService.broadcastProjectEvent('project-members-changed', { id });
   }
 
   /**
@@ -300,6 +308,7 @@ class ProjectController {
             console.error('[-] Failed to queue member notification:', notifyErr);
           }
         })();
+        socketService.broadcastProjectEvent('project-members-changed', { id });
         return res.status(200).json({ message: 'Member added successfully' });
       }
       case 'not_owner': return res.status(403).json({ error: 'Only the project owner can add members' });
@@ -322,7 +331,9 @@ class ProjectController {
 
     const result = await projectDAO.removeMember(id, targetUserId, authReq.user!.id);
     switch (result) {
-      case 'removed': return res.status(200).json({ message: 'Member removed successfully' });
+      case 'removed':
+        socketService.broadcastProjectEvent('project-members-changed', { id });
+        return res.status(200).json({ message: 'Member removed successfully' });
       case 'not_owner': return res.status(403).json({ error: 'Only the project owner can remove members' });
       case 'not_member': return res.status(404).json({ error: 'User is not a member of this project' });
       case 'cannot_remove_owner': return res.status(400).json({ error: 'The project owner cannot be removed' });
@@ -341,9 +352,11 @@ class ProjectController {
     if (typeof id !== 'string') {
       return res.status(400).json({ error: 'Invalid project ID' });
     }
+
     if (!name || name.trim().length < 2) {
       return res.status(400).json({ error: 'Project name must be at least 2 characters' });
     }
+    
     if (name.trim().length > 50) {
       return res.status(400).json({ error: 'Project name cannot exceed 50 characters' });
     }

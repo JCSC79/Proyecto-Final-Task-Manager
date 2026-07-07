@@ -15,7 +15,7 @@ class EmailService {
         if (process.env.NODE_ENV !== 'production' && !process.env.SMTP_HOST) {
             // Auto-create a disposable Ethereal test account for development
             const testAccount = await nodemailer.createTestAccount();
-            this.transporter = nodemailer.createTransport({
+            this.transporter = nodemailer.createTransport({ // NOSONAR: smtp.ethereal.email is a dev-only test account — not a production HTTP resource
                 host: 'smtp.ethereal.email',
                 port: 587,
                 secure: false,
