@@ -10,4 +10,5 @@ export interface IComment {
     // Denormalised from JOIN — display only
     authorName?: string | null;
     authorEmail?: string;
+    authorAvatarUrl?: string | null;
 }

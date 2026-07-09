@@ -23,6 +23,7 @@ class CommentDAO {
                 'comments.createdAt',
                 'users.name as authorName',
                 'users.email as authorEmail',
+                'users.avatar_url as authorAvatarUrl',
             )
             .orderBy('comments.createdAt', 'asc') as IComment[];
     }
