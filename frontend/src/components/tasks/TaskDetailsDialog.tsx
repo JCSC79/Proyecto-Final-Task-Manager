@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog, Classes, Tabs, Tab, Tag, H3, Text, Button, Icon, Intent,
 } from '@blueprintjs/core';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getTaskHistory } from '../../api/task.api';
 import type { Task, AuditLog } from '../../types/task';
 import { useTranslation } from 'react-i18next';
 import { TagBadge } from './TagBadge';
 import { getTranslatedStatus } from './taskUtils';
+import { CommentThread } from './CommentThread';
+import { useSocket } from '../../hooks/useSocket';
+import type { IComment } from '../../api/comment.api';
 import styles from './TaskItem.module.css';
 
 const STATUS_INTENT: Record<string, Intent> = {
@@ -22,15 +25,41 @@ interface TaskDetailsDialogProps {
   onClose: () => void;
   onEdit: () => void;
   isOwner: boolean;
+  onRead?: (taskId: string) => void;
 }
 
 export const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
-  task, isOpen, onClose, onEdit, isOwner,
+  task, isOpen, onClose, onEdit, isOwner, onRead,
 }) => {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [detailsTab, setDetailsTab] = useState<string>('info');
 
   const statusIntent = STATUS_INTENT[task.status] ?? Intent.WARNING;
+
+  // Join the task's Socket.IO room while the dialog is open
+  // so incoming comments are appended in real time
+  const { joinTask, leaveTask } = useSocket({
+    onNewComment: (comment: IComment) => {
+      queryClient.setQueryData<IComment[]>(['comments', comment.taskId], (prev = []) =>
+        prev.some(c => c.id === comment.id) ? prev : [...prev, comment]
+      );
+      // If this comment arrived while the dialog is open, the user is already reading it
+      if (comment.taskId === task.id && isOpen) {
+        onRead?.(task.id);
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      joinTask(task.id);
+      onRead?.(task.id); // clear unread dot when dialog opens
+    } else {
+      leaveTask(task.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, task.id]);
 
   const { data: auditLogs = [] } = useQuery<AuditLog[]>({
     queryKey: ['taskHistory', task.id],
@@ -95,6 +124,9 @@ export const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                 ))
               }
             </div>
+          } />
+          <Tab id="comments" title={t('comments')} panel={
+            <CommentThread taskId={task.id} />
           } />
         </Tabs>
       </div>

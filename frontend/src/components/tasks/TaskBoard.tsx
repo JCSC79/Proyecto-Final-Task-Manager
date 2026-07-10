@@ -40,9 +40,12 @@ const DroppableColumn: React.FC<{
 interface TaskBoardProps {
   tasks: Task[];
   statusFilter: TaskStatus | 'ALL';
+  hasUnread?: (taskId: string) => boolean;
+  unreadCount?: (taskId: string) => number;
+  onRead?: (taskId: string) => void;
 }
 
-export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter }) => {
+export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter, hasUnread, unreadCount, onRead }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const isDesktop = useMediaQuery('(min-width: 1081px)');
@@ -128,7 +131,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter }) => 
 
   const renderColumn = (labelKey: string, status: TaskStatus) => {
     const currentSort = sortOrders[status];
-    
+
     // Sort tasks locally for THIS column only
     const columnTasks = tasks
       .filter(task => task.status === status)
@@ -140,7 +143,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter }) => 
 
     const totalPages = Math.ceil(columnTasks.length / ITEMS_PER_PAGE) || 1;
     const validPage = Math.min(pages[status], totalPages);
-    
+
     const startIndex = (validPage - 1) * ITEMS_PER_PAGE;
     const paginatedTasks = columnTasks.slice(startIndex, startIndex + ITEMS_PER_PAGE);
     const taskIds = paginatedTasks.map(t => t.id);
@@ -164,7 +167,14 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, statusFilter }) => 
 
         <div className={styles.taskList}>
           {paginatedTasks.map((task) => (
-            <TaskItem key={task.id} task={task} isDragEnabled={isDesktop} />
+            <TaskItem
+              key={task.id}
+              task={task}
+              isDragEnabled={isDesktop}
+              hasUnread={hasUnread?.(task.id)}
+              unreadCount={unreadCount?.(task.id) ?? 0}
+              onRead={onRead}
+            />
           ))}
           {columnTasks.length === 0 && (
             <div className={styles.emptyColumn}>
