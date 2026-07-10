@@ -21,10 +21,11 @@ import styles from './TaskItem.module.css';
 
 interface TaskItemProps {
   task: Task;
-  /** When true, enables drag-and-drop via useSortable (desktop only). */
   isDragEnabled?: boolean;
-  /** When true, renders a simplified ghost card inside DragOverlay. */
   isOverlay?: boolean;
+  hasUnread?: boolean;
+  unreadCount?: number;
+  onRead?: (taskId: string) => void;
 }
 
 function getPriorityIntent(priority: TaskPriority): Intent {
@@ -61,7 +62,7 @@ const STATUS_CLASS: Record<string, string> = {
   PENDING:     styles.statusPending,
 };
 
-export const TaskItem: React.FC<TaskItemProps> = ({ task, isDragEnabled = false, isOverlay = false }) => {
+export const TaskItem: React.FC<TaskItemProps> = ({ task, isDragEnabled = false, isOverlay = false, hasUnread = false, unreadCount = 0, onRead }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -170,6 +171,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDragEnabled = false,
             <div className={styles.dateRow}>
               <Icon icon="calendar" size={16} aria-hidden="true" />
               <span>{new Date(task.createdAt).toLocaleDateString()}</span>
+              {hasUnread && (
+                <span className={styles.unreadBadge} aria-label={`${unreadCount} ${t('comments')}`}>
+                  <Icon icon="chat" size={12} />
+                  {unreadCount > 0 && <span className={styles.unreadCount}>{unreadCount > 9 ? '9+' : unreadCount}</span>}
+                </span>
+              )}
             </div>
           )}
           {(task.projectName ?? task.creatorName) && (
@@ -230,6 +237,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDragEnabled = false,
         onClose={() => setIsDetailsOpen(false)}
         onEdit={() => setIsEditOpen(true)}
         isOwner={isOwner}
+        onRead={onRead}
       />
 
       <TaskEditDialog

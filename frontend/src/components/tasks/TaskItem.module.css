@@ -54,6 +54,26 @@
   color: var(--text-main);
 }
 
+/* Unread comments badge: chat icon + count pill */
+.unreadBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background-color: var(--color-danger);
+  color: #fff;
+  border-radius: 10px;
+  padding: 1px 6px 1px 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.unreadCount {
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
 .titleDone {
   text-decoration: line-through;
   opacity: 0.7;
@@ -72,7 +92,12 @@
   align-items: center;
   gap: 4px;
   color: var(--text-subtle);
-  font-size: 0.7rem; /* raised from 9px — below 10px triggers WAVE very small text alert */
+  font-size: 0.7rem;
+}
+
+/* Badge pushed to the right end of the date row */
+.dateRow .unreadBadge {
+  margin-left: auto;
 }
 
 .footerRow {
