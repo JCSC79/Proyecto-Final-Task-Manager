@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Spinner, NonIdealState, Button, Intent, Icon, Dialog, DialogBody } from '@blueprintjs/core';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axiosInstance';
 import { downloadTasksPdf } from '../api/task.api';
 import { useAuth } from '../hooks/useAuth';
+import { useSocket, SocketProvider } from '../hooks/useSocket';
+import { useUnreadComments } from '../hooks/useUnreadComments';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { TaskFilters } from '../components/tasks/TaskFilters';
@@ -13,10 +15,11 @@ import { TaskForm } from '../components/tasks/TaskForm';
 import { TaskBoard } from '../components/tasks/TaskBoard';
 import { ProjectSelector } from '../components/tasks/ProjectSelector';
 import type { Task, TaskStatus, TaskPriority } from '../types/task';
+import type { IComment } from '../api/comment.api';
 import pageStyles from './pages.module.css';
 import formStyles from '../components/tasks/TaskForm.module.css';
 
-const HomePage: React.FC = () => {
+const HomePageInner: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -27,6 +30,46 @@ const HomePage: React.FC = () => {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'ALL'>('ALL');
   const [onlyMyTasks, setOnlyMyTasks] = useState(false);
+
+  // Socket.IO: receive real-time comments and mark tasks as unread
+  const { markUnread, markRead, hasUnread, unreadCount } = useUnreadComments();
+  const queryClient = useQueryClient();
+  useSocket({
+    onNewComment: (comment: IComment) => {
+      // Only mark unread for comments from OTHER users
+      if (comment.userId !== user?.id) {
+        markUnread(comment.taskId);
+      }
+    },
+    onTaskUpdated: (updatedTask) => {
+      queryClient.setQueryData<Task[]>(['tasks'], (prev) => {
+        if (!prev) {
+          return prev;
+        }
+        const exists = prev.some(t => t.id === updatedTask.id);
+        // New task (create) -> append; existing task (update) -> replace
+        return exists
+          ? prev.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t)
+          : [...prev, updatedTask];
+      });
+    },
+    onTaskDeleted: ({ id }) => {
+      queryClient.setQueryData<Task[]>(['tasks'], (prev) =>
+        prev ? prev.filter(t => t.id !== id) : prev
+      );
+    },
+    onProjectCreated: () => {
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+    onProjectDeleted: ({ id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
+      // If the deleted project was selected, reset to "All projects"
+      setSelectedProjectId(prev => prev === id ? null : prev);
+    },
+    onProjectMembersChanged: () => {
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
   // Initialize statusFilter from navigation state
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>(
     () => (location.state as { statusFilter?: TaskStatus } | null)?.statusFilter ?? 'ALL'
@@ -134,7 +177,7 @@ const HomePage: React.FC = () => {
                     {t('exportPdf')}
                   </Button>
                 </div>
-                <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} />
+                <TaskBoard tasks={filteredTasks} statusFilter={statusFilter} hasUnread={hasUnread} unreadCount={unreadCount} onRead={markRead} />
               </>
             )}
           </>
@@ -174,5 +217,11 @@ const HomePage: React.FC = () => {
     </div>
   );
 };
+
+const HomePage: React.FC = () => (
+  <SocketProvider>
+    <HomePageInner />
+  </SocketProvider>
+);
 
 export default HomePage;
