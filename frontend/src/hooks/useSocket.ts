@@ -64,6 +64,7 @@ export const useSocket = (handlers: {
   onProjectCreated?: (project: IProject) => void;
   onProjectDeleted?: (payload: { id: string }) => void;
   onProjectMembersChanged?: (payload: { id: string }) => void;
+  onUserRegistered?: () => void;
 }) => {
   const { socket } = useSocketContext();
 
@@ -89,6 +90,9 @@ export const useSocket = (handlers: {
     if (handlers.onProjectMembersChanged) {
       socket.on('project-members-changed', handlers.onProjectMembersChanged);
     }
+    if (handlers.onUserRegistered) {
+      socket.on('user-registered', handlers.onUserRegistered);
+    }
     return () => {
       if (handlers.onNewComment) {
         socket.off('new-comment', handlers.onNewComment);
@@ -107,6 +111,9 @@ export const useSocket = (handlers: {
       }
       if (handlers.onProjectMembersChanged) {
         socket.off('project-members-changed', handlers.onProjectMembersChanged);
+      }
+      if (handlers.onUserRegistered) {
+        socket.off('user-registered', handlers.onUserRegistered);
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps

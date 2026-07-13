@@ -6,7 +6,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axiosInstance';
 import { downloadTasksPdf } from '../api/task.api';
 import { useAuth } from '../hooks/useAuth';
-import { useSocket, SocketProvider } from '../hooks/useSocket';
+import { useSocket } from '../hooks/useSocket';
 import { useUnreadComments } from '../hooks/useUnreadComments';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
@@ -218,10 +218,4 @@ const HomePageInner: React.FC = () => {
   );
 };
 
-const HomePage: React.FC = () => (
-  <SocketProvider>
-    <HomePageInner />
-  </SocketProvider>
-);
-
-export default HomePage;
+export default HomePageInner;

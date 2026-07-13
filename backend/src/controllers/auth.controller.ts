@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { authService } from '../services/auth.service.ts';
 import { userDAO } from '../daos/user.dao.ts';
 import { registerSchema, loginSchema } from '../schemas/user.schema.ts';
+import { socketService } from '../services/socket.service.ts';
 
 interface ValidationError {
   errors?: string[];
@@ -65,6 +66,7 @@ class AuthController {
                 maxAge: 24 * 60 * 60 * 1000
             });
 
+            socketService.broadcastUserRegistered();
             return res.status(201).json({ message: 'Registration successful', user });
         } catch (err) {
             const error = err as ValidationError;

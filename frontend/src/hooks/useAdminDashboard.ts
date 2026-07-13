@@ -5,6 +5,7 @@ import { fetchAdminUsers, updateUserRole, blockUser, deleteUser } from '../api/a
 import type { IUserWithStats } from '../types/admin';
 import { AppToaster } from '../utils/toaster';
 import { Intent } from '@blueprintjs/core';
+import { useSocket } from './useSocket';
 
 // Reusable type for our sorting system
 export type SortColumn = 'name' | 'email' | 'total' | 'pending' | 'inProgress' | 'completed' | 'rate';
@@ -38,6 +39,13 @@ export const useAdminDashboard = () => {
     queryFn: fetchAdminUsers,
     retry: 1,
     staleTime: 30_000,
+  });
+
+  // Real-time: refresh user list when a new user registers
+  useSocket({
+    onUserRegistered: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
   });
 
   // ACTIONS

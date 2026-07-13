@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -12,6 +13,21 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../../api/task.api', () => ({
   getTaskHistory: vi.fn(() => Promise.resolve([])),
+}));
+
+vi.mock('../../api/comment.api', () => ({
+  getComments: vi.fn(() => Promise.resolve([])),
+  postComment: vi.fn(() => Promise.resolve({ id: 'c1', taskId: 'task-1', userId: 'user-1', body: 'hi' })),
+}));
+
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'user-1', email: 'test@test.com', role: 'USER', lang: 'en', is_blocked: false } }),
+}));
+
+vi.mock('../../hooks/useSocket', () => ({
+  useSocket: () => ({ joinTask: vi.fn(), leaveTask: vi.fn() }),
+  useSocketContext: () => ({ socket: null }),
+  SocketProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock('../../utils/toaster', () => ({

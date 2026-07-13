@@ -1,15 +1,22 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.ts';
+import { SocketProvider } from '../hooks/useSocket';
 
 /**
  * ProtectedRoute — guards any route that requires authentication.
- * If no valid session exists, redirects to /login.
- * Uses <Outlet /> so it works as a layout wrapper for nested routes.
+ * Also mounts the SocketProvider so all authenticated pages share one socket.
  */
 const ProtectedRoute: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return (
+    <SocketProvider>
+      <Outlet />
+    </SocketProvider>
+  );
 };
 
 export default ProtectedRoute;

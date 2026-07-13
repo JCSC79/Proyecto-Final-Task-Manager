@@ -34,6 +34,7 @@ const mockUser: IUser = {
   email: 'test@example.com',
   role: 'USER',
   lang: 'en',
+  is_blocked: false,
   createdAt: new Date().toISOString(),
 };
 

@@ -114,6 +114,14 @@ class SocketService {
         this.io.emit(eventName, payload);
     }
 
+    /** Notifies admin clients that a new user registered. */
+    broadcastUserRegistered(): void {
+        if (!this.io) {
+            return;
+        }
+        this.io.emit('user-registered');
+    }
+
     getIO(): Server | null {
         return this.io;
     }
