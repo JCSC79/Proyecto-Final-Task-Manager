@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { userDAO } from '../daos/user.dao.ts';
 import { taskDAO } from '../daos/task.dao.ts';
+import { auditDAO } from '../daos/audit.dao.ts';
 import type { ITask } from '../models/task.model.ts';
 import { generateAdminPdf } from '../services/pdf.service.ts';
 
@@ -138,6 +139,31 @@ class AdminController {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(pdfBuffer);
+  }
+  /**
+   * GET /api/admin/analytics?range=7|30|90|all
+   * Returns lead times by category and workload by user.
+   */
+  async getAnalytics(req: Request, res: Response): Promise<Response | void> {
+    const rawRange = req.query['range'];
+    const range = typeof rawRange === 'string' ? rawRange : 'all';
+    let since: Date | undefined;
+    if (range === '7')  {
+      since = new Date(Date.now() - 7  * 86_400_000);
+    }
+    if (range === '30') {
+      since = new Date(Date.now() - 30 * 86_400_000);
+    }
+    if (range === '90') {
+      since = new Date(Date.now() - 90 * 86_400_000);
+    }
+
+    const [leadTimes, workload] = await Promise.all([
+      auditDAO.getLeadTimesByCategory(since),
+      auditDAO.getWorkloadByUser(),
+    ]);
+
+    return res.json({ leadTimes, workload });
   }
 }
 
