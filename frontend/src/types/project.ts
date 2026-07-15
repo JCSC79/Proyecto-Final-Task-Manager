@@ -14,4 +14,5 @@ export interface IProject {
   settings: IProjectSettings;
   memberRole: 'OWNER' | 'MEMBER' | null;
   memberCount: number;
+  ownerName?: string | null;
 }

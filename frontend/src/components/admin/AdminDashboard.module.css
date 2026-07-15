@@ -6,6 +6,92 @@
   gap: var(--space-md);
 }
 
+/* Analytics section: two cards side by side (mirrors chartsGrid) */
+.analyticsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.analyticsCard {
+  background-color: var(--bg-surface);
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+.analyticsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+/* Resource Management list */
+.workloadWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.workloadList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.workloadRow {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.workloadName {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workloadBar {
+  height: 8px !important;
+}
+
+.workloadCount {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 20px;
+  text-align: right;
+}
+
+.workloadTag {
+  font-size: 0.7rem !important;
+}
+
+.workloadPagination {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--border);
+}
+
+.workloadPageLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 .pageTitle {
   display: flex;
   align-items: center;
@@ -93,6 +179,17 @@
   box-shadow: var(--shadow-sm);
   color: var(--text-main);
   font-weight: bold;
+}
+
+/* Lead Time chart custom tooltip */
+.chartTooltip {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.375rem 0.625rem;
+  font-size: 0.75rem;
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Toolbar: search + filter */
@@ -447,6 +544,10 @@
   }
 
   .chartsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .analyticsGrid {
     grid-template-columns: 1fr;
   }
 

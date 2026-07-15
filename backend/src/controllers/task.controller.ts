@@ -91,14 +91,14 @@ class TaskController {
   async deleteAll(req: Request, res: Response): Promise<Response | void> {
     const authReq = req as AuthRequest;
     const statusQuery = req.query['status'];
-    
-    // FIX: Ensure status is a string or undefined, but never an array
     const status = typeof statusQuery === 'string' ? statusQuery : undefined;
     
     const result = await taskService.deleteTasksByStatus(authReq.user!.id, status);
     if (result.isFailure) {
       return res.status(500).json({ error: result.error });
     }
+    // Notify all clients that a bulk delete happened (affects admin stats)
+    socketService.broadcastTaskDeleted('bulk');
     res.status(204).send();
   }
 

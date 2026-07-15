@@ -35,3 +35,26 @@ export const blockUser = async (
 export const deleteUser = async (userId: string): Promise<void> => {
   await api.delete(`/api/admin/users/${userId}`);
 };
+
+export interface LeadTimeEntry {
+  category: string;
+  avgDays: number;
+  resolved: number;
+}
+
+export interface WorkloadEntry {
+  userId: string;
+  name: string | null;
+  email: string;
+  activeTasks: number;
+}
+
+export interface AdminAnalytics {
+  leadTimes: LeadTimeEntry[];
+  workload: WorkloadEntry[];
+}
+
+export const fetchAdminAnalytics = async (range: '7' | '30' | '90' | 'all' = 'all'): Promise<AdminAnalytics> => {
+  const res = await api.get<AdminAnalytics>('/api/admin/analytics', { params: { range } });
+  return res.data;
+};

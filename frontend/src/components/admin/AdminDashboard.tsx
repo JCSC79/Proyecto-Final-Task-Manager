@@ -1,9 +1,11 @@
 import React from 'react';
 import { StatusDonutChart } from './charts/StatusDonutChart';
 import { UserTasksBarChart } from './charts/UserTasksBarChart';
+import { ResourceManagement } from './ResourceManagement';
+import { LeadTimeChart } from './LeadTimeChart';
 import {
   Card, Elevation, H2, H3, Icon, InputGroup,
-  Button, Alert, Intent, Spinner, ButtonGroup
+  Button, Alert, Intent, Spinner, ButtonGroup, HTMLSelect
 } from '@blueprintjs/core';
 import { useAdminDashboard } from '../../hooks/useAdminDashboard';
 import { UserDetailDialog } from './UserDetailDialog';
@@ -23,6 +25,7 @@ export const AdminDashboard: React.FC = () => {
     pendingChange, setPendingChange, selectedUser, setSelectedUser, roleMutation,
     userToDelete, setUserToDelete, blockMutation, deleteMutation,
     userToBlock, setUserToBlock,
+    analytics, analyticsRange, setAnalyticsRange,
     users, globalStats
   } = useAdminDashboard();
 
@@ -100,6 +103,38 @@ export const AdminDashboard: React.FC = () => {
             colors={{ pending: CHART_COLORS.pending, inProgress: CHART_COLORS.progress, completed: CHART_COLORS.done }}
             labels={{ pending: t('pending'), inProgress: t('inProgress'), completed: t('completed') }}
           />
+        </Card>
+      </div>
+
+      {/* Analytics: Resource Management + Lead Time */}
+      <div className={styles.analyticsGrid}>
+        <Card elevation={Elevation.ONE} className={styles.analyticsCard}>
+          <div className={styles.analyticsHeader}>
+            <H3 className={styles.chartTitle}>
+              <Icon icon="horizontal-bar-chart-desc" size={20} /> {t('resourceManagement')}
+            </H3>
+          </div>
+          <ResourceManagement workload={analytics?.workload ?? []} />
+        </Card>
+
+        <Card elevation={Elevation.ONE} className={styles.analyticsCard}>
+          <div className={styles.analyticsHeader}>
+            <H3 className={styles.chartTitle}>
+              <Icon icon="horizontal-bar-chart" size={20} /> {t('leadTimeByCategory')}
+            </H3>
+            <HTMLSelect
+              value={analyticsRange}
+              onChange={e => setAnalyticsRange(e.target.value as '7' | '30' | '90' | 'all')}
+              aria-label={t('rangeAll')}
+              iconName="caret-down"
+            >
+              <option value="7">{t('rangeLast7')}</option>
+              <option value="30">{t('rangeLast30')}</option>
+              <option value="90">{t('rangeLast90')}</option>
+              <option value="all">{t('rangeAll')}</option>
+            </HTMLSelect>
+          </div>
+          <LeadTimeChart data={analytics?.leadTimes ?? []} />
         </Card>
       </div>
 
