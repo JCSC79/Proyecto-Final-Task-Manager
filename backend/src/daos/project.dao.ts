@@ -34,6 +34,11 @@ class ProjectDAO {
                     db.raw('?', [requestingUserId])
                 );
             })
+            // JOIN to get the owner's display name
+            .leftJoin('project_members as pm_owner', function () {
+                this.on('pm_owner.projectId', '=', 'p.id').andOnVal('pm_owner.role', '=', 'OWNER');
+            })
+            .leftJoin('users as owner_u', 'owner_u.id', 'pm_owner.userId')
             // Only show private projects if the requesting user is already a member
             .where(function () {
                 this.where('ps.isPublic', true).orWhereNotNull('pm.role');
@@ -46,7 +51,8 @@ class ProjectDAO {
                 'ps.description',
                 'ps.color',
                 'ps.isPublic',
-                'pm.role as memberRole'
+                'pm.role as memberRole',
+                db.raw('COALESCE(owner_u.name, owner_u.email) as "ownerName"')
             );
 
         // Count members per project in a single extra query to avoid N + 1
@@ -73,6 +79,7 @@ class ProjectDAO {
             },
             memberRole: (row.memberRole as MemberRole) ?? null,
             memberCount: countMap.get(row.id as string) ?? 0,
+            ownerName: (row.ownerName as string | null) ?? null,
         }));
     }
 
@@ -118,6 +125,7 @@ class ProjectDAO {
             },
             memberRole: 'OWNER',
             memberCount: 1,
+            ownerName: null, // creator — already known by the caller
         };
     }
 
@@ -395,6 +403,7 @@ class ProjectDAO {
             },
             memberRole: (updated.memberRole as MemberRole) ?? null,
             memberCount: Number(countRow?.memberCount ?? 0),
+            ownerName: null,
         };
     }
 }
