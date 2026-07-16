@@ -117,11 +117,17 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
                 isActive ? styles.chipMemberActive : '',
               ].filter(Boolean).join(' ');
 
+              // Tooltip: for members, append who the owner is
+              let chipTitle = project.name;
+              if (role === 'MEMBER' && project.ownerName) {
+                chipTitle = `${project.name} — ${t('projectOwnedBy', { name: project.ownerName })}`;
+              }
+
               return (
                 <div
                   key={project.id}
                   className={chipClass}
-                  title={project.name}
+                  title={chipTitle}
                 >
                   <button
                     type="button"
@@ -136,6 +142,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
                       />
                     )}
                     <span className={styles.chipName}>{project.name}</span>
+                    <span className={`${styles.roleLabel} ${role === 'OWNER' ? styles.roleLabelOwner : styles.roleLabelMember}`}>
+                      {role === 'OWNER' ? t('projectOwnerLabel') : t('projectMemberLabel')}
+                    </span>
                     <span className={styles.memberBadge}>{project.memberCount}</span>
                   </button>
 

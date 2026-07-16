@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { fetchAdminUsers, updateUserRole, blockUser, deleteUser } from '../api/admin.api';
+import { fetchAdminUsers, updateUserRole, blockUser, deleteUser, fetchAdminAnalytics, type AdminAnalytics } from '../api/admin.api';
 import type { IUserWithStats } from '../types/admin';
 import { AppToaster } from '../utils/toaster';
 import { Intent } from '@blueprintjs/core';
@@ -30,6 +30,7 @@ export const useAdminDashboard = () => {
   const [selectedUser, setSelectedUser] = useState<IUserWithStats | null>(null);
   const [userToDelete, setUserToDelete] = useState<IUserWithStats | null>(null);
   const [userToBlock, setUserToBlock] = useState<IUserWithStats | null>(null);
+  const [analyticsRange, setAnalyticsRange] = useState<'7' | '30' | '90' | 'all'>('all');
 
   const pageSize = 10;
 
@@ -41,10 +42,30 @@ export const useAdminDashboard = () => {
     staleTime: 30_000,
   });
 
-  // Real-time: refresh user list when a new user registers
+  const { data: analytics } = useQuery<AdminAnalytics>({
+    queryKey: ['admin-analytics', analyticsRange],
+    queryFn: () => fetchAdminAnalytics(analyticsRange),
+    staleTime: 60_000,
+  });
+
+  // Real-time: refresh all admin data on any relevant change
   useSocket({
     onUserRegistered: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-analytics'] });
+    },
+    onTaskUpdated: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-analytics'] });
+    },
+    onTaskDeleted: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-analytics'] });
+    },
+    onProjectDeleted: () => {
+      // Project deletion cascades tasks — stats, KPIs and analytics all change
+      void queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-analytics'] });
     },
   });
 
@@ -88,6 +109,7 @@ export const useAdminDashboard = () => {
     mutationFn: (userId: string) => deleteUser(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-analytics'] });
       AppToaster.show({
         message: t('userDeleted'),
         intent: Intent.DANGER,
@@ -164,6 +186,7 @@ export const useAdminDashboard = () => {
     pendingChange, setPendingChange, selectedUser, setSelectedUser, roleMutation,
     userToDelete, setUserToDelete, blockMutation, deleteMutation,
     userToBlock, setUserToBlock,
+    analytics, analyticsRange, setAnalyticsRange,
     users, // for bar chart
     globalStats: { total: globalTotal, pending: globalPending, inProgress: globalInProgress, completed: globalCompleted, rate: globalRate }
   };

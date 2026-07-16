@@ -130,6 +130,27 @@
   background: rgba(255,255,255,0.25);
 }
 
+/* Role label (Owner / Member) shown inside the chip */
+.roleLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.roleLabelOwner {
+  background: rgba(255,255,255,0.9);
+  color: #1a4971;
+}
+
+.roleLabelMember {
+  background: rgba(0,0,0,0.25);
+  color: #fff;
+}
+
 /* Selectable area inside member chip (avoids nested <button>) */
 .chipSelectArea {
   display: inline-flex;

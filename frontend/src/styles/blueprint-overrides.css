@@ -4,6 +4,40 @@
  * NOTE: Blueprint v6 uses "bp6-" prefix throughout.
  */
 
+/* DIALOG OVERLAY — pushed down below the sticky header.
+  The backdrop and portal start below --navbar-height so the header is always visible and never overlapped by the modal scrim. */
+.bp6-overlay-backdrop {
+  top: var(--navbar-height) !important;
+}
+
+.bp6-overlay-content {
+  top: var(--navbar-height) !important;
+}
+
+/* Dialog container: centered vertically in the space below the header. max-height prevents the dialog from growing taller than the viewport. */
+.bp6-dialog-container {
+  min-height: calc(100vh - var(--navbar-height)) !important;
+  max-height: calc(100vh - var(--navbar-height)) !important;
+  align-items: center !important;
+}
+
+/* Dialog card: never taller than the available viewport below the header. Internal scroll is handled per-section (e.g. the comment list). */
+.bp6-dialog {
+  max-height: calc(100vh - var(--navbar-height) - 2rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  background-color: var(--bg-surface) !important;
+  color: var(--text-main) !important;
+}
+
+/* Dialog body: grows to fill the dialog height and scrolls if needed, but only when the content itself doesn't have its own scroll area. */
+.bp6-dialog-body {
+  overflow-y: auto !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+}
+
 /* NAVBAR */
 .bp6-navbar {
   background-color: var(--bg-surface) !important;
@@ -59,10 +93,7 @@
 }
 
 /* DIALOG */
-.bp6-dialog {
-  background-color: var(--bg-surface) !important;
-  color: var(--text-main) !important;
-}
+/* (layout and max-height defined in the overlay section above) */
 
 .bp6-dialog-header {
   background-color: var(--bg-surface-alt) !important;

@@ -54,9 +54,14 @@ const HomePageInner: React.FC = () => {
       });
     },
     onTaskDeleted: ({ id }) => {
-      queryClient.setQueryData<Task[]>(['tasks'], (prev) =>
-        prev ? prev.filter(t => t.id !== id) : prev
-      );
+      if (id === 'bulk') {
+        // Bulk delete (e.g. "Clear Completed") — invalidate to get fresh list
+        void queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      } else {
+        queryClient.setQueryData<Task[]>(['tasks'], (prev) =>
+          prev ? prev.filter(t => t.id !== id) : prev
+        );
+      }
     },
     onProjectCreated: () => {
       void queryClient.invalidateQueries({ queryKey: ['projects'] });
