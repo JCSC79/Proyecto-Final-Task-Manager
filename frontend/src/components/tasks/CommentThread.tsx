@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
+import EmojiPicker, { type EmojiClickData, Theme } from 'emoji-picker-react';
 import { Button, Intent, Spinner, TextArea } from '@blueprintjs/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getComments, postComment, type IComment } from '../../api/comment.api';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
 import { AppToaster } from '../../utils/toaster';
 import styles from './CommentThread.module.css';
 
@@ -64,8 +66,11 @@ const CommentAvatar: React.FC<{
 export const CommentThread: React.FC<Props> = ({ taskId }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const queryClient = useQueryClient();
   const [body, setBody] = useState('');
+  const [showPicker, setShowPicker] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const bottomRef = useRef<HTMLLIElement>(null);
 
@@ -114,6 +119,25 @@ export const CommentThread: React.FC<Props> = ({ taskId }) => {
       return;
     }
     mutation.mutate(trimmed);
+  };
+
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart ?? body.length;
+      const end = textarea.selectionEnd ?? body.length;
+      const newBody = body.slice(0, start) + emojiData.emoji + body.slice(end);
+      setBody(newBody);
+      // Restore focus and cursor position after insertion
+      requestAnimationFrame(() => {
+        textarea.focus();
+        const pos = start + emojiData.emoji.length;
+        textarea.setSelectionRange(pos, pos);
+      });
+    } else {
+      setBody(prev => prev + emojiData.emoji);
+    }
+    setShowPicker(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -184,26 +208,49 @@ export const CommentThread: React.FC<Props> = ({ taskId }) => {
     <div className={styles.thread}>
       {renderContent()}
 
-      <div className={styles.inputRow}>
-        <TextArea
-          className={styles.textarea}
-          placeholder={t('commentPlaceholder')}
-          value={body}
-          onChange={e => setBody(e.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={2}
-          maxLength={1000}
-          aria-label={t('commentPlaceholder')}
-        />
-        <Button
-          intent={Intent.PRIMARY}
-          icon="send-message"
-          loading={mutation.isPending}
-          disabled={!body.trim()}
-          onClick={handleSend}
-          aria-label={t('commentSend')}
-          title={t('commentSend')}
-        />
+      <div className={styles.inputWrapper}>
+        {showPicker && (
+          <div className={styles.pickerContainer}>
+            <EmojiPicker
+              onEmojiClick={handleEmojiClick}
+              theme={isDark ? Theme.DARK : Theme.LIGHT}
+              width="100%"
+              height={340}
+              searchDisabled={false}
+              lazyLoadEmojis
+            />
+          </div>
+        )}
+        <div className={styles.inputRow}>
+          <Button
+            icon="emoji"
+            variant="minimal"
+            onClick={() => setShowPicker(p => !p)}
+            aria-label="Emoji"
+            title="Emoji"
+            className={showPicker ? styles.emojiActive : ''}
+          />
+          <TextArea
+            inputRef={textareaRef}
+            className={styles.textarea}
+            placeholder={t('commentPlaceholder')}
+            value={body}
+            onChange={e => setBody(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={2}
+            maxLength={1000}
+            aria-label={t('commentPlaceholder')}
+          />
+          <Button
+            intent={Intent.PRIMARY}
+            icon="send-message"
+            loading={mutation.isPending}
+            disabled={!body.trim()}
+            onClick={handleSend}
+            aria-label={t('commentSend')}
+            title={t('commentSend')}
+          />
+        </div>
       </div>
     </div>
   );

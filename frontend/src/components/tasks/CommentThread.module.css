@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  max-height: 360px;
+  /* No max-height here — the dialog body controls the outer scroll */
 }
 
 .loading,
@@ -21,7 +21,9 @@
   flex-direction: column;
   gap: var(--space-sm);
   overflow-y: auto;
-  max-height: 260px;
+  /* Fills the available space inside the dialog body */
+  flex: 1;
+  min-height: 120px;
   padding-right: 4px;
 }
 
@@ -150,13 +152,32 @@
 }
 .body a { color: inherit; text-decoration: underline; }
 
-/* Input row: textarea + send button */
+/* Input wrapper: contains the picker (above) + input row (below) */
+.inputWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Emoji picker panel — floats above the input row */
+.pickerContainer {
+  width: 100%;
+  padding-bottom: var(--space-xs);
+}
+
+/* Input row: emoji button + textarea + send button */
 .inputRow {
   display: flex;
   gap: var(--space-sm);
   align-items: flex-end;
   padding-top: var(--space-sm);
   border-top: 1px solid var(--border);
+}
+
+/* Emoji button active state */
+.emojiActive {
+  color: var(--chip-active-bg) !important;
 }
 
 .textarea {
