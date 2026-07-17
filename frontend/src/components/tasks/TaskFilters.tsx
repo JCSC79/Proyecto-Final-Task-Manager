@@ -5,10 +5,11 @@ import {
 } from '@blueprintjs/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axiosInstance';
-import type { TaskStatus, TaskPriority, ICategory } from '../../types/task';
+import type { TaskStatus, TaskPriority, ICategory, ITag } from '../../types/task';
 import { useTranslation } from 'react-i18next';
 import { AppToaster } from '../../utils/toaster';
 import { getCategories } from '../../api/category.api';
+import { getTagsByProject } from '../../api/tag.api';
 import styles from './TaskFilters.module.css';
 
 interface TaskFiltersProps {
@@ -22,6 +23,9 @@ interface TaskFiltersProps {
   setPriorityFilter: (val: TaskPriority | 'ALL') => void;
   onlyMyTasks: boolean;
   setOnlyMyTasks: (val: boolean) => void;
+  selectedProjectId: string | null;
+  selectedTagIds: string[];
+  setSelectedTagIds: (val: string[]) => void;
 }
 
 interface FilterButtonsProps {
@@ -105,6 +109,9 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   setPriorityFilter,
   onlyMyTasks,
   setOnlyMyTasks,
+  selectedProjectId,
+  selectedTagIds,
+  setSelectedTagIds,
 }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -115,6 +122,14 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     queryKey: ['categories'],
     queryFn: getCategories,
     staleTime: Infinity,
+  });
+
+  // Only fetch tags when a project is selected — tags are project-scoped
+  const { data: projectTags = [] } = useQuery<ITag[]>({
+    queryKey: ['project-tags', selectedProjectId],
+    queryFn: () => getTagsByProject(selectedProjectId!),
+    enabled: !!selectedProjectId,
+    staleTime: 30_000,
   });
 
   const clearMutation = useMutation({
@@ -224,6 +239,24 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           </div>
         )}
 
+        {/* Tag filter — only shown when a project is selected and it has tags */}
+        {selectedProjectId && projectTags.length > 0 && (
+          <div className={styles.advancedSelect}>
+            <HTMLSelect
+              value={selectedTagIds[0] ?? ''}
+              onChange={(e) => setSelectedTagIds(e.target.value ? [e.target.value] : [])}
+              aria-label={t('filterByTag')}
+              fill={true}
+              iconName='caret-down'
+            >
+              <option value="">{t('filterByTag')}</option>
+              {projectTags.map((tag) => (
+                <option key={tag.id} value={tag.id}>{tag.name}</option>
+              ))}
+            </HTMLSelect>
+          </div>
+        )}
+
         <div className={styles.advancedSelect}>
           <HTMLSelect
             value={priorityFilter}
@@ -253,7 +286,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           {t('onlyMyTasks')}
         </Button>
 
-        {(searchTerm !== '' || statusFilter !== 'ALL' || categoryId !== null || priorityFilter !== 'ALL' || onlyMyTasks) && (
+        {(searchTerm !== '' || statusFilter !== 'ALL' || categoryId !== null || priorityFilter !== 'ALL' || onlyMyTasks || selectedTagIds.length > 0) && (
           <Button
             icon="filter-remove"
             intent={Intent.PRIMARY}
@@ -265,6 +298,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               setCategoryId(null);
               setPriorityFilter('ALL');
               setOnlyMyTasks(false);
+              setSelectedTagIds([]);
             }}
             aria-label={t('clearFilters')}
             title={t('clearFilters')}

@@ -30,6 +30,7 @@ const HomePageInner: React.FC = () => {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'ALL'>('ALL');
   const [onlyMyTasks, setOnlyMyTasks] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
   // Socket.IO: receive real-time comments and mark tasks as unread
   const { markUnread, markRead, hasUnread, unreadCount } = useUnreadComments();
@@ -87,6 +88,11 @@ const HomePageInner: React.FC = () => {
       navigate('/', { replace: true, state: {} });
     }
   }, [location.state, navigate]);
+  const handleProjectSelect = (projectId: string | null) => {
+    setSelectedProjectId(projectId);
+    setSelectedTagIds([]); // tags are project-scoped — reset when project changes
+  };
+
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   const { data: tasks, isLoading, isError, error, refetch } = useQuery<Task[]>({
@@ -110,9 +116,11 @@ const HomePageInner: React.FC = () => {
       const matchesCategory = categoryId === null || task.categoryId === categoryId;
       const matchesPriority = priorityFilter === 'ALL' || task.priority === priorityFilter;
       const matchesOwner = !onlyMyTasks || task.userId === user?.id;
-      return matchesSearch && matchesStatus && matchesProject && matchesCategory && matchesPriority && matchesOwner;
+      const matchesTags = selectedTagIds.length === 0 ||
+        (task.tags ?? []).some(tag => selectedTagIds.includes(tag.id));
+      return matchesSearch && matchesStatus && matchesProject && matchesCategory && matchesPriority && matchesOwner && matchesTags;
     });
-  }, [tasks, searchTerm, statusFilter, selectedProjectId, categoryId, priorityFilter, onlyMyTasks, user?.id]);
+  }, [tasks, searchTerm, statusFilter, selectedProjectId, categoryId, priorityFilter, onlyMyTasks, user?.id, selectedTagIds]);
 
   const total = tasks?.length ?? 0;
   const completed = tasks?.filter(t => t.status === 'COMPLETED').length ?? 0;
@@ -148,7 +156,7 @@ const HomePageInner: React.FC = () => {
           <>
             <ProjectSelector
               selectedProjectId={selectedProjectId}
-              onSelect={setSelectedProjectId}
+              onSelect={handleProjectSelect}
             />
 
             <TaskFilters
@@ -162,6 +170,9 @@ const HomePageInner: React.FC = () => {
               setPriorityFilter={setPriorityFilter}
               onlyMyTasks={onlyMyTasks}
               setOnlyMyTasks={setOnlyMyTasks}
+              selectedProjectId={selectedProjectId}
+              selectedTagIds={selectedTagIds}
+              setSelectedTagIds={setSelectedTagIds}
             />
 
             {isLoading ? (
