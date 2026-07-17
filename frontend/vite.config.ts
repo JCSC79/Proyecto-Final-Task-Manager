@@ -7,6 +7,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './vitest.setup.ts',
-    css: true, // Enables CSS processing so tests that depend on CSS classes work correctly
+    css: true,
+    testTimeout: 15000, // increase from 5s to 15s to account for heavy imports like emoji-picker-react
   },
 });

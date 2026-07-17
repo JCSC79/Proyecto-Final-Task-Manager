@@ -1,5 +1,11 @@
 import '@testing-library/jest-dom';
-import { beforeAll, afterAll } from 'vitest';
+import { beforeAll, afterAll, vi } from 'vitest';
+
+// Mock heavy third-party libraries to speed up test module loading
+vi.mock('emoji-picker-react', () => ({
+  default: () => null,
+  Theme: { DARK: 'dark', LIGHT: 'light' },
+}));
 
 /**
  * FINAL CONSOLE SANITIZER
