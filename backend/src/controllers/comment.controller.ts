@@ -91,6 +91,42 @@ class CommentController {
 
         return res.status(201).json(comment);
     }
+
+    /**
+     * DELETE /api/tasks/:id/comments/:commentId
+     * Permanently deletes a comment. Only the comment's author may delete it.
+     * Broadcasts 'comment-deleted' so all connected clients (including other
+     * tabs/devices of the same user) remove it in real time.
+     */
+    async delete(req: Request, res: Response): Promise<Response | void> {
+        const taskId = String(req.params['id']);
+        const commentId = String(req.params['commentId']);
+        const userId = (req as AuthRequest).user?.id;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Unauthorized.' });
+        }
+
+        const allowed = await assertCommentAccess(taskId, userId, res);
+        if (!allowed) {
+            return;
+        }
+
+        const comment = await commentDAO.getById(commentId);
+        if (comment?.taskId !== taskId) {
+            return res.status(404).json({ error: 'Comment not found.' });
+        }
+
+        if (comment.userId !== userId) {
+            return res.status(403).json({ error: 'You can only delete your own comments.' });
+        }
+
+        await commentDAO.delete(commentId);
+
+        socketService.broadcastCommentDeleted(taskId, commentId);
+
+        return res.status(204).send();
+    }
 }
 
 export const commentController = new CommentController();

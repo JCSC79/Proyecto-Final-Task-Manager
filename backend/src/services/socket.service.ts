@@ -86,6 +86,14 @@ class SocketService {
         this.io.emit('new-comment', comment);
     }
 
+    // Notifies all clients that a comment was permanently deleted by its author.
+    broadcastCommentDeleted(taskId: string, commentId: string): void {
+        if (!this.io) {
+            return;
+        }
+        this.io.emit('comment-deleted', { taskId, commentId });
+    }
+
     // Broadcasts a task update to ALL connected clients (not just the task room), so any open TaskBoard refreshes in real time without polling.
     broadcastTaskUpdate(task: ITask): void {
         if (!this.io) {

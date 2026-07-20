@@ -39,6 +39,23 @@ class CommentDAO {
         const rows = await this.getByTask(data.taskId);
         return rows.find(c => c.id === data.id) as IComment;
     }
+
+    /**
+     * Returns a single comment row (no author JOIN — just enough to check ownership).
+     */
+    async getById(commentId: string): Promise<{ id: string; taskId: string; userId: string } | undefined> {
+        return await db('comments')
+            .where({ id: commentId })
+            .select('id', 'taskId', 'userId')
+            .first();
+    }
+
+    /**
+     * Permanently deletes a comment. Caller is responsible for authorization checks.
+     */
+    async delete(commentId: string): Promise<void> {
+        await db('comments').where({ id: commentId }).delete();
+    }
 }
 
 export const commentDAO = new CommentDAO();
