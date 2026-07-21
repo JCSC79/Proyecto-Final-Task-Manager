@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import EmojiPicker, { type EmojiClickData, Theme } from 'emoji-picker-react';
-import { Button, Intent, Spinner, TextArea } from '@blueprintjs/core';
+import { Alert, Button, Intent, Spinner, TextArea } from '@blueprintjs/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { getComments, postComment, type IComment } from '../../api/comment.api';
+import { getComments, postComment, deleteComment, type IComment } from '../../api/comment.api';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
+import { useSocket } from '../../hooks/useSocket';
 import { AppToaster } from '../../utils/toaster';
 import styles from './CommentThread.module.css';
 
@@ -70,14 +71,38 @@ export const CommentThread: React.FC<Props> = ({ taskId }) => {
   const queryClient = useQueryClient();
   const [body, setBody] = useState('');
   const [showPicker, setShowPicker] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
+  const [isClearAlertOpen, setIsClearAlertOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const bottomRef = useRef<HTMLLIElement>(null);
 
-  const { data: comments = [], isLoading } = useQuery<IComment[]>({
+  // "Clear chat" is local-only (like Teams' clear chat): it never touches the
+  // server, it just hides messages older than this timestamp for the current
+  // user/browser. Persisted in localStorage so it survives reloads.
+  const clearStorageKey = `comment-chat-cleared:${taskId}:${user?.id ?? 'anon'}`;
+  const [clearedAt, setClearedAt] = useState<string | null>(() => localStorage.getItem(clearStorageKey));
+
+  const { data: allComments = [], isLoading } = useQuery<IComment[]>({
     queryKey: ['comments', taskId],
     queryFn: () => getComments(taskId),
     staleTime: 0,
+  });
+
+  const comments = clearedAt
+    ? allComments.filter(c => !c.createdAt || new Date(c.createdAt) > new Date(clearedAt))
+    : allComments;
+
+  // Real-time removal when the author deletes a comment from another tab/device
+  useSocket({
+    onCommentDeleted: ({ taskId: deletedTaskId, commentId }) => {
+      if (deletedTaskId !== taskId) {
+        return;
+      }
+      queryClient.setQueryData<IComment[]>(['comments', taskId], (prev = []) =>
+        prev.filter(c => c.id !== commentId)
+      );
+    },
   });
 
   // Scroll to latest message — instant on first load, smooth on new arrivals
@@ -112,6 +137,29 @@ export const CommentThread: React.FC<Props> = ({ taskId }) => {
       AppToaster.show({ message: t('commentError'), intent: Intent.DANGER, icon: 'warning-sign' });
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteComment(taskId, id),
+    onSuccess: (_data, id) => {
+      queryClient.setQueryData<IComment[]>(['comments', taskId], (prev = []) =>
+        prev.filter(c => c.id !== id)
+      );
+    },
+    onError: () => {
+      AppToaster.show({ message: t('deleteCommentError'), intent: Intent.DANGER, icon: 'warning-sign' });
+    },
+    onSettled: () => {
+      setCommentToDelete(null);
+    },
+  });
+
+  const handleClearChat = () => {
+    const now = new Date().toISOString();
+    localStorage.setItem(clearStorageKey, now);
+    setClearedAt(now);
+    setIsClearAlertOpen(false);
+    AppToaster.show({ message: t('chatCleared'), intent: Intent.SUCCESS, icon: 'tick' });
+  };
 
   const handleSend = () => {
     const trimmed = body.trim();
@@ -185,6 +233,17 @@ export const CommentThread: React.FC<Props> = ({ taskId }) => {
                     {isOwn ? t('you') : displayName}
                   </span>
                   <span className={styles.time}>{formatTime(comment.createdAt)}</span>
+                  {isOwn && (
+                    <Button
+                      icon="eraser"
+                      variant="minimal"
+                      size="small"
+                      className={styles.deleteBtn}
+                      onClick={() => setCommentToDelete(comment.id)}
+                      aria-label={t('deleteComment')}
+                      title={t('deleteComment')}
+                    />
+                  )}
                 </div>
                 {/* ReactMarkdown renders **bold**, _italic_, `code`, lists, etc. */}
                 <div className={styles.body}>
@@ -206,6 +265,19 @@ export const CommentThread: React.FC<Props> = ({ taskId }) => {
 
   return (
     <div className={styles.thread}>
+      {allComments.length > 0 && (
+        <div className={styles.threadHeader}>
+          <Button
+            icon="trash"
+            variant="minimal"
+            size="small"
+            onClick={() => setIsClearAlertOpen(true)}
+            text={t('clearChat')}
+            aria-label={t('clearChat')}
+            title={t('clearChat')}
+          />
+        </div>
+      )}
       {renderContent()}
 
       <div className={styles.inputWrapper}>
@@ -252,6 +324,31 @@ export const CommentThread: React.FC<Props> = ({ taskId }) => {
           />
         </div>
       </div>
+
+      <Alert
+        isOpen={commentToDelete !== null}
+        icon="eraser"
+        intent={Intent.DANGER}
+        confirmButtonText={t('deleteComment')}
+        cancelButtonText={t('cancel')}
+        loading={deleteMutation.isPending}
+        onCancel={() => setCommentToDelete(null)}
+        onConfirm={() => commentToDelete && deleteMutation.mutate(commentToDelete)}
+      >
+        <p>{t('deleteCommentConfirmBody')}</p>
+      </Alert>
+
+      <Alert
+        isOpen={isClearAlertOpen}
+        icon="trash"
+        intent={Intent.WARNING}
+        confirmButtonText={t('clearChat')}
+        cancelButtonText={t('cancel')}
+        onCancel={() => setIsClearAlertOpen(false)}
+        onConfirm={handleClearChat}
+      >
+        <p>{t('clearChatConfirmBody')}</p>
+      </Alert>
     </div>
   );
 };

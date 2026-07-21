@@ -5,6 +5,12 @@
   /* No max-height here — the dialog body controls the outer scroll */
 }
 
+.threadHeader {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 2px;
+}
+
 .loading,
 .empty {
   text-align: center;
@@ -95,10 +101,21 @@
 
 .meta {
   display: flex;
-  justify-content: space-between;
   align-items: baseline;
   gap: var(--space-sm);
   margin-bottom: 2px;
+}
+
+.deleteBtn {
+  margin-left: auto;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  padding: 0 !important;
+  opacity: 0.7;
+}
+
+.deleteBtn:hover {
+  opacity: 1;
 }
 
 .author {

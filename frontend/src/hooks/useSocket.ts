@@ -59,6 +59,7 @@ import type { IProject } from '../types/project';
  */
 export const useSocket = (handlers: {
   onNewComment?: (comment: IComment) => void;
+  onCommentDeleted?: (payload: { taskId: string; commentId: string }) => void;
   onTaskUpdated?: (task: Task) => void;
   onTaskDeleted?: (payload: { id: string }) => void;
   onProjectCreated?: (project: IProject) => void;
@@ -74,6 +75,9 @@ export const useSocket = (handlers: {
     }
     if (handlers.onNewComment) {
       socket.on('new-comment', handlers.onNewComment);
+    }
+    if (handlers.onCommentDeleted) {
+      socket.on('comment-deleted', handlers.onCommentDeleted);
     }
     if (handlers.onTaskUpdated) {
       socket.on('task-updated', handlers.onTaskUpdated);
@@ -96,6 +100,9 @@ export const useSocket = (handlers: {
     return () => {
       if (handlers.onNewComment) {
         socket.off('new-comment', handlers.onNewComment);
+      }
+      if (handlers.onCommentDeleted) {
+        socket.off('comment-deleted', handlers.onCommentDeleted);
       }
       if (handlers.onTaskUpdated) {
         socket.off('task-updated', handlers.onTaskUpdated);
