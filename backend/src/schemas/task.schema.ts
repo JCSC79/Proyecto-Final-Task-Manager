@@ -24,7 +24,12 @@ export const createTaskSchema = yup.object({
     categoryId: yup.string().matches(uuidFormat, 'err_categoryId_invalid').optional(),
     priority: yup.mixed<typeof TaskPriority[keyof typeof TaskPriority]>()
         .oneOf([...Object.values(TaskPriority), undefined] as const, 'err_priority_invalid')
-        .optional()
+        .optional(),
+    dueDate: yup.string().nullable().optional().test(
+        'date-or-null',
+        'err_dueDate_invalid',
+        (val) => val == null || /^\d{4}-\d{2}-\d{2}$/.test(val)
+    )
 });
 
 /**
@@ -49,5 +54,10 @@ export const updateTaskSchema = yup.object({
     priority: yup.string()
         .oneOf(Object.values(TaskPriority), 'err_priority_invalid')
         .nullable()
-        .optional()
+        .optional(),
+    dueDate: yup.string().nullable().optional().test(
+        'date-or-null',
+        'err_dueDate_invalid',
+        (val) => val == null || /^\d{4}-\d{2}-\d{2}$/.test(val)
+    )
 });

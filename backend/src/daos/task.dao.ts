@@ -25,6 +25,7 @@ interface RawTaskRow {
     categoryName: string | null;
     categoryColor: string | null;
     priority: string | null;
+    dueDate: Date | null;
     projectName: string | null;
     creatorName: string | null;
 }
@@ -58,6 +59,18 @@ function mapTaskRow(row: RawTaskRow): ITask {
     if (row.priority != null) {
         task.priority = row.priority as TaskPriority;
     }
+    if (row.dueDate != null) {
+        // pg parses DATE columns into a JS Date using LOCAL date components
+        // (new Date(year, month, day)), NOT UTC. Using toISOString() here would
+        // convert to UTC and roll the date back by one day in any timezone with
+        // a positive UTC offset (e.g. UTC+1/+2) — always read it back with the
+        // matching LOCAL getters instead of toISOString() to avoid that shift.
+        const d = row.dueDate;
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        task.dueDate = `${yyyy}-${mm}-${dd}`;
+    }
     if (row.projectName != null) {
         task.projectName = row.projectName;
     }
@@ -82,6 +95,7 @@ const TASK_SELECT = [
     'tasks.createdAt',
     'tasks.updatedAt',
     'tasks.priority',
+    'tasks.dueDate',
     'categories.name as categoryName',
     'categories.color as categoryColor',
     'projects.name as projectName',
@@ -216,6 +230,7 @@ class TaskDAO {
             ...(task.projectId === undefined ? {} : { projectId: task.projectId }),
             ...(task.categoryId === undefined ? {} : { categoryId: task.categoryId }),
             ...(task.priority === undefined ? {} : { priority: task.priority }),
+            ...(task.dueDate === undefined ? {} : { dueDate: task.dueDate }),
             createdAt: task.createdAt,
         });
         return task;

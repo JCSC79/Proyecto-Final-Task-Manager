@@ -38,6 +38,7 @@ export interface ITask {
     category?: ICategory; // Populated via LEFT JOIN in read queries; absent on write operations
     tags?: ITag[];        // Populated via task_tags JOIN in read queries; absent on write operations
     priority?: TaskPriority | null;
+    dueDate?: string | null; // ISO date string (YYYY-MM-DD) — nullable, no time component
     projectName?: string;   // Denormalised from projects.name via JOIN — read-only
     creatorName?: string;   // Denormalised from users.name via JOIN — read-only
     createdAt: Date;

@@ -51,6 +51,7 @@ export class TaskService {
             const categoryId = (data as { categoryId?: string }).categoryId;
             const tagIds = (data as { tagIds?: string[] }).tagIds;
             const priority = validated.priority ?? undefined;
+            const dueDate = validated.dueDate ?? undefined;
 
             // Guard: if a projectId is supplied, the user must be a member of that project
             if (projectId) {
@@ -69,6 +70,7 @@ export class TaskService {
                 ...(projectId ? { projectId } : {}),
                 ...(categoryId ? { categoryId } : {}),
                 ...(priority ? { priority } : {}),
+                ...(dueDate ? { dueDate } : {}),
                 createdAt: new Date()
             };
 
