@@ -3,12 +3,15 @@ import {
   Dialog, Classes, FormGroup, InputGroup, TextArea, HTMLSelect, Checkbox,
   Button, Intent,
 } from '@blueprintjs/core';
+import { DateInput } from '@blueprintjs/datetime';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { dateStringToIso, isoToDateString, formatLocalDate, parseLocalDate } from '../../utils/date';
 import api from '../../api/axiosInstance';
 import { getCategories } from '../../api/category.api';
 import { getTagsByProject, assignTag, unassignTag } from '../../api/tag.api';
 import type { Task, TaskPriority, ICategory } from '../../types/task';
 import { useTranslation } from 'react-i18next';
+import { es, enUS } from 'date-fns/locale';
 import { AppToaster } from '../../utils/toaster';
 import { TagBadge } from './TagBadge';
 import styles from './TaskItem.module.css';
@@ -31,13 +34,15 @@ interface TaskEditDialogProps {
 }
 
 export const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ task, isOpen, onClose }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language.startsWith('es') ? es : enUS;
   const queryClient = useQueryClient();
 
   const [editTitle, setEditTitle] = useState(task.title);
   const [editDescription, setEditDescription] = useState(task.description);
   const [editCategoryId, setEditCategoryId] = useState<string>(task.category?.id ?? '');
   const [editPriority, setEditPriority] = useState<TaskPriority | ''>(task.priority ?? '');
+  const [editDueDate, setEditDueDate] = useState<string>(task.dueDate ?? '');
   const [editTagIds, setEditTagIds] = useState<string[]>([]);
 
   // Reset form fields when dialog opens without triggering an extra render cycle
@@ -49,6 +54,7 @@ export const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ task, isOpen, on
       setEditDescription(task.description);
       setEditCategoryId(task.category?.id ?? '');
       setEditPriority(task.priority ?? '');
+      setEditDueDate(task.dueDate ?? '');
       setEditTagIds(task.tags?.map(tag => tag.id) ?? []);
     }
   }
@@ -95,6 +101,7 @@ export const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ task, isOpen, on
       description: editDescription,
       categoryId: editCategoryId || null,
       ...(editPriority ? { priority: editPriority } : { priority: null }),
+      dueDate: editDueDate || null,
     });
   };
 
@@ -144,6 +151,20 @@ export const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ task, isOpen, on
               <option key={p} value={p}>{t(p)}</option>
             ))}
           </HTMLSelect>
+        </FormGroup>
+        <FormGroup label={t('dueDate')} labelFor="edit-due-date-input">
+          <DateInput
+            inputProps={{ id: 'edit-due-date-input' }}
+            fill
+            canClearSelection
+            formatDate={formatLocalDate}
+            parseDate={(str) => parseLocalDate(str) ?? false}
+            placeholder="YYYY-MM-DD"
+            value={dateStringToIso(editDueDate)}
+            onChange={(isoValue) => setEditDueDate(isoToDateString(isoValue))}
+            popoverProps={{ placement: 'bottom-start' }}
+            locale={dateLocale}
+          />
         </FormGroup>
         {projectTags.length > 0 && (
           <FormGroup label={t('tags')}>

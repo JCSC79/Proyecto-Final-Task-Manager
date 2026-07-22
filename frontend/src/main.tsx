@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
  */
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/icons/lib/css/blueprint-icons.css";
+import "@blueprintjs/datetime/lib/css/blueprint-datetime.css";
 import 'flag-icons/css/flag-icons.min.css';
 
 /** * 2. Our style manager 

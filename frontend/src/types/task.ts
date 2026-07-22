@@ -28,6 +28,7 @@ export interface Task {
   category?: ICategory;
   tags?: ITag[];
   priority?: TaskPriority | null;
+  dueDate?: string | null; // ISO date string (YYYY-MM-DD)
   projectName?: string;  // Denormalised from server JOIN — display only
   creatorName?: string;  // Denormalised from server JOIN — display only
   createdAt?: string;

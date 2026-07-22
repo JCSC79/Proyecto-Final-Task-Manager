@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   InputGroup, ButtonGroup, Button, Card,
-  Elevation, Alert, Intent, Popover, HTMLSelect
+  Elevation, Alert, Intent, HTMLSelect, PopoverNext as Popover
 } from '@blueprintjs/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axiosInstance';

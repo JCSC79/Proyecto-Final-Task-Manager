@@ -23,6 +23,11 @@
 
 /* Dialog card: never taller than the available viewport below the header. Internal scroll is handled per-section (e.g. the comment list). */
 .bp6-dialog {
+  /* Blueprint hard-codes width: 500px with no responsive breakpoint, which
+     overflows the viewport on phones (and clips/squeezes fields like the
+     due-date input). Cap with max-width (not width) so per-dialog width
+     overrides like .taskDialog still apply on larger screens. */
+  max-width: calc(100vw - 2rem) !important;
   max-height: calc(100vh - var(--navbar-height) - 2rem) !important;
   display: flex !important;
   flex-direction: column !important;

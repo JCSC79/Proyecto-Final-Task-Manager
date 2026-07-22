@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Button, InputGroup, TextArea, FormGroup, H4, Intent, HTMLSelect, Checkbox } from '@blueprintjs/core';
+import { DateInput } from '@blueprintjs/datetime';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { dateStringToIso, isoToDateString, formatLocalDate, parseLocalDate } from '../../utils/date';
 import api from '../../api/axiosInstance';
 import { getProjects } from '../../api/project.api';
 import { getCategories } from '../../api/category.api';
@@ -34,6 +36,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
   const [projectId, setProjectId] = useState<string>(defaultProjectId ?? '');
   const [categoryId, setCategoryId] = useState<string>('');
   const [priority, setPriority] = useState<TaskPriority | ''>('');
+  const [dueDate, setDueDate] = useState<string>('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
   const { data: categories = [] } = useQuery<ICategory[]>({
@@ -56,7 +59,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
   });
 
   const mutation = useMutation({
-    mutationFn: (newTask: { title: string; description: string; projectId?: string; categoryId?: string; tagIds?: string[] }) =>
+    mutationFn: (newTask: { title: string; description: string; projectId?: string; categoryId?: string; priority?: TaskPriority; dueDate?: string; tagIds?: string[] }) =>
       api.post('/api/tasks', newTask),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -84,7 +87,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
     },
   });
 
-  const handleClear = () => { setTitle(''); setDescription(''); setProjectId(defaultProjectId ?? ''); setCategoryId(''); setPriority(''); setSelectedTagIds([]); };
+  const handleClear = () => { setTitle(''); setDescription(''); setProjectId(defaultProjectId ?? ''); setCategoryId(''); setPriority(''); setDueDate(''); setSelectedTagIds([]); };
 
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -98,6 +101,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
       ...(projectId ? { projectId } : {}),
       ...(categoryId ? { categoryId } : {}),
       ...(priority ? { priority } : {}),
+      ...(dueDate ? { dueDate } : {}),
       ...(selectedTagIds.length > 0 ? { tagIds: selectedTagIds } : {}),
     });
   };
@@ -168,6 +172,19 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
               <option key={p} value={p}>{t(p)}</option>
             ))}
           </HTMLSelect>
+        </FormGroup>
+        <FormGroup label={t('dueDate')} labelFor="due-date-input">
+          <DateInput
+            inputProps={{ id: 'due-date-input' }}
+            fill
+            canClearSelection
+            formatDate={formatLocalDate}
+            parseDate={(str) => parseLocalDate(str) ?? false}
+            placeholder="YYYY-MM-DD"
+            value={dateStringToIso(dueDate)}
+            onChange={(isoValue) => setDueDate(isoToDateString(isoValue))}
+            popoverProps={{ placement: 'bottom-start' }}
+          />
         </FormGroup>
         {projectTags.length > 0 && (
           <FormGroup label={t('tags')}>

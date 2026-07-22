@@ -46,6 +46,31 @@ function getCategoryDotClass(color: string): string {
   return (styles as Record<string, string>)[cls] ?? '';
 }
 
+/**
+ * Returns how many whole days remain until the due date (negative if overdue).
+ * Compares by calendar day (midnight-to-midnight), ignoring time-of-day.
+ */
+function daysUntil(dueDate: string): number {
+  const due = new Date(dueDate + 'T00:00:00');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function getDueDateIntent(dueDate: string, isCompleted: boolean): Intent {
+  if (isCompleted) {
+    return Intent.NONE;
+  }
+  const diff = daysUntil(dueDate);
+  if (diff < 0) {
+    return Intent.DANGER;
+  }
+  if (diff <= 2) {
+    return Intent.WARNING;
+  }
+  return Intent.NONE;
+}
+
 function getAdjacentStatuses(status: TaskStatus): { next: TaskStatus | null; prev: TaskStatus | null } {
   if (status === 'PENDING')     {
     return { next: 'IN_PROGRESS', prev: null };
@@ -147,7 +172,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDragEnabled = false,
           <Text ellipsize className={styles.description}>
             {task.description || t('noDescription')}
           </Text>
-          {Boolean(task.category ?? task.priority) && (
+          {Boolean(task.category ?? task.priority ?? task.dueDate) && (
             <div className={styles.metaRow}>
               {task.category && (
                 <span className={styles.categoryBadge}>
@@ -158,6 +183,18 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDragEnabled = false,
               {task.priority && (
                 <Tag minimal round intent={getPriorityIntent(task.priority)} className={styles.priorityBadge}>
                   {t(task.priority)}
+                </Tag>
+              )}
+              {task.dueDate && (
+                <Tag
+                  minimal
+                  round
+                  icon="time"
+                  intent={getDueDateIntent(task.dueDate, isCompleted)}
+                  className={styles.priorityBadge}
+                  title={t('dueDate')}
+                >
+                  {new Date(task.dueDate + 'T00:00:00').toLocaleDateString()}
                 </Tag>
               )}
             </div>
