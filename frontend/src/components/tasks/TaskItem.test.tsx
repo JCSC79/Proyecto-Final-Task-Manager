@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TaskItem } from './TaskItem';
@@ -13,6 +14,7 @@ import type { IUser } from '../../types/user';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
+    i18n: { language: 'en' },
   }),
 }));
 
@@ -26,6 +28,26 @@ vi.mock('../../api/axiosInstance', () => ({
 // Mock categories API to avoid unhandled network calls
 vi.mock('../../api/category.api', () => ({
   getCategories: vi.fn(() => Promise.resolve([])),
+}));
+
+vi.mock('../../hooks/useTheme', () => ({
+  useTheme: () => ({ isDark: false, toggleTheme: vi.fn() }),
+}));
+
+vi.mock('../../hooks/useSocket', () => ({
+  useSocket: () => ({ joinTask: vi.fn(), leaveTask: vi.fn() }),
+  useSocketContext: () => ({ socket: null }),
+  SocketProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'user-1', email: 'test@example.com', role: 'USER', lang: 'en', is_blocked: false } }),
+}));
+
+vi.mock('../../api/comment.api', () => ({
+  getComments: vi.fn(() => Promise.resolve([])),
+  postComment: vi.fn(),
+  deleteComment: vi.fn(),
 }));
 
 // The logged-in user — userId matches mockTask.userId so isOwner = true
