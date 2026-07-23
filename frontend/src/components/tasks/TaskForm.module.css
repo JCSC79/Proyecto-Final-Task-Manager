@@ -26,7 +26,10 @@
   position: fixed;
   bottom: 2rem;
   right: 2rem;
-  z-index: 100;
+  /* Must stay BELOW Blueprint's overlay/dialog z-index. Otherwise, when a tall dialog reaches the bottom-right corner, 
+  the FAB would render on top of the dialog's own buttons, making clicks ambiguous between the two. Any value below 20 
+  is enough since normal page content has no explicit z-index. */
+  z-index: 10;
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

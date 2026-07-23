@@ -5,12 +5,13 @@
  */
 
 /* DIALOG OVERLAY — pushed down below the sticky header.
-  The backdrop and portal start below --navbar-height so the header is always visible and never overlapped by the modal scrim. */
+  The backdrop and portal start below --navbar-height so the header is always visible and never overlapped by the modal scrim.
+ */
 .bp6-overlay-backdrop {
   top: var(--navbar-height) !important;
 }
 
-.bp6-overlay-content {
+.bp6-dialog-container.bp6-overlay-content {
   top: var(--navbar-height) !important;
 }
 

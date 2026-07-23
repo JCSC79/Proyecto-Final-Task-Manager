@@ -8,6 +8,7 @@ import { getProjects } from '../../api/project.api';
 import { getCategories } from '../../api/category.api';
 import { getTagsByProject } from '../../api/tag.api';
 import { useTranslation } from 'react-i18next';
+import { es, enUS } from 'date-fns/locale';
 import { AppToaster } from '../../utils/toaster';
 import type { IProject } from '../../types/project';
 import type { ICategory, TaskPriority } from '../../types/task';
@@ -29,7 +30,8 @@ interface TaskFormProps {
 }
 
 export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language.startsWith('es') ? es : enUS;
   const queryClient = useQueryClient();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -184,6 +186,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
             value={dateStringToIso(dueDate)}
             onChange={(isoValue) => setDueDate(isoToDateString(isoValue))}
             popoverProps={{ placement: 'bottom-start' }}
+            locale={dateLocale}
           />
         </FormGroup>
         {projectTags.length > 0 && (
