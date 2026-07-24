@@ -13,6 +13,7 @@ import authRoutes from './routes/auth.routes.ts';
 import adminRoutes from './routes/admin.routes.ts';
 import projectRoutes from './routes/project.routes.ts';
 import { projectTagRouter, taskTagRouter } from './routes/tag.routes.ts';
+import { taskAssigneeRouter } from './routes/assignee.routes.ts';
 import categoryRouter from './routes/category.routes.ts';
 import commentRouter from './routes/comment.routes.ts';
 import { authenticateToken } from './middlewares/auth.middleware.ts';
@@ -92,6 +93,9 @@ app.use('/api/projects/:id/tags', authenticateToken, projectTagRouter);
 
 // TAGS (task-scoped: assign/unassign tags on a task)
 app.use('/api/tasks/:id/tags', authenticateToken, taskTagRouter);
+
+// ASSIGNEES (task-scoped: assign/unassign project members on a task, OWNER only)
+app.use('/api/tasks/:id/assignees', authenticateToken, taskAssigneeRouter);
 
 // COMMENTS (task-scoped: list and post comments)
 app.use('/api/tasks/:id/comments', authenticateToken, commentRouter);
