@@ -169,6 +169,8 @@ export class TaskService {
             if (!updatedTask) {
                 return Result.fail<ITask>("Unauthorized update attempt or task not found");
             }
+            const { email, lang, name } = await getUserInfo(userId, this.userDao);
+            await notifyProjectOrOwner(this.messaging, updatedTask, 'TASK_UPDATED', { email, lang, name });
             await this.messaging.sendAuditEvent({
                 taskId: id,
                 userId,
@@ -197,24 +199,21 @@ async function getUserInfo(userId: string, dao: typeof userDAO): Promise<{ email
 }
 
 /**
- * If the task belongs to a project, sends one email per project member.
- * Falls back to notifying only the task owner when there is no project.
+ * If the task belongs to a project, emails every OTHER project member (the actor who triggered the event is always excluded — no one needs an email about their own action).
+ * If the task has no project, there is nobody else to notify, so nothing is sent.
  */
 async function notifyProjectOrOwner(
     messaging: typeof messagingService,
     task: ITask,
     eventType: 'TASK_CREATED' | 'TASK_COMPLETED' | 'TASK_UPDATED',
-    owner: { email: string; lang: 'en' | 'es'; name: string },
+    actor: { email: string; lang: 'en' | 'es'; name: string },
 ): Promise<void> {
-    if (task.projectId) {
-        const members = await projectDAO.getMembersForNotification(task.projectId);
-        if (members.length > 0) {
-            for (const m of members) {
-                await messaging.sendTaskNotification(task, m.email, eventType, m.lang, m.name);
-            }
-            return;
-        }
+    if (!task.projectId) {
+        return;
     }
-    // No project or no members found — notify owner only
-    await messaging.sendTaskNotification(task, owner.email, eventType, owner.lang, owner.name);
+    const members = await projectDAO.getMembersForNotification(task.projectId);
+    const recipients = members.filter(m => m.email !== actor.email);
+    for (const m of recipients) {
+        await messaging.sendTaskNotification(task, m.email, eventType, m.lang, m.name);
+    }
 }

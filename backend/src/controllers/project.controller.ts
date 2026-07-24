@@ -163,8 +163,9 @@ class ProjectController {
             projectName,
             ownerInfo.email,
             ownerInfo.lang ?? 'en',
-            joiner?.name ?? joiner?.email ?? 'Someone',
+            ownerInfo.name ?? undefined,
             'JOINED',
+            joiner?.name ?? joiner?.email ?? 'Someone',
           );
         }
       } catch { /* non-critical — do not fail the request */ }

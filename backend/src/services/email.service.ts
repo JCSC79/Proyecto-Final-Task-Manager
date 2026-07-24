@@ -82,10 +82,10 @@ class EmailService {
         const lang = payload.lang ?? 'en';
         const isJoined = payload.eventType === 'JOINED';
         const subjectEs = isJoined
-            ? `${payload.recipientName ?? 'Alguien'} se ha unido a tu proyecto "${payload.projectName}"`
+            ? `${payload.actorName ?? 'Alguien'} se ha unido a tu proyecto "${payload.projectName}"`
             : `Has sido añadido al proyecto "${payload.projectName}"`;
         const subjectEn = isJoined
-            ? `${payload.recipientName ?? 'Someone'} joined your project "${payload.projectName}"`
+            ? `${payload.actorName ?? 'Someone'} joined your project "${payload.projectName}"`
             : `You have been added to project "${payload.projectName}"`;
         const subject = lang === 'es' ? subjectEs : subjectEn; 
         const html = buildMemberEmailHtml(payload);

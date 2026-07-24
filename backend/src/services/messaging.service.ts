@@ -66,6 +66,8 @@ class MessagingService {
     /**
      * Publishes a project-membership notification (MEMBER_ADDED).
      * Uses type: 'PROJECT' so the worker routes it to the project email handler.
+     * @param recipientName - Display name of the actual recipient, always used for the greeting.
+     * @param actorName - Display name of the user who joined (JOINED events only); used in the subject/intro line.
      */
     async sendMemberNotification(
         projectId: string,
@@ -74,6 +76,7 @@ class MessagingService {
         lang: 'en' | 'es' = 'en',
         recipientName?: string,
         eventType: 'ADDED' | 'JOINED' = 'ADDED',
+        actorName?: string,
     ): Promise<void> {
         if (!this.channel) {
             console.error('[-] Messaging channel not initialized.');
@@ -87,6 +90,7 @@ class MessagingService {
             recipientEmail,
             lang,
             ...(recipientName ? { recipientName } : {}),
+            ...(actorName ? { actorName } : {}),
         };
         this.channel.sendToQueue(this.queue, Buffer.from(JSON.stringify(payload)), { persistent: true });
         console.log(` [x] Member notification queued (${eventType}): ${recipientEmail} — "${projectName}"`);

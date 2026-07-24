@@ -6,6 +6,7 @@ import type { ITask } from '../models/task.model.ts';
 import type { taskDAO } from '../daos/task.dao.ts';
 import type { userDAO } from '../daos/user.dao.ts';
 import type { messagingService } from './messaging.service.ts';
+import { projectDAO } from '../daos/project.dao.ts';
 
 /**
  * BACKEND UNIT TESTS: TaskService
@@ -99,7 +100,7 @@ describe('TaskService - Business Logic & Security', () => {
     });
 
     // 4. BUSINESS LOGIC TESTS (RabbitMQ Integration)
-    test('should call messaging service when a task is created', async () => {
+    test('should NOT send a notification when creating a task with no project (nobody else to notify)', async () => {
         let notificationSent = false;
         
         const spyMessaging = {
@@ -112,6 +113,59 @@ describe('TaskService - Business Logic & Security', () => {
         const serviceWithSpy = new TaskService(mockDao, spyMessaging, mockUserDao);
         await serviceWithSpy.createTask({ title: 'New Task', description: 'A valid description' }, 'owner-1');
 
-        assert.strictEqual(notificationSent, true);
+        assert.strictEqual(notificationSent, false);
+    });
+
+    test('should notify other project members but exclude the actor who created the task', async (t) => {
+        const notifiedEmails: string[] = [];
+
+        const spyMessaging = {
+            sendTaskNotification: async (_task: ITask, email: string): Promise<void> => {
+                notifiedEmails.push(email);
+            },
+            sendAuditEvent: async (): Promise<void> => {}
+        } as unknown as typeof messagingService;
+
+        // mockUserDao.getById resolves the actor's email to 'owner@test.com' — include it in the
+        // member list to prove it gets filtered out, alongside a genuinely different teammate.
+        t.mock.method(projectDAO, 'getMemberRole', async () => 'OWNER' as const);
+        t.mock.method(projectDAO, 'getMembersForNotification', async () => [
+            { email: 'owner@test.com', name: 'Owner', lang: 'en' as const },
+            { email: 'teammate@test.com', name: 'Teammate', lang: 'en' as const },
+        ]);
+
+        const serviceWithSpy = new TaskService(mockDao, spyMessaging, mockUserDao);
+        await serviceWithSpy.createTask({
+            title: 'New Task',
+            description: 'A valid description',
+            projectId: '11111111-1111-1111-1111-111111111111',
+        }, 'owner-1');
+
+        assert.deepStrictEqual(notifiedEmails, ['teammate@test.com']);
+    });
+
+    test('should notify other project members (excluding the actor) when a task is content-edited', async (t) => {
+        const notifiedEmails: string[] = [];
+
+        const spyMessaging = {
+            sendTaskNotification: async (_task: ITask, email: string): Promise<void> => {
+                notifiedEmails.push(email);
+            },
+            sendAuditEvent: async (): Promise<void> => {}
+        } as unknown as typeof messagingService;
+
+        t.mock.method(projectDAO, 'getMembersForNotification', async () => [
+            { email: 'owner@test.com', name: 'Owner', lang: 'en' as const },
+            { email: 'teammate@test.com', name: 'Teammate', lang: 'en' as const },
+        ]);
+
+        const serviceWithSpy = new TaskService(mockDao, spyMessaging, mockUserDao);
+        await serviceWithSpy.updateTask('valid-task', 'owner-1', {
+            title: 'Edited Title',
+            description: 'Edited description text',
+            projectId: '11111111-1111-1111-1111-111111111111',
+        });
+
+        assert.deepStrictEqual(notifiedEmails, ['teammate@test.com']);
     });
 });

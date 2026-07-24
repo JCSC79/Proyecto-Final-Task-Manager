@@ -25,12 +25,14 @@ const i18n: Record<Lang, Record<string, string>> = {
         TASK_COMPLETED: 'Task completed',
         TASK_UPDATED:   'Task updated',
         MEMBER_ADDED:   'You have been added to a project',
+        MEMBER_JOINED:  'New member joined your project',
         appName:          'Task Manager',
         greeting:         'Hello',
         introCreated:     'A new task has been assigned to your project:',
         introCompleted:   'Great news! The following task has been completed:',
         introUpdated:     'The following task has been updated:',
         introMemberAdded: 'You have been added as a member of project',
+        introMemberJoined: 'joined your project',
         labelStatus:      'Status',
         labelDescription: 'Description',
         labelCreated:     'Created',
@@ -41,12 +43,14 @@ const i18n: Record<Lang, Record<string, string>> = {
         TASK_COMPLETED: 'Tarea completada',
         TASK_UPDATED:   'Tarea actualizada',
         MEMBER_ADDED:   'Has sido añadido a un proyecto',
+        MEMBER_JOINED:  'Nuevo miembro en tu proyecto',
         appName:          'Gestor de Tareas',
         greeting:         'Hola',
         introCreated:     'Se ha creado una nueva tarea en tu proyecto:',
         introCompleted:   '¡Buenas noticias! La siguiente tarea ha sido completada:',
         introUpdated:     'La siguiente tarea ha sido actualizada:',
         introMemberAdded: 'Has sido añadido como miembro del proyecto',
+        introMemberJoined: 'se ha unido a tu proyecto',
         labelStatus:      'Estado',
         labelDescription: 'Descripción',
         labelCreated:     'Creada el',
@@ -173,12 +177,16 @@ export function buildMemberEmailHtml(payload: ProjectNotificationPayload): strin
     const lang: Lang = payload.lang ?? 'en';
     const t = i18n[lang];
     const recipientName = payload.recipientName ?? payload.recipientEmail;
-    const introLine = `${t.introMemberAdded} "${payload.projectName}".`;
+    const isJoined = payload.eventType === 'JOINED';
+    const actorName = payload.actorName ?? (lang === 'es' ? 'Alguien' : 'Someone');
+    const introLine = isJoined
+        ? `${actorName} ${t.introMemberJoined} "${payload.projectName}".`
+        : `${t.introMemberAdded} "${payload.projectName}".`;
 
     const vars: Record<string, string> = {
         logoBase64:       LOGO_BASE64,
         appName:          t.appName ?? 'Task Manager',
-        eventLabel:       t.MEMBER_ADDED ?? 'Added to project',
+        eventLabel:       isJoined ? (t.MEMBER_JOINED ?? 'New member') : (t.MEMBER_ADDED ?? 'Added to project'),
         greeting:         t.greeting ?? 'Hello',
         recipientName,
         introLine,

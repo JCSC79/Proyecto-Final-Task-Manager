@@ -27,7 +27,10 @@ export interface ProjectNotificationPayload {
     projectId: string;
     projectName: string;
     recipientEmail: string;
+    /** Display name of the actual recipient — always used for the email greeting. */
     recipientName?: string;
+    /** Display name of the user who joined the project. Only set for JOINED events; used in the subject/intro line, never for the greeting. */
+    actorName?: string;
     lang?: 'en' | 'es';
 }
 
