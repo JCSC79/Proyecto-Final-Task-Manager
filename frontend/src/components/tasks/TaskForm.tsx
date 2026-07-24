@@ -4,9 +4,10 @@ import { DateInput } from '@blueprintjs/datetime';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { dateStringToIso, isoToDateString, formatLocalDate, parseLocalDate } from '../../utils/date';
 import api from '../../api/axiosInstance';
-import { getProjects } from '../../api/project.api';
+import { getProjects, getProjectMembers } from '../../api/project.api';
 import { getCategories } from '../../api/category.api';
 import { getTagsByProject } from '../../api/tag.api';
+import { assignUser } from '../../api/task.api';
 import { useTranslation } from 'react-i18next';
 import { es, enUS } from 'date-fns/locale';
 import { AppToaster } from '../../utils/toaster';
@@ -40,6 +41,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
   const [priority, setPriority] = useState<TaskPriority | ''>('');
   const [dueDate, setDueDate] = useState<string>('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
 
   const { data: categories = [] } = useQuery<ICategory[]>({
     queryKey: ['categories'],
@@ -60,10 +62,23 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
     enabled: !!projectId,
   });
 
+  // Only the project OWNER can assign tasks to members
+  const isProjectOwner = projects.find((p) => p.id === projectId)?.memberRole === 'OWNER';
+  const { data: projectMembers = [] } = useQuery({
+    queryKey: ['projectMembers', projectId],
+    queryFn: () => getProjectMembers(projectId),
+    enabled: !!projectId && isProjectOwner,
+  });
+
   const mutation = useMutation({
     mutationFn: (newTask: { title: string; description: string; projectId?: string; categoryId?: string; priority?: TaskPriority; dueDate?: string; tagIds?: string[] }) =>
-      api.post('/api/tasks', newTask),
-    onSuccess: () => {
+      api.post<{ id: string }>('/api/tasks', newTask),
+    onSuccess: (response) => {
+      const createdTaskId = response.data.id;
+      const assignPromises = selectedAssigneeIds.map((userId) => assignUser(createdTaskId, userId));
+      Promise.all(assignPromises)
+        .then(() => queryClient.invalidateQueries({ queryKey: ['tasks'] }))
+        .catch(() => AppToaster.show({ message: t('assignError'), intent: Intent.DANGER }));
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       AppToaster.show({ message: t('taskCreated'), intent: Intent.SUCCESS, icon: 'tick-circle' });
       handleClear();
@@ -89,7 +104,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
     },
   });
 
-  const handleClear = () => { setTitle(''); setDescription(''); setProjectId(defaultProjectId ?? ''); setCategoryId(''); setPriority(''); setDueDate(''); setSelectedTagIds([]); };
+  const handleClear = () => { setTitle(''); setDescription(''); setProjectId(defaultProjectId ?? ''); setCategoryId(''); setPriority(''); setDueDate(''); setSelectedTagIds([]); setSelectedAssigneeIds([]); };
 
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -138,7 +153,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
               id="project-select"
               fill
               value={projectId}
-              onChange={(e) => { setProjectId(e.target.value); setSelectedTagIds([]); }}
+              onChange={(e) => { setProjectId(e.target.value); setSelectedTagIds([]); setSelectedAssigneeIds([]); }}
             >
               <option value="">{t('noProject')}</option>
               {projects.map((p) => (
@@ -207,6 +222,30 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess, defaultProjectId 
                       }
                     />
                     <TagBadge tag={tag} />
+                  </label>
+                );
+              })}
+            </div>
+          </FormGroup>
+        )}
+        {isProjectOwner && projectMembers.length > 0 && (
+          <FormGroup label={t('assignTo')}>
+            <div className={styles.tagList}>
+              {projectMembers.map((member) => {
+                const checked = selectedAssigneeIds.includes(member.userId);
+                return (
+                  <label key={member.userId} className={styles.tagCheckLabel}>
+                    <Checkbox
+                      checked={checked}
+                      onChange={() =>
+                        setSelectedAssigneeIds(
+                          checked
+                            ? selectedAssigneeIds.filter((id) => id !== member.userId)
+                            : [...selectedAssigneeIds, member.userId]
+                        )
+                      }
+                    />
+                    {member.name ?? member.email}
                   </label>
                 );
               })}

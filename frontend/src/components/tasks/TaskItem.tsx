@@ -13,6 +13,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { AppToaster } from '../../utils/toaster';
 import clsx from 'clsx';
 import { TagBadge } from './TagBadge';
+import { AssigneeBadge } from './AssigneeBadge';
 import { hexToIntent } from '../../utils/hexToIntent';
 import { TaskDetailsDialog } from './TaskDetailsDialog';
 import { TaskEditDialog } from './TaskEditDialog';
@@ -202,6 +203,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, isDragEnabled = false,
           {task.tags && task.tags.length > 0 && (
             <div className={styles.tagRow}>
               {task.tags.map((tag) => <TagBadge key={tag.id} tag={tag} />)}
+            </div>
+          )}
+          {task.assignees && task.assignees.length > 0 && (
+            <div className={styles.tagRow}>
+              {task.assignees.map((assignee) => <AssigneeBadge key={assignee.id} assignee={assignee} />)}
             </div>
           )}
           {task.createdAt && (

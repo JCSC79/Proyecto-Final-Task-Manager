@@ -25,3 +25,13 @@ export const downloadAdminPdf = async (lang: 'en' | 'es' = 'en'): Promise<void> 
   a.click();
   URL.revokeObjectURL(url);
 };
+
+/** POST /api/tasks/:id/assignees/:userId — assign a project member to a task (project OWNER only) */
+export const assignUser = async (taskId: string, userId: string): Promise<void> => {
+  await api.post(`/api/tasks/${taskId}/assignees/${userId}`);
+};
+
+/** DELETE /api/tasks/:id/assignees/:userId — unassign a project member from a task (project OWNER only) */
+export const unassignUser = async (taskId: string, userId: string): Promise<void> => {
+  await api.delete(`/api/tasks/${taskId}/assignees/${userId}`);
+};

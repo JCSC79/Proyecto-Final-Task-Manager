@@ -27,6 +27,7 @@ export interface Task {
   categoryId?: string | null;
   category?: ICategory;
   tags?: ITag[];
+  assignees?: { id: string; name: string; email: string }[];
   priority?: TaskPriority | null;
   dueDate?: string | null; // ISO date string (YYYY-MM-DD)
   projectName?: string;  // Denormalised from server JOIN — display only

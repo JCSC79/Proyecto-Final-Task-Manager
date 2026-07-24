@@ -23,6 +23,8 @@ interface TaskFiltersProps {
   setPriorityFilter: (val: TaskPriority | 'ALL') => void;
   onlyMyTasks: boolean;
   setOnlyMyTasks: (val: boolean) => void;
+  onlyMyAssignments: boolean;
+  setOnlyMyAssignments: (val: boolean) => void;
   selectedProjectId: string | null;
   selectedTagIds: string[];
   setSelectedTagIds: (val: string[]) => void;
@@ -109,6 +111,8 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   setPriorityFilter,
   onlyMyTasks,
   setOnlyMyTasks,
+  onlyMyAssignments,
+  setOnlyMyAssignments,
   selectedProjectId,
   selectedTagIds,
   setSelectedTagIds,
@@ -286,7 +290,20 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           {t('onlyMyTasks')}
         </Button>
 
-        {(searchTerm !== '' || statusFilter !== 'ALL' || categoryId !== null || priorityFilter !== 'ALL' || onlyMyTasks || selectedTagIds.length > 0) && (
+        <Button
+          icon="id-number"
+          intent={onlyMyAssignments ? Intent.PRIMARY : Intent.NONE}
+          active={onlyMyAssignments}
+          variant={onlyMyAssignments ? 'solid' : 'outlined'}
+          className={styles.myTasksBtn}
+          onClick={() => setOnlyMyAssignments(!onlyMyAssignments)}
+          aria-pressed={onlyMyAssignments}
+          title={t('onlyMyAssignments')}
+        >
+          {t('onlyMyAssignments')}
+        </Button>
+
+        {(searchTerm !== '' || statusFilter !== 'ALL' || categoryId !== null || priorityFilter !== 'ALL' || onlyMyTasks || onlyMyAssignments || selectedTagIds.length > 0) && (
           <Button
             icon="filter-remove"
             intent={Intent.PRIMARY}
@@ -298,6 +315,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               setCategoryId(null);
               setPriorityFilter('ALL');
               setOnlyMyTasks(false);
+              setOnlyMyAssignments(false);
               setSelectedTagIds([]);
             }}
             aria-label={t('clearFilters')}

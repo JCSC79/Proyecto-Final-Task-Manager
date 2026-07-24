@@ -7,6 +7,7 @@ import { getTaskHistory } from '../../api/task.api';
 import type { Task, AuditLog } from '../../types/task';
 import { useTranslation } from 'react-i18next';
 import { TagBadge } from './TagBadge';
+import { AssigneeBadge } from './AssigneeBadge';
 import { getTranslatedStatus } from './taskUtils';
 import { CommentThread } from './CommentThread';
 import { useSocket } from '../../hooks/useSocket';
@@ -95,6 +96,13 @@ export const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                 <div className={styles.detailTagRow}>
                   {task.tags.map((tag) => (
                     <TagBadge key={tag.id} tag={tag} />
+                  ))}
+                </div>
+              )}
+              {task.assignees && task.assignees.length > 0 && (
+                <div className={styles.detailTagRow}>
+                  {task.assignees.map((assignee) => (
+                    <AssigneeBadge key={assignee.id} assignee={assignee} />
                   ))}
                 </div>
               )}

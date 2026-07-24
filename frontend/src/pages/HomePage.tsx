@@ -30,6 +30,7 @@ const HomePageInner: React.FC = () => {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'ALL'>('ALL');
   const [onlyMyTasks, setOnlyMyTasks] = useState(false);
+  const [onlyMyAssignments, setOnlyMyAssignments] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
   // Socket.IO: receive real-time comments and mark tasks as unread
@@ -116,11 +117,12 @@ const HomePageInner: React.FC = () => {
       const matchesCategory = categoryId === null || task.categoryId === categoryId;
       const matchesPriority = priorityFilter === 'ALL' || task.priority === priorityFilter;
       const matchesOwner = !onlyMyTasks || task.userId === user?.id;
+      const matchesAssignee = !onlyMyAssignments || (task.assignees ?? []).some(a => a.id === user?.id);
       const matchesTags = selectedTagIds.length === 0 ||
         (task.tags ?? []).some(tag => selectedTagIds.includes(tag.id));
-      return matchesSearch && matchesStatus && matchesProject && matchesCategory && matchesPriority && matchesOwner && matchesTags;
+      return matchesSearch && matchesStatus && matchesProject && matchesCategory && matchesPriority && matchesOwner && matchesAssignee && matchesTags;
     });
-  }, [tasks, searchTerm, statusFilter, selectedProjectId, categoryId, priorityFilter, onlyMyTasks, user?.id, selectedTagIds]);
+  }, [tasks, searchTerm, statusFilter, selectedProjectId, categoryId, priorityFilter, onlyMyTasks, onlyMyAssignments, user?.id, selectedTagIds]);
 
   const total = tasks?.length ?? 0;
   const completed = tasks?.filter(t => t.status === 'COMPLETED').length ?? 0;
@@ -170,6 +172,8 @@ const HomePageInner: React.FC = () => {
               setPriorityFilter={setPriorityFilter}
               onlyMyTasks={onlyMyTasks}
               setOnlyMyTasks={setOnlyMyTasks}
+              onlyMyAssignments={onlyMyAssignments}
+              setOnlyMyAssignments={setOnlyMyAssignments}
               selectedProjectId={selectedProjectId}
               selectedTagIds={selectedTagIds}
               setSelectedTagIds={setSelectedTagIds}
