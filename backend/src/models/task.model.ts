@@ -37,6 +37,7 @@ export interface ITask {
     categoryId?: string | null;  // FK -> categories.id — null explicitly clears the category
     category?: ICategory; // Populated via LEFT JOIN in read queries; absent on write operations
     tags?: ITag[];        // Populated via task_tags JOIN in read queries; absent on write operations
+    assignees?: { id: string; name: string; email: string }[]; // Populated via task_assignees JOIN in read queries; absent on write operations
     priority?: TaskPriority | null;
     dueDate?: string | null; // ISO date string (YYYY-MM-DD) — nullable, no time component
     projectName?: string;   // Denormalised from projects.name via JOIN — read-only

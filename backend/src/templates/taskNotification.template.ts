@@ -24,6 +24,7 @@ const i18n: Record<Lang, Record<string, string>> = {
         TASK_CREATED:   'New task created',
         TASK_COMPLETED: 'Task completed',
         TASK_UPDATED:   'Task updated',
+        TASK_ASSIGNED:  'You have been assigned a task',
         MEMBER_ADDED:   'You have been added to a project',
         MEMBER_JOINED:  'New member joined your project',
         appName:          'Task Manager',
@@ -31,6 +32,7 @@ const i18n: Record<Lang, Record<string, string>> = {
         introCreated:     'A new task has been assigned to your project:',
         introCompleted:   'Great news! The following task has been completed:',
         introUpdated:     'The following task has been updated:',
+        introAssigned:    'You have been assigned to the following task:',
         introMemberAdded: 'You have been added as a member of project',
         introMemberJoined: 'joined your project',
         labelStatus:      'Status',
@@ -42,6 +44,7 @@ const i18n: Record<Lang, Record<string, string>> = {
         TASK_CREATED:   'Nueva tarea creada',
         TASK_COMPLETED: 'Tarea completada',
         TASK_UPDATED:   'Tarea actualizada',
+        TASK_ASSIGNED:  'Se te ha asignado una tarea',
         MEMBER_ADDED:   'Has sido añadido a un proyecto',
         MEMBER_JOINED:  'Nuevo miembro en tu proyecto',
         appName:          'Gestor de Tareas',
@@ -49,6 +52,7 @@ const i18n: Record<Lang, Record<string, string>> = {
         introCreated:     'Se ha creado una nueva tarea en tu proyecto:',
         introCompleted:   '¡Buenas noticias! La siguiente tarea ha sido completada:',
         introUpdated:     'La siguiente tarea ha sido actualizada:',
+        introAssigned:    'Se te ha asignado la siguiente tarea:',
         introMemberAdded: 'Has sido añadido como miembro del proyecto',
         introMemberJoined: 'se ha unido a tu proyecto',
         labelStatus:      'Estado',
@@ -87,8 +91,15 @@ export function buildTaskEmailHtml(payload: TaskNotificationPayload): string {
           })
         : '—';
 
-    // Build the intro line depending on event type
-    let introLine = t[`intro${eventType.charAt(0) + eventType.slice(1).toLowerCase().replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())}`] ?? '';
+    // Build the intro line depending on event type.
+    // NOTE: uses an explicit map (not a derived string) so it can never silently produce an empty intro line for an event type that doesn't match a naming convention.
+    const introKeyByEvent: Record<string, string> = {
+        TASK_CREATED:   'introCreated',
+        TASK_COMPLETED: 'introCompleted',
+        TASK_UPDATED:   'introUpdated',
+        TASK_ASSIGNED:  'introAssigned',
+    };
+    let introLine = t[introKeyByEvent[eventType] ?? ''] ?? '';
     if (eventType === 'MEMBER_ADDED' && payload.projectName) {
         introLine = `${t.introMemberAdded} "${payload.projectName}".`;
     }

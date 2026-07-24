@@ -166,6 +166,43 @@ class TaskDAO {
     }
 
     /**
+     * Fetches all assignees for the given task IDs in a single query and merges them into the task objects. Avoids N+1 queries.
+     */
+    private async enrichWithAssignees(tasks: ITask[]): Promise<ITask[]> {
+        if (tasks.length === 0) {
+            return tasks;
+        }
+        const taskIds = tasks.map(t => t.id);
+
+        interface AssigneeRow {
+            taskId: string;
+            id: string;
+            name: string | null;
+            email: string;
+        }
+
+        const rows = await db('users as u')
+            .join('task_assignees as ta', 'ta.userId', 'u.id')
+            .whereIn('ta.taskId', taskIds)
+            .select<AssigneeRow[]>('ta.taskId', 'u.id', 'u.name', 'u.email');
+
+        const assigneesByTaskId = new Map<string, { id: string; name: string; email: string }[]>();
+        for (const row of rows) {
+            const list = assigneesByTaskId.get(row.taskId) ?? [];
+            list.push({ id: row.id, name: row.name ?? row.email, email: row.email });
+            assigneesByTaskId.set(row.taskId, list);
+        }
+
+        for (const task of tasks) {
+            const assignees = assigneesByTaskId.get(task.id);
+            if (assignees && assignees.length > 0) {
+                task.assignees = assignees;
+            }
+        }
+        return tasks;
+    }
+
+    /**
      * Returns all tasks visible to the user:
      *   - tasks the user created (any project or no project), PLUS
      *   - tasks in projects the user is a member of (created by others).
@@ -181,7 +218,7 @@ class TaskDAO {
                 );
             });
         const tasks = (rows as RawTaskRow[]).map(mapTaskRow);
-        return this.enrichWithTags(tasks);
+        return this.enrichWithAssignees(await this.enrichWithTags(tasks));
     }
 
     /*
@@ -190,7 +227,7 @@ class TaskDAO {
     async adminGetAll(): Promise<ITask[]> {
         const rows = await this.baseQuery();
         const tasks = (rows as RawTaskRow[]).map(mapTaskRow);
-        return this.enrichWithTags(tasks);
+        return this.enrichWithAssignees(await this.enrichWithTags(tasks));
     }
 
     /**
@@ -213,7 +250,7 @@ class TaskDAO {
             return undefined;
         }
         const task = mapTaskRow(row as RawTaskRow);
-        const enriched = await this.enrichWithTags([task]);
+        const enriched = await this.enrichWithAssignees(await this.enrichWithTags([task]));
         return enriched[0];
     }
 
@@ -310,6 +347,41 @@ class TaskDAO {
      */
     async deleteByStatus(userId: string, status: string): Promise<number> {
         return await db('tasks').where({ userId, status }).del();
+    }
+
+    /**
+     * Assigns a user to a task.
+     * Returns false if the user is already assigned (idempotent-safe).
+     * Does NOT verify project membership — that check is done in the controller.
+     */
+    async assignUser(taskId: string, userId: string): Promise<boolean> {
+        const existing = await db('task_assignees').where({ taskId, userId }).first();
+
+        if (existing) {
+            return false;
+        }
+        await db('task_assignees').insert({ taskId, userId });
+        return true;
+    }
+
+    /**
+     * Removes a user's assignment from a task.
+     */
+    async unassignUser(taskId: string, userId: string): Promise<boolean> {
+        const deleted = await db('task_assignees').where({ taskId, userId }).del();
+        return deleted > 0;
+    }
+
+    /**
+     * Returns all assignees currently on a task.
+     * Used to return the updated list right after an assign/unassign operation.
+     */
+    async getAssigneesByTask(taskId: string): Promise<{ id: string; name: string; email: string }[]> {
+        const rows = await db('users as u')
+            .join('task_assignees as ta', 'ta.userId', 'u.id')
+            .where('ta.taskId', taskId)
+            .select<{ id: string; name: string | null; email: string }[]>('u.id', 'u.name', 'u.email');
+        return rows.map((row) => ({ id: row.id, name: row.name ?? row.email, email: row.email }));
     }
 }
 

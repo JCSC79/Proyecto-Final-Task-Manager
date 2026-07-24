@@ -133,6 +133,7 @@ function buildSubject(payload: TaskNotificationPayload): string {
         TASK_CREATED: `New task: ${payload.task.title}`,
         TASK_COMPLETED: `Task completed: ${payload.task.title}`,
         TASK_UPDATED: `Task updated: ${payload.task.title}`,
+        TASK_ASSIGNED: `You have been assigned a task: ${payload.task.title}`,
         MEMBER_ADDED: `You have been added to a project`,
     };
     return titles[payload.eventType];

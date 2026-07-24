@@ -1,6 +1,6 @@
 import type { ITask } from './task.model.ts';
 
-export type NotificationEventType = 'TASK_CREATED' | 'TASK_COMPLETED' | 'TASK_UPDATED' | 'MEMBER_ADDED';
+export type NotificationEventType = 'TASK_CREATED' | 'TASK_COMPLETED' | 'TASK_UPDATED' | 'TASK_ASSIGNED' | 'MEMBER_ADDED';
 
 /**
  * Shape of every task-event message published to the task_notifications queue.

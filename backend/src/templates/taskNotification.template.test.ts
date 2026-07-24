@@ -1,7 +1,17 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { buildMemberEmailHtml } from './taskNotification.template.ts';
-import type { ProjectNotificationPayload } from '../models/notification.model.ts';
+import { buildMemberEmailHtml, buildTaskEmailHtml } from './taskNotification.template.ts';
+import type { ProjectNotificationPayload, TaskNotificationPayload } from '../models/notification.model.ts';
+import type { ITask } from '../models/task.model.ts';
+
+const baseTask: ITask = {
+    id: 't1',
+    title: 'Write the report',
+    description: 'Quarterly report for the board',
+    status: 'PENDING',
+    userId: 'u1',
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+};
 
 /**
  * BACKEND UNIT TESTS: taskNotification.template
@@ -62,5 +72,52 @@ describe('buildMemberEmailHtml', () => {
         const html = buildMemberEmailHtml(payload);
 
         assert.ok(html.includes('Someone joined your project "Alpha"'));
+    });
+});
+
+describe('buildTaskEmailHtml', () => {
+
+    test('TASK_CREATED, TASK_COMPLETED and TASK_UPDATED all render a non-empty intro line (regression: intro key derivation used to silently mismatch and leave the intro blank)', () => {
+        const eventTypes: TaskNotificationPayload['eventType'][] = ['TASK_CREATED', 'TASK_COMPLETED', 'TASK_UPDATED'];
+        for (const eventType of eventTypes) {
+            const payload: TaskNotificationPayload = {
+                task: baseTask,
+                recipientEmail: 'member@test.com',
+                recipientName: 'Member Name',
+                eventType,
+                lang: 'en',
+            };
+            const html = buildTaskEmailHtml(payload);
+            assert.ok(html.includes(baseTask.title));
+            assert.ok(!html.includes('undefined'));
+        }
+    });
+
+    test('TASK_ASSIGNED renders the assignment intro line for the recipient', () => {
+        const payload: TaskNotificationPayload = {
+            task: baseTask,
+            recipientEmail: 'assignee@test.com',
+            recipientName: 'Assignee Name',
+            eventType: 'TASK_ASSIGNED',
+            lang: 'en',
+        };
+        const html = buildTaskEmailHtml(payload);
+
+        assert.ok(html.includes('Assignee Name'));
+        assert.ok(html.includes('You have been assigned to the following task'));
+        assert.ok(html.includes(baseTask.title));
+    });
+
+    test('TASK_ASSIGNED in Spanish renders the localized assignment intro line', () => {
+        const payload: TaskNotificationPayload = {
+            task: baseTask,
+            recipientEmail: 'assignee@test.com',
+            recipientName: 'Nombre Asignado',
+            eventType: 'TASK_ASSIGNED',
+            lang: 'es',
+        };
+        const html = buildTaskEmailHtml(payload);
+
+        assert.ok(html.includes('Se te ha asignado la siguiente tarea'));
     });
 });

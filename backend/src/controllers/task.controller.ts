@@ -2,6 +2,9 @@ import type { Request, Response } from 'express';
 import { taskService } from '../services/task.service.ts';
 import { auditDAO } from '../daos/audit.dao.ts';
 import { taskDAO } from '../daos/task.dao.ts';
+import { projectDAO } from '../daos/project.dao.ts';
+import { userDAO } from '../daos/user.dao.ts';
+import { messagingService } from '../services/messaging.service.ts';
 import { generateTasksPdf } from '../services/pdf.service.ts';
 import { socketService } from '../services/socket.service.ts';
 
@@ -150,6 +153,97 @@ class TaskController {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(pdfBuffer);
+  }
+
+  /**
+   * POST /api/tasks/:id/assignees/:userId
+   * Assigns a user to a task. Only the project OWNER can assign tasks, the task must belong to a project, and the target user must be a member of that project.
+   */
+  async assignUser(req: Request, res: Response): Promise<Response | void> {
+    const authReq = req as AuthRequest;
+    const { id: taskId, userId: targetUserId } = req.params;
+
+    if (typeof taskId !== 'string' || typeof targetUserId !== 'string') {
+      return res.status(400).json({ error: 'Invalid task or user ID' });
+    }
+
+    const task = await taskDAO.getById(taskId, authReq.user!.id);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found or access denied' });
+    }
+    if (!task.projectId) {
+      return res.status(400).json({ error: 'Tasks can only be assigned to members when they belong to a project' });
+    }
+
+    const role = await projectDAO.getMemberRole(task.projectId, authReq.user!.id);
+    if (role !== 'OWNER') {
+      return res.status(403).json({ error: 'Only the project owner can assign tasks' });
+    }
+
+    const members = await projectDAO.getMembers(task.projectId, authReq.user!.id);
+    const targetIsMember = members?.some((m) => m.userId === targetUserId) ?? false;
+    if (!targetIsMember) {
+      return res.status(404).json({ error: 'User is not a member of this project' });
+    }
+
+    const assigned = await taskDAO.assignUser(taskId, targetUserId);
+    if (!assigned) {
+      return res.status(409).json({ error: 'User is already assigned to this task' });
+    }
+
+    const updatedTask = await taskDAO.getById(taskId, authReq.user!.id);
+    if (updatedTask) {
+      socketService.broadcastTaskUpdate(updatedTask);
+      // Notify only the newly-assigned user — nobody else needs an email for this.
+      const targetUser = await userDAO.getById(targetUserId);
+      if (targetUser) {
+        await messagingService.sendTaskNotification(
+          updatedTask,
+          targetUser.email,
+          'TASK_ASSIGNED',
+          targetUser.lang ?? 'en',
+          targetUser.name ?? targetUser.email,
+        );
+      }
+    }
+    res.status(200).json({ message: 'User assigned successfully' });
+  }
+
+  /**
+   * DELETE /api/tasks/:id/assignees/:userId
+   * Removes a user's assignment from a task. Only the project OWNER can unassign.
+   */
+  async unassignUser(req: Request, res: Response): Promise<Response | void> {
+    const authReq = req as AuthRequest;
+    const { id: taskId, userId: targetUserId } = req.params;
+
+    if (typeof taskId !== 'string' || typeof targetUserId !== 'string') {
+      return res.status(400).json({ error: 'Invalid task or user ID' });
+    }
+
+    const task = await taskDAO.getById(taskId, authReq.user!.id);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found or access denied' });
+    }
+    if (!task.projectId) {
+      return res.status(400).json({ error: 'Tasks can only be assigned to members when they belong to a project' });
+    }
+
+    const role = await projectDAO.getMemberRole(task.projectId, authReq.user!.id);
+    if (role !== 'OWNER') {
+      return res.status(403).json({ error: 'Only the project owner can unassign tasks' });
+    }
+
+    const removed = await taskDAO.unassignUser(taskId, targetUserId);
+    if (!removed) {
+      return res.status(404).json({ error: 'User was not assigned to this task' });
+    }
+
+    const updatedTask = await taskDAO.getById(taskId, authReq.user!.id);
+    if (updatedTask) {
+      socketService.broadcastTaskUpdate(updatedTask);
+    }
+    res.status(200).json({ message: 'User unassigned successfully' });
   }
 }
 
