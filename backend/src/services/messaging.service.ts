@@ -45,14 +45,24 @@ class MessagingService {
      * @param taskData - The task record.
      * @param recipientEmail - Email address of the user to notify.
      * @param eventType - What triggered the notification.
+     * @param isOwner - Whether the recipient is the project OWNER (controls "your project" vs "the project you belong to" phrasing).
+     * @param projectName - Name of the project the task belongs to, used in the member-facing phrasing.
      */
-    async sendTaskNotification(taskData: TaskNotificationPayload['task'], recipientEmail: string, eventType: NotificationEventType = 'TASK_CREATED', lang: 'en' | 'es' = 'en', recipientName?: string): Promise<void> {
+    async sendTaskNotification(taskData: TaskNotificationPayload['task'], recipientEmail: string, eventType: NotificationEventType = 'TASK_CREATED', lang: 'en' | 'es' = 'en', recipientName?: string, isOwner?: boolean, projectName?: string): Promise<void> {
         if (!this.channel) {
             console.error('[-] Messaging channel not initialized.');
             return;
         }
 
-        const payload: TaskNotificationPayload = { task: taskData, recipientEmail, eventType, lang, ...(recipientName ? { recipientName } : {}) };
+        const payload: TaskNotificationPayload = {
+            task: taskData,
+            recipientEmail,
+            eventType,
+            lang,
+            ...(recipientName ? { recipientName } : {}),
+            ...(isOwner !== undefined ? { isOwner } : {}),
+            ...(projectName ? { projectName } : {}),
+        };
         const message = JSON.stringify(payload);
 
         // Convert to Buffer and send with persistence enabled for reliability

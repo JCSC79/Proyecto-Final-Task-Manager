@@ -120,4 +120,75 @@ describe('buildTaskEmailHtml', () => {
 
         assert.ok(html.includes('Se te ha asignado la siguiente tarea'));
     });
+
+    // Regression coverage: a project MEMBER (non-owner) must never see "your project" wording,
+    // since the project actually belongs to its OWNER. The owner keeps the original "your project"
+    // phrasing, while other members get "the project you belong to" plus the project name.
+    test('TASK_CREATED: OWNER recipient sees "your project" wording', () => {
+        const payload: TaskNotificationPayload = {
+            task: baseTask,
+            recipientEmail: 'owner@test.com',
+            recipientName: 'Owner Name',
+            eventType: 'TASK_CREATED',
+            lang: 'en',
+            isOwner: true,
+            projectName: 'Demo Project',
+        };
+        const html = buildTaskEmailHtml(payload);
+
+        assert.ok(html.includes('A new task has been assigned to your project'));
+        assert.ok(!html.includes('the project you belong to'));
+    });
+
+    test('TASK_CREATED: non-owner MEMBER recipient sees "the project you belong to" wording with the project name', () => {
+        const payload: TaskNotificationPayload = {
+            task: baseTask,
+            recipientEmail: 'member@test.com',
+            recipientName: 'Member Name',
+            eventType: 'TASK_CREATED',
+            lang: 'en',
+            isOwner: false,
+            projectName: 'Demo Project',
+        };
+        const html = buildTaskEmailHtml(payload);
+
+        assert.ok(html.includes('A new task has been created in the project you belong to, "Demo Project"'));
+        assert.ok(!html.includes('your project'));
+    });
+
+    test('TASK_COMPLETED and TASK_UPDATED: non-owner MEMBER recipient sees the member-facing wording in Spanish', () => {
+        const completedPayload: TaskNotificationPayload = {
+            task: baseTask,
+            recipientEmail: 'member@test.com',
+            recipientName: 'Miembro',
+            eventType: 'TASK_COMPLETED',
+            lang: 'es',
+            isOwner: false,
+            projectName: 'Proyecto Demo',
+        };
+        const completedHtml = buildTaskEmailHtml(completedPayload);
+        assert.ok(completedHtml.includes('Se ha completado una tarea en el proyecto al cual perteneces, "Proyecto Demo"'));
+
+        const updatedPayload: TaskNotificationPayload = {
+            ...completedPayload,
+            eventType: 'TASK_UPDATED',
+        };
+        const updatedHtml = buildTaskEmailHtml(updatedPayload);
+        assert.ok(updatedHtml.includes('Se ha actualizado una tarea en el proyecto al cual perteneces, "Proyecto Demo"'));
+    });
+
+    test('TASK_CREATED: missing projectName falls back to the owner-facing wording even for a non-owner (never crashes / never shows a broken sentence)', () => {
+        const payload: TaskNotificationPayload = {
+            task: baseTask,
+            recipientEmail: 'member@test.com',
+            recipientName: 'Member Name',
+            eventType: 'TASK_CREATED',
+            lang: 'en',
+            isOwner: false,
+        };
+        const html = buildTaskEmailHtml(payload);
+
+        assert.ok(html.includes('A new task has been assigned to your project'));
+        assert.ok(!html.includes('undefined'));
+    });
 });

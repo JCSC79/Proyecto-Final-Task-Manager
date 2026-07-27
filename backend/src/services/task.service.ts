@@ -214,6 +214,6 @@ async function notifyProjectOrOwner(
     const members = await projectDAO.getMembersForNotification(task.projectId);
     const recipients = members.filter(m => m.email !== actor.email);
     for (const m of recipients) {
-        await messaging.sendTaskNotification(task, m.email, eventType, m.lang, m.name);
+        await messaging.sendTaskNotification(task, m.email, eventType, m.lang, m.name, m.role === 'OWNER', m.projectName);
     }
 }

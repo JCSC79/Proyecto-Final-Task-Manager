@@ -327,16 +327,19 @@ class ProjectDAO {
         return row ? { email: row.email, lang: row.lang ?? 'en', name: row.name ?? null } : null;
     }
 
-    async getMembersForNotification(projectId: string): Promise<{ email: string; name: string; lang: 'en' | 'es' }[]> {
+    async getMembersForNotification(projectId: string): Promise<{ email: string; name: string; lang: 'en' | 'es'; role: 'OWNER' | 'MEMBER'; projectName: string }[]> {
         const rows = await db('project_members as pm')
             .join('users as u', 'u.id', 'pm.userId')
+            .join('projects as p', 'p.id', 'pm.projectId')
             .where('pm.projectId', projectId)
-            .select('u.email', 'u.name', 'u.lang');
+            .select('u.email', 'u.name', 'u.lang', 'pm.role', 'p.name as projectName');
 
         return rows.map(r => ({
             email: r.email as string,
             name:  (r.name as string | null) ?? (r.email as string),
             lang:  (r.lang as 'en' | 'es') ?? 'en',
+            role:  r.role as 'OWNER' | 'MEMBER',
+            projectName: r.projectName as string,
         }));
     }
 

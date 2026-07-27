@@ -14,6 +14,8 @@ export interface TaskNotificationPayload {
     eventType: NotificationEventType;
     lang?: 'en' | 'es';
     projectName?: string;
+    /** True when the recipient is the project OWNER — lets the email intro say "your project" vs "the project you belong to". */
+    isOwner?: boolean;
 }
 
 /**

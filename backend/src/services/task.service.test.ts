@@ -130,8 +130,8 @@ describe('TaskService - Business Logic & Security', () => {
         // member list to prove it gets filtered out, alongside a genuinely different teammate.
         t.mock.method(projectDAO, 'getMemberRole', async () => 'OWNER' as const);
         t.mock.method(projectDAO, 'getMembersForNotification', async () => [
-            { email: 'owner@test.com', name: 'Owner', lang: 'en' as const },
-            { email: 'teammate@test.com', name: 'Teammate', lang: 'en' as const },
+            { email: 'owner@test.com', name: 'Owner', lang: 'en' as const, role: 'OWNER' as const, projectName: 'Demo Project' },
+            { email: 'teammate@test.com', name: 'Teammate', lang: 'en' as const, role: 'MEMBER' as const, projectName: 'Demo Project' },
         ]);
 
         const serviceWithSpy = new TaskService(mockDao, spyMessaging, mockUserDao);
@@ -142,6 +142,48 @@ describe('TaskService - Business Logic & Security', () => {
         }, 'owner-1');
 
         assert.deepStrictEqual(notifiedEmails, ['teammate@test.com']);
+    });
+
+    test('should tell each recipient whether they are the project OWNER, so the email wording is not misleading for regular members', async (t) => {
+        const calls: { email: string; isOwner?: boolean; projectName?: string }[] = [];
+
+        const spyMessaging = {
+            sendTaskNotification: async (
+                _task: ITask,
+                email: string,
+                _eventType?: string,
+                _lang?: string,
+                _recipientName?: string,
+                isOwner?: boolean,
+                projectName?: string,
+            ): Promise<void> => {
+                calls.push({
+                    email,
+                    ...(isOwner !== undefined ? { isOwner } : {}),
+                    ...(projectName !== undefined ? { projectName } : {}),
+                });
+            },
+            sendAuditEvent: async (): Promise<void> => {}
+        } as unknown as typeof messagingService;
+
+        // mockUserDao resolves the actor's email to 'owner@test.com', so only the teammate should be notified — with isOwner correctly set to false (not the owner)
+        // and the project name available for the member-facing email wording.
+        t.mock.method(projectDAO, 'getMemberRole', async () => 'OWNER' as const);
+        t.mock.method(projectDAO, 'getMembersForNotification', async () => [
+            { email: 'owner@test.com', name: 'Owner', lang: 'en' as const, role: 'OWNER' as const, projectName: 'Demo Project' },
+            { email: 'teammate@test.com', name: 'Teammate', lang: 'en' as const, role: 'MEMBER' as const, projectName: 'Demo Project' },
+        ]);
+
+        const serviceWithSpy = new TaskService(mockDao, spyMessaging, mockUserDao);
+        await serviceWithSpy.createTask({
+            title: 'New Task',
+            description: 'A valid description',
+            projectId: '11111111-1111-1111-1111-111111111111',
+        }, 'owner-1');
+
+        assert.deepStrictEqual(calls, [
+            { email: 'teammate@test.com', isOwner: false, projectName: 'Demo Project' },
+        ]);
     });
 
     test('should notify other project members (excluding the actor) when a task is content-edited', async (t) => {

@@ -32,6 +32,9 @@ const i18n: Record<Lang, Record<string, string>> = {
         introCreated:     'A new task has been assigned to your project:',
         introCompleted:   'Great news! The following task has been completed:',
         introUpdated:     'The following task has been updated:',
+        introCreatedMember:   'A new task has been created in the project you belong to,',
+        introCompletedMember: 'Great news! The following task has been completed in the project you belong to,',
+        introUpdatedMember:   'The following task has been updated in the project you belong to,',
         introAssigned:    'You have been assigned to the following task:',
         introMemberAdded: 'You have been added as a member of project',
         introMemberJoined: 'joined your project',
@@ -52,6 +55,9 @@ const i18n: Record<Lang, Record<string, string>> = {
         introCreated:     'Se ha creado una nueva tarea en tu proyecto:',
         introCompleted:   '¡Buenas noticias! La siguiente tarea ha sido completada:',
         introUpdated:     'La siguiente tarea ha sido actualizada:',
+        introCreatedMember:   'Se ha creado una nueva tarea en el proyecto al cual perteneces,',
+        introCompletedMember: '¡Buenas noticias! Se ha completado una tarea en el proyecto al cual perteneces,',
+        introUpdatedMember:   'Se ha actualizado una tarea en el proyecto al cual perteneces,',
         introAssigned:    'Se te ha asignado la siguiente tarea:',
         introMemberAdded: 'Has sido añadido como miembro del proyecto',
         introMemberJoined: 'se ha unido a tu proyecto',
@@ -99,7 +105,18 @@ export function buildTaskEmailHtml(payload: TaskNotificationPayload): string {
         TASK_UPDATED:   'introUpdated',
         TASK_ASSIGNED:  'introAssigned',
     };
+    // Member-facing variant: the owner-facing copy says "your project", which is misleading when the recipient is just a project MEMBER (not its creator) — swap in "the project
+    // you belong to" phrasing plus the project name for any non-owner recipient.
+    const introMemberKeyByEvent: Record<string, string> = {
+        TASK_CREATED:   'introCreatedMember',
+        TASK_COMPLETED: 'introCompletedMember',
+        TASK_UPDATED:   'introUpdatedMember',
+    };
     let introLine = t[introKeyByEvent[eventType] ?? ''] ?? '';
+    const memberIntroKey = introMemberKeyByEvent[eventType];
+    if (payload.isOwner === false && payload.projectName && memberIntroKey) {
+        introLine = `${t[memberIntroKey]} "${payload.projectName}":`;
+    }
     if (eventType === 'MEMBER_ADDED' && payload.projectName) {
         introLine = `${t.introMemberAdded} "${payload.projectName}".`;
     }

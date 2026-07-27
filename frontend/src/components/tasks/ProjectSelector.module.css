@@ -132,8 +132,8 @@
 
 /* Role label (Owner / Member) shown inside the chip */
 .roleLabel {
-  font-size: 0.65rem;
-  font-weight: 700;
+  font-size: 0.70rem;
+  font-weight: 600;
   padding: 1px 5px;
   border-radius: var(--radius-sm);
   text-transform: uppercase;
