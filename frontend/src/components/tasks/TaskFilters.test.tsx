@@ -41,6 +41,8 @@ interface Props {
   categoryId?: string | null;
   priorityFilter?: TaskPriority | 'ALL';
   onlyMyTasks?: boolean;
+  onlyMyAssignments?: boolean;
+  selectedTagIds?: string[];
 }
 
 function renderFilters(overrides: Props = {}) {
@@ -55,6 +57,11 @@ function renderFilters(overrides: Props = {}) {
     setPriorityFilter: vi.fn(),
     onlyMyTasks: overrides.onlyMyTasks ?? false,
     setOnlyMyTasks: vi.fn(),
+    onlyMyAssignments: overrides.onlyMyAssignments ?? false,
+    setOnlyMyAssignments: vi.fn(),
+    selectedProjectId: null,
+    selectedTagIds: overrides.selectedTagIds ?? [],
+    setSelectedTagIds: vi.fn(),
   };
 
   render(

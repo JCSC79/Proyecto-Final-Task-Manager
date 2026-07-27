@@ -167,7 +167,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProjec
                         aria-label={`${t('manageProject')}: ${project.name}`}
                         title={t('manageProject')}
                       >
-                        <Icon icon="people" size={18} />
+                        <Icon icon="team" size={18} />
                       </button>
                       <button
                         type="button"

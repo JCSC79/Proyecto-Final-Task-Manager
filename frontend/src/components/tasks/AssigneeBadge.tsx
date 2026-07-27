@@ -6,7 +6,7 @@ interface AssigneeBadgeProps {
 }
 
 export const AssigneeBadge: React.FC<AssigneeBadgeProps> = ({ assignee }) => (
-  <Tag icon="person" round minimal title={assignee.email}>
+  <Tag icon="user" round minimal title={assignee.email}>
     {assignee.name}
   </Tag>
 );
