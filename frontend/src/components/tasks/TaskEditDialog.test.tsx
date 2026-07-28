@@ -8,7 +8,7 @@ import axiosInstance from '../../api/axiosInstance';
 // Global mocks
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
 }));
 
 vi.mock('../../api/axiosInstance', () => ({
@@ -25,6 +25,19 @@ vi.mock('../../api/tag.api', () => ({
   getTagsByProject: vi.fn(() => Promise.resolve([])),
   assignTag: vi.fn(() => Promise.resolve()),
   unassignTag: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('../../api/project.api', () => ({
+  getProjectMembers: vi.fn(() => Promise.resolve([])),
+}));
+
+vi.mock('../../api/task.api', () => ({
+  assignUser: vi.fn(() => Promise.resolve()),
+  unassignUser: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'user-1' } }),
 }));
 
 vi.mock('../../utils/toaster', () => ({

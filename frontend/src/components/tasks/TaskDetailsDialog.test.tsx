@@ -18,6 +18,7 @@ vi.mock('../../api/task.api', () => ({
 vi.mock('../../api/comment.api', () => ({
   getComments: vi.fn(() => Promise.resolve([])),
   postComment: vi.fn(() => Promise.resolve({ id: 'c1', taskId: 'task-1', userId: 'user-1', body: 'hi' })),
+  deleteComment: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock('../../hooks/useAuth', () => ({
@@ -28,6 +29,10 @@ vi.mock('../../hooks/useSocket', () => ({
   useSocket: () => ({ joinTask: vi.fn(), leaveTask: vi.fn() }),
   useSocketContext: () => ({ socket: null }),
   SocketProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+vi.mock('../../hooks/useTheme', () => ({
+  useTheme: () => ({ isDark: false, toggleTheme: vi.fn() }),
 }));
 
 vi.mock('../../utils/toaster', () => ({
