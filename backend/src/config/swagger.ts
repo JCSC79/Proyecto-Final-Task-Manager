@@ -31,6 +31,7 @@ const options: swaggerJSDoc.Options = {
             description: { type: 'string' },
             status: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'] },
             priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'], nullable: true },
+            dueDate: { type: 'string', format: 'date', nullable: true, description: 'YYYY-MM-DD, no time component' },
             userId: { type: 'string', format: 'uuid' },
             projectId: { type: 'string', format: 'uuid', nullable: true },
             projectName: { type: 'string', nullable: true, description: 'Denormalised project name (read-only, from JOIN)' },
@@ -102,6 +103,19 @@ const options: swaggerJSDoc.Options = {
         ErrorResponse: {
           type: 'object',
           properties: { error: { type: 'string' } }
+        },
+        Comment: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            taskId: { type: 'string', format: 'uuid' },
+            userId: { type: 'string', format: 'uuid' },
+            body: { type: 'string', maxLength: 1000, description: 'Supports CommonMark Markdown' },
+            createdAt: { type: 'string', format: 'date-time' },
+            authorName: { type: 'string', nullable: true },
+            authorEmail: { type: 'string' },
+            authorAvatarUrl: { type: 'string', nullable: true }
+          }
         }
       }
     },
@@ -239,6 +253,7 @@ const options: swaggerJSDoc.Options = {
                     projectId: { type: 'string', format: 'uuid', nullable: true, description: 'Must be a project the user is a member of' },
                     categoryId: { type: 'string', format: 'uuid', nullable: true },
                     priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'], nullable: true },
+                    dueDate: { type: 'string', format: 'date', nullable: true, description: 'YYYY-MM-DD, no time component' },
                     tagIds: { type: 'array', items: { type: 'string', format: 'uuid' }, description: 'Tag IDs to assign (must belong to the same project)' }
                   }
                 }
@@ -340,7 +355,8 @@ const options: swaggerJSDoc.Options = {
                     description: { type: 'string' },
                     status: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'] },
                     categoryId: { type: 'string', format: 'uuid', nullable: true },
-                    priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'], nullable: true }
+                    priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'], nullable: true },
+                    dueDate: { type: 'string', format: 'date', nullable: true, description: 'YYYY-MM-DD, no time component' }
                   }
                 }
               }
@@ -771,6 +787,195 @@ const options: swaggerJSDoc.Options = {
           responses: {
             200: { description: 'Tag removed successfully' },
             404: { description: 'Task not found or tag not assigned' },
+            401: { description: 'Not authenticated' }
+          }
+        }
+      },
+      '/api/tasks/{id}/assignees/{userId}': {
+        post: {
+          summary: 'Assign a project member to a task',
+          description: 'The task must belong to a project. Only the project OWNER can assign tasks, and the target user must already be a member of that project.',
+          tags: ['Assignees'],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Task ID' },
+            { name: 'userId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' }, description: 'User ID to assign' }
+          ],
+          responses: {
+            200: { description: 'User assigned successfully' },
+            400: { description: 'Task does not belong to a project' },
+            403: { description: 'Only the project owner can assign tasks' },
+            404: { description: 'Task not found, or target user is not a project member' },
+            409: { description: 'User already assigned to this task' },
+            401: { description: 'Not authenticated' }
+          }
+        },
+        delete: {
+          summary: 'Unassign a project member from a task',
+          description: 'Only the project OWNER can unassign tasks.',
+          tags: ['Assignees'],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Task ID' },
+            { name: 'userId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' }, description: 'User ID to unassign' }
+          ],
+          responses: {
+            200: { description: 'User unassigned successfully' },
+            400: { description: 'Task does not belong to a project' },
+            403: { description: 'Only the project owner can unassign tasks' },
+            404: { description: 'Task not found or user was not assigned' },
+            401: { description: 'Not authenticated' }
+          }
+        }
+      },
+      '/api/tasks/{id}/comments': {
+        get: {
+          summary: 'List comments for a task',
+          description: 'Returns all comments oldest-first. Access restricted to task owner (no project) or project members.',
+          tags: ['Comments'],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Task ID' }],
+          responses: {
+            200: {
+              description: 'Array of comments with author info',
+              content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Comment' } } } }
+            },
+            403: { description: 'Access denied — not a project member or task owner' },
+            401: { description: 'Not authenticated' }
+          }
+        },
+        post: {
+          summary: 'Post a comment on a task',
+          description: 'Creates a comment and broadcasts it via Socket.IO to all users with the task dialog open. Supports Markdown. Access restricted to project members or task owner.',
+          tags: ['Comments'],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Task ID' }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['body'],
+                  properties: {
+                    body: { type: 'string', minLength: 1, maxLength: 1000, example: 'Fixed in commit `a1b2c3`. **Ready for review.**' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            201: { description: 'Comment created and broadcast via Socket.IO', content: { 'application/json': { schema: { $ref: '#/components/schemas/Comment' } } } },
+            400: { description: 'Body empty or exceeds 1000 characters' },
+            403: { description: 'Access denied — not a project member or task owner' },
+            401: { description: 'Not authenticated' }
+          }
+        }
+      },
+      '/api/tasks/{id}/comments/{commentId}': {
+        delete: {
+          summary: 'Delete a comment (author only)',
+          description: 'Permanently deletes a comment and broadcasts a `comment-deleted` Socket.IO event so all connected clients remove it in real time. Only the comment author may delete it — this does not support moderator/project-owner deletion of others\' comments.',
+          tags: ['Comments'],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Task ID' },
+            { name: 'commentId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Comment ID' }
+          ],
+          responses: {
+            204: { description: 'Comment deleted (no content)' },
+            403: { description: 'Access denied — not the comment author, or not a project member/task owner' },
+            404: { description: 'Comment not found' },
+            401: { description: 'Not authenticated' }
+          }
+        }
+      },
+      '/api/admin/users/{id}/block': {
+        patch: {
+          summary: 'Block or unblock a user (Admin only)',
+          description: 'Sets the is_blocked flag. A blocked user is rejected on their next authenticated request (403). Admins cannot block themselves.',
+          tags: ['Admin'],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['blocked'],
+                  properties: { blocked: { type: 'boolean', example: true } }
+                }
+              }
+            }
+          },
+          responses: {
+            200: { description: 'User blocked/unblocked' },
+            400: { description: 'Cannot block yourself or invalid payload' },
+            404: { description: 'User not found' },
+            403: { description: 'Admin role required' }
+          }
+        }
+      },
+      '/api/admin/users/{id}': {
+        delete: {
+          summary: 'Permanently delete a user (Admin only)',
+          description: 'Deletes the user account. All their tasks, audit logs and project memberships are removed via DB CASCADE. Admins cannot delete themselves.',
+          tags: ['Admin'],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+          responses: {
+            204: { description: 'User deleted (no content)' },
+            400: { description: 'Cannot delete yourself' },
+            404: { description: 'User not found' },
+            403: { description: 'Admin role required' }
+          }
+        }
+      },
+      '/api/admin/analytics': {
+        get: {
+          summary: 'Get analytics data (Admin only)',
+          description: 'Returns two datasets: average task resolution time per category (lead time) and active task count per user (workload). Optionally filtered by a time range.',
+          tags: ['Admin'],
+          parameters: [
+            {
+              name: 'range',
+              in: 'query',
+              required: false,
+              description: 'Filter completed tasks by recency. Omit or use "all" for all time.',
+              schema: { type: 'string', enum: ['7', '30', '90', 'all'], default: 'all' }
+            }
+          ],
+          responses: {
+            200: {
+              description: 'Analytics payload',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      leadTimes: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            category: { type: 'string', example: 'Bug' },
+                            avgDays: { type: 'number', example: 2.5 },
+                            resolved: { type: 'integer', example: 14 }
+                          }
+                        }
+                      },
+                      workload: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            userId: { type: 'string', format: 'uuid' },
+                            name: { type: 'string', nullable: true },
+                            email: { type: 'string' },
+                            activeTasks: { type: 'integer', example: 7 }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            403: { description: 'Admin role required' },
             401: { description: 'Not authenticated' }
           }
         }
