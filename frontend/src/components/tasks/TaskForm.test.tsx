@@ -10,7 +10,7 @@ import * as projectApi from '../../api/project.api';
 // Global mocks
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
 }));
 
 vi.mock('../../api/axiosInstance', () => ({
@@ -19,6 +19,7 @@ vi.mock('../../api/axiosInstance', () => ({
 
 vi.mock('../../api/project.api', () => ({
   getProjects: vi.fn(() => Promise.resolve([])),
+  getProjectMembers: vi.fn(() => Promise.resolve([])),
 }));
 
 vi.mock('../../api/category.api', () => ({
@@ -27,6 +28,10 @@ vi.mock('../../api/category.api', () => ({
 
 vi.mock('../../api/tag.api', () => ({
   getTagsByProject: vi.fn(() => Promise.resolve([])),
+}));
+
+vi.mock('../../api/task.api', () => ({
+  assignUser: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock('../../utils/toaster', () => ({
