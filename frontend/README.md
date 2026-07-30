@@ -1,8 +1,8 @@
 # Task Manager — Frontend
 
-React 19 SPA built with **Vite 7**, **TypeScript** (strict), **BlueprintJS v6**, and **TanStack Query v5**. Features JWT authentication via httpOnly cookie, dark/light theme, full i18n (EN/ES), a kanban task board with drag-and-drop, project workspaces, KPI analytics dashboard, and an admin panel.
+React 19 SPA built with **Vite 7**, **TypeScript** (strict), **BlueprintJS v6**, **TanStack Query v5**, **Socket.IO client**, and **dnd-kit**. Features JWT auth via httpOnly cookie, dark/light theme, EN/ES i18n, kanban drag-and-drop, real-time collaboration, per-task comments with Markdown, KPI analytics, and a full admin panel.
 
-> This README covers the frontend in isolation. For the full project setup (Docker Compose, environment variables, backend) see the [root README](../README.md).
+> This README covers the frontend in isolation. For the full project setup see the [root README](../README.md).
 
 ---
 
@@ -10,68 +10,77 @@ React 19 SPA built with **Vite 7**, **TypeScript** (strict), **BlueprintJS v6**,
 
 ```text
 src/
-├── main.tsx                App entry point — mounts providers and global CSS
-├── App.tsx                 Root component (wraps all context providers)
-├── i18n.ts                 react-i18next config + EN/ES translation strings
+├── main.tsx                App entry point
+├── App.tsx                 Root component (providers)
+├── i18n.ts                 react-i18next config + EN/ES strings
 ├── api/
-│   ├── axiosInstance.ts    Axios instance (withCredentials: true for cookies)
+│   ├── axiosInstance.ts    Axios (withCredentials, 401/403 interceptor)
 │   ├── auth.api.ts         login / register / updateMe / logout
-│   ├── project.api.ts      project CRUD + join/leave/member management
+│   ├── project.api.ts      project CRUD + members + summary
+│   ├── comment.api.ts      getComments / postComment
 │   ├── category.api.ts     fetchCategories
-│   ├── tag.api.ts          tag CRUD + assign/unassign to tasks
-│   └── admin.api.ts        fetchAdminUsers / updateUserRole
+│   ├── tag.api.ts          tag CRUD + assign/unassign
+│   └── admin.api.ts        users / role / block / delete / analytics
 ├── contexts/
 │   ├── AuthContext.tsx     Auth state shape
-│   ├── AuthProvider.tsx    JWT cookie session management
+│   ├── AuthProvider.tsx    JWT cookie session + localStorage
 │   ├── ThemeContext.tsx    Dark/Light theme state
-│   └── ThemeProvider.tsx   Sets data-theme on <html> + bp6-dark on <body>
+│   └── ThemeProvider.tsx   Sets data-theme on <html>
 ├── router/
 │   ├── AppRouter.tsx       Route definitions
-│   ├── ProtectedRoute.tsx  Redirects to /login if not authenticated
-│   └── AdminRoute.tsx      Redirects to / if not ADMIN role
+│   ├── ProtectedRoute.tsx  Redirects to /login + mounts SocketProvider
+│   └── AdminRoute.tsx      Redirects to / if not ADMIN
 ├── pages/
-│   ├── LoginPage.tsx
+│   ├── LoginPage.tsx       Login + blocked account banner
 │   ├── RegisterPage.tsx
-│   ├── HomePage.tsx        Kanban board + project selector
-│   ├── DashboardPage.tsx   KPI analytics view
-│   └── AdminPage.tsx       User management (ADMIN only)
+│   ├── HomePage.tsx        Kanban + project selector + socket handlers
+│   ├── DashboardPage.tsx   KPI analytics
+│   └── AdminPage.tsx       Admin panel (ADMIN only)
 ├── components/
 │   ├── layout/
-│   │   ├── Header.tsx      Navbar — navigation, avatar, theme, language toggle
+│   │   ├── Header.tsx
 │   │   └── Footer.tsx
 │   ├── tasks/
-│   │   ├── ProjectSelector.tsx   Project chip bar — create/rename/delete/join/leave
-│   │   ├── TaskBoard.tsx         Three-column DnD kanban board
-│   │   ├── TaskForm.tsx          Create task modal (project, category, priority, tags)
-│   │   ├── TaskFilters.tsx       Search + status filter + category filter
-│   │   ├── TaskItem.tsx          Task card with move arrows, delete, DnD handle
-│   │   ├── TaskDetailsDialog.tsx Task detail view with info tab + history tab
-│   │   ├── TaskEditDialog.tsx    Edit form dialog (title, description, priority, tags)
-│   │   └── taskUtils.ts          Shared helpers (getTranslatedStatus)
+│   │   ├── ProjectSelector.tsx   Project bar (sort, create/rename/delete/join/leave)
+│   │   ├── TaskBoard.tsx         DnD kanban (3 columns, pagination)
+│   │   ├── TaskForm.tsx          Create task modal
+│   │   ├── TaskFilters.tsx       Search + status + category + priority + "only my tasks"
+│   │   ├── TaskItem.tsx          Task card with unread badge 💬 N
+│   │   ├── TaskDetailsDialog.tsx Info / History / Comments tabs
+│   │   ├── TaskEditDialog.tsx    Edit form
+│   │   ├── CommentThread.tsx     Chat thread (Markdown, avatars, auto-scroll)
+│   │   └── CommentThread.module.css
 │   ├── dashboard/
-│   │   └── DashboardView.tsx     KPI cards + Recharts (donut, bar, line) + PDF button
+│   │   └── DashboardView.tsx
 │   └── admin/
-│       └── AdminDashboard.tsx    User stats table + charts + promote/demote + PDF button
+│       ├── AdminDashboard.tsx
+│       ├── UserManagementTable.tsx
+│       ├── DeleteUserDialog.tsx
+│       ├── ResourceManagement.tsx  Workload bars per user (real-time)
+│       ├── LeadTimeChart.tsx        Avg resolution time by category
+│       └── charts/
 ├── hooks/
-│   ├── useAuth.ts              Consumes AuthContext
-│   ├── useTheme.ts             Consumes ThemeContext
-│   ├── useProjectActions.ts    Project mutation bundle (create/delete/join/leave/rename)
-│   ├── useAdminDashboard.ts    Admin data + search/pagination logic
-│   ├── useChartColors.ts       Resolves CSS tokens to JS strings for Recharts
-│   └── useLanguageToggle.ts    EN ↔ ES switcher
+│   ├── useSocket.ts            SocketProvider + useSocket (shared connection)
+│   ├── useUnreadComments.ts    Map<taskId, count> for unread badges
+│   ├── useAuth.ts
+│   ├── useTheme.ts
+│   ├── useProjectActions.ts
+│   ├── useAdminDashboard.ts    Admin data + real-time invalidation
+│   ├── useChartColors.ts
+│   └── useLanguageToggle.ts
 ├── styles/
-│   ├── variables.css           All design tokens (colors, spacing, radii, shadows)
-│   ├── globals.css             CSS reset + base styles + .sr-only utility
-│   ├── blueprint-overrides.css Adapts Blueprint v6 to our design tokens
-│   └── index.css               Import order entry point
+│   ├── variables.css           Design tokens (colors, spacing, radii, shadows)
+│   ├── globals.css
+│   ├── blueprint-overrides.css
+│   └── index.css
 ├── types/
-│   ├── task.ts                 Task, TaskStatus, TaskPriority, ITag, ICategory
-│   ├── user.ts                 IUser, UserRole, LoginResponse
-│   ├── project.ts              IProject, ProjectMember, MemberRole
-│   └── admin.ts                IUserStats, IUserWithStats
+│   ├── task.ts
+│   ├── user.ts                 includes is_blocked
+│   ├── project.ts
+│   └── admin.ts
 └── utils/
-    ├── toaster.ts              Singleton Blueprint toaster for app-wide notifications
-    └── gravatar.ts             SHA-256 Gravatar URL generator (Web Crypto API)
+    ├── toaster.ts
+    └── gravatar.ts
 ```
 
 ---
@@ -115,7 +124,7 @@ Output goes to `dist/`. In Docker this folder is served by Nginx (see `frontend/
 npx vitest run
 ```
 
-Expected output: **27 tests, 0 failures**. Tests are co-located next to the component they cover (e.g. `LoginPage.test.tsx`, `AuthForm.test.tsx`).
+Expected output: **102 tests, 0 failures**. Tests are co-located next to the component they cover (e.g. `LoginPage.test.tsx`, `AuthForm.test.tsx`).
 
 ---
 
@@ -143,3 +152,28 @@ The dashboard and admin panel each have a "Download PDF" button that calls the c
 ### Theming & i18n
 
 Theme (dark/light) and language (EN/ES) toggles are in the header. Preferences are stored in `localStorage`. All user-facing strings run through `react-i18next`.
+
+### Real-time collaboration (Socket.IO)
+
+`SocketProvider` (mounted in `ProtectedRoute`) creates **one** persistent WebSocket connection per authenticated session, shared across all pages via React Context. Components call `useSocket({ onTaskUpdated, onNewComment, … })` to register event handlers without creating additional connections.
+
+Events handled on the frontend:
+
+| Event | Effect |
+| --- | --- |
+| `task-updated` | Updates task in TanStack Query cache (create or update) |
+| `task-deleted` | Removes task from cache |
+| `new-comment` | Appends to comment list if dialog open; increments badge if closed |
+| `project-created/deleted` | Invalidates `['projects']` query |
+| `project-members-changed` | Invalidates `['projects']` query |
+| `user-registered` | Invalidates `['admin-users']` and `['admin-analytics']` queries |
+
+### Comments with Markdown
+
+Each task has a **Comments** tab powered by `CommentThread`. Messages support CommonMark Markdown (`**bold**`, `_italic_`, `` `code` ``, lists). Avatars show the user's Gravatar if set, or deterministic colour-coded initials otherwise.
+
+---
+
+## License
+
+[MIT](../LICENSE) © 2026
