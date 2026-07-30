@@ -1,8 +1,8 @@
 # Task Manager — Backend
 
-REST API built with **Node.js 24**, **Express 5**, **TypeScript** (strict / zero-any), **PostgreSQL 15**, and **RabbitMQ**. Implements JWT authentication (httpOnly cookie), role-based access control (RBAC), Yup input validation, the Result Pattern throughout, and async email notifications via a dedicated worker process.
+REST API built with **Node.js 24**, **Express 5**, **TypeScript** (strict / zero-any), **PostgreSQL 15**, **RabbitMQ**, and **Socket.IO**. Implements JWT authentication (httpOnly cookie), RBAC, Yup validation, the Result Pattern, async email notifications, and real-time WebSocket events.
 
-> This README covers the backend in isolation. For the full project setup (Docker Compose, environment variables, frontend) see the [root README](../README.md).
+> This README covers the backend in isolation. For the full project setup see the [root README](../README.md).
 
 ---
 
@@ -10,51 +10,44 @@ REST API built with **Node.js 24**, **Express 5**, **TypeScript** (strict / zero
 
 ```text
 src/
-├── server.ts               Express app — middleware stack + route mounting
+├── server.ts               Express app + Socket.IO initialisation
 ├── worker.ts               RabbitMQ consumer — sends emails from queued events
-├── config/
-│   └── swagger.ts          OpenAPI 3.0 spec v2.0.0 (served at /api-docs)
-├── controllers/            HTTP layer — parse request, call service, return response
+├── config/swagger.ts       OpenAPI 3.0 spec (served at /api-docs)
+├── controllers/            HTTP layer
 │   ├── auth.controller.ts
 │   ├── task.controller.ts
 │   ├── project.controller.ts
+│   ├── comment.controller.ts
 │   ├── category.controller.ts
 │   ├── tag.controller.ts
 │   └── admin.controller.ts
-├── services/               Business logic — framework-agnostic
-│   ├── auth.service.ts     JWT generation, bcrypt hashing, user registration
-│   ├── task.service.ts     Task CRUD with per-user isolation + membership guard
-│   ├── messaging.service.ts  RabbitMQ producer (task_notifications + audit_events)
-│   ├── email.service.ts    Nodemailer wrapper — Ethereal (dev) or SMTP (prod)
-│   ├── pdf.service.ts      PDF generation (pdfkit) for task and admin exports
-│   ├── auth.service.test.ts
-│   ├── task.service.test.ts
-│   └── security.test.ts
-├── daos/                   Data Access Objects — all Knex queries here
+├── services/               Business logic
+│   ├── auth.service.ts
+│   ├── task.service.ts
+│   ├── messaging.service.ts  RabbitMQ producer
+│   ├── email.service.ts
+│   ├── pdf.service.ts
+│   ├── socket.service.ts   Socket.IO singleton — broadcasts real-time events
+│   └── *.test.ts           Unit tests (12 passing)
+├── daos/                   Database access (Knex)
 │   ├── user.dao.ts
-│   ├── task.dao.ts         JOINs projects + users for denormalised response
-│   ├── project.dao.ts      Project CRUD + member management + role queries
+│   ├── task.dao.ts
+│   ├── project.dao.ts
+│   ├── comment.dao.ts
+│   ├── audit.dao.ts        getLeadTimesByCategory · getWorkloadByUser
 │   ├── category.dao.ts
 │   └── tag.dao.ts
 ├── middlewares/
-│   ├── auth.middleware.ts  JWT guard (authenticateToken)
-│   └── admin.middleware.ts RBAC guard (requireAdmin)
-├── models/                 TypeScript interfaces (IUser, ITask, IProject…)
-├── routes/
-│   ├── auth.routes.ts
-│   ├── task.routes.ts      (also mounts GET /:id/history)
-│   ├── project.routes.ts
-│   ├── category.routes.ts
-│   ├── tag.routes.ts
-│   └── admin.routes.ts
-├── schemas/                Yup validation schemas
-│   ├── task.schema.ts
-│   └── user.schema.ts
+│   ├── auth.middleware.ts  JWT guard + is_blocked check
+│   └── admin.middleware.ts RBAC guard
+├── models/                 TypeScript interfaces
+├── routes/                 Express routers (+ comment.routes.ts)
+├── schemas/                Yup validation
+├── templates/              HTML email templates (bilingual EN/ES)
 ├── db/
-│   ├── migrations/         Knex migration files (applied in order)
-│   └── seeds/              Default users + stress-test task dataset
-└── utils/
-    └── result.ts           Generic Result<T, E> pattern
+│   ├── migrations/         Knex migrations
+│   └── seeds/              Dev seed data
+└── utils/result.ts         Result<T, E> pattern
 ```
 
 ---
@@ -63,73 +56,63 @@ src/
 
 All endpoints except `/api/auth/*` and `/health` require a valid JWT (httpOnly cookie).
 
-### System
-
-| Method | Path | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/health` | ✗ | Returns `{ status: "ok" }`. Used by Docker healthchecks. |
-
 ### Auth — `/api/auth`
 
 | Method | Path | Auth | Description |
 | --- | --- | --- | --- |
-| `POST` | `/api/auth/register` | ✗ | Create a new USER account. Rate-limited: 5 req/hour. |
-| `POST` | `/api/auth/login` | ✗ | Validate credentials, set httpOnly cookie. Rate-limited: 10 req/15 min. |
+| `POST` | `/api/auth/register` | ✗ | Create account. Rate-limited: 5 req/hour. |
+| `POST` | `/api/auth/login` | ✗ | Set httpOnly JWT cookie. Rate-limited: 10 req/15 min. |
 | `POST` | `/api/auth/logout` | ✓ | Clear auth cookie. |
-| `PATCH` | `/api/auth/me` | ✓ | Update the logged-in user''s display name. |
+| `PATCH` | `/api/auth/me` | ✓ | Update display name. |
 
 ### Tasks — `/api/tasks`
 
-All task endpoints are scoped to the authenticated user.
-
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/tasks` | Get all tasks (supports `?status=`, `?search=`, `?projectId=`, `?categoryId=`, `?priority=`, `?tagIds=` filters) |
-| `POST` | `/api/tasks` | Create a task. Validates project membership before inserting. |
-| `GET` | `/api/tasks/:id` | Get a single task by ID |
-| `PATCH` | `/api/tasks/:id` | Update title, description, status, priority, categoryId |
-| `DELETE` | `/api/tasks/:id` | Delete a specific task |
-| `DELETE` | `/api/tasks` | Bulk delete. Optional `?status=` to scope deletion. |
-| `GET` | `/api/tasks/:id/history` | Audit log entries for a task (chronological change history) |
-| `GET` | `/api/tasks/export/pdf` | Generate and download a PDF of the current user''s tasks |
+| `GET` | `/api/tasks` | All visible tasks (own + project member tasks) |
+| `POST` | `/api/tasks` | Create a task |
+| `GET` | `/api/tasks/:id` | Get a single task |
+| `PATCH` | `/api/tasks/:id` | Update (title, description, status, priority, categoryId) |
+| `DELETE` | `/api/tasks/:id` | Delete a task |
+| `DELETE` | `/api/tasks` | Bulk delete (optional `?status=` filter) |
+| `GET` | `/api/tasks/:id/history` | Audit log for a task |
+| `GET` | `/api/tasks/export/pdf` | Download tasks as PDF |
+| `GET` | `/api/tasks/:id/comments` | List comments (project members only) |
+| `POST` | `/api/tasks/:id/comments` | Post a comment + broadcast via Socket.IO |
+| `DELETE` | `/api/tasks/:id/comments/:commentId` | Delete own comment |
 
 ### Projects — `/api/projects`
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/projects` | Get all projects the user owns or is a member of |
-| `POST` | `/api/projects` | Create a new project (creator becomes OWNER) |
-| `PATCH` | `/api/projects/:id` | Rename or change settings (OWNER only) |
-| `DELETE` | `/api/projects/:id` | Delete project and all its tasks (OWNER only) |
-| `POST` | `/api/projects/:id/join` | Join a public project as MEMBER. Notifies OWNER by email. |
-| `DELETE` | `/api/projects/:id/leave` | Leave a project (MEMBER only — OWNER must delete instead) |
-| `GET` | `/api/projects/:id/members` | List all members with their roles |
-| `POST` | `/api/projects/:id/members` | Add a user by email (OWNER only). Sends invitation email. |
-| `DELETE` | `/api/projects/:id/members/:userId` | Remove a member (OWNER only) |
-
-### Categories — `/api/categories`
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/api/categories` | Get all categories (optionally `?projectId=`) |
-
-### Tags — `/api/tags`
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/api/tags` | Get all tags for a project (`?projectId=` required) |
-| `POST` | `/api/tags` | Create a tag in a project |
-| `DELETE` | `/api/tags/:id` | Delete a tag |
-| `POST` | `/api/tags/tasks/:taskId` | Assign a tag to a task |
-| `DELETE` | `/api/tags/tasks/:taskId/:tagId` | Remove a tag from a task |
+| `GET` | `/api/projects` | All projects visible to user |
+| `POST` | `/api/projects` | Create a project |
+| `PATCH` | `/api/projects/:id` | Rename (OWNER only) |
+| `DELETE` | `/api/projects/:id` | Delete project + CASCADE (OWNER only) |
+| `GET` | `/api/projects/:id/summary` | Task count + member count |
+| `POST` | `/api/projects/:id/join` | Join as MEMBER |
+| `DELETE` | `/api/projects/:id/leave` | Leave project |
+| `GET` | `/api/projects/:id/members` | List members |
+| `POST` | `/api/projects/:id/members` | Add member by email (OWNER only) |
+| `DELETE` | `/api/projects/:id/members/:userId` | Remove member (OWNER only) |
+| `PATCH` | `/api/projects/:id/settings` | Update isPublic / color / description |
 
 ### Admin — `/api/admin` *(ADMIN role required)*
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/admin/users` | All users with per-user task statistics |
-| `PATCH` | `/api/admin/users/:id/role` | Promote to ADMIN or demote to USER |
-| `GET` | `/api/admin/export/pdf` | Download a PDF of all users and their stats |
+| `GET` | `/api/admin/users` | All users with task statistics |
+| `PATCH` | `/api/admin/users/:id/role` | Promote / demote |
+| `PATCH` | `/api/admin/users/:id/block` | Block / unblock (immediate next-request expiry) |
+| `DELETE` | `/api/admin/users/:id` | Delete user (CASCADE on all data) |
+| `GET` | `/api/admin/analytics` | Lead times by category + workload by user (`?range=7\|30\|90\|all`) |
+| `GET` | `/api/admin/export/pdf` | Download admin report as PDF |
+
+### System
+
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/health` | X | `{ status: "ok" }` — Docker healthcheck |
 
 ---
 
@@ -179,7 +162,7 @@ npm install
 
 ### 4. Run database migrations
 
-Creates all tables (`users`, `tasks`, `projects`, `project_members`, `categories`, `tags`, `task_tags`, `audit_logs`):
+Creates all tables (`users`, `categories`, `projects`, `project_settings`, `project_members`, `tags`, `tasks`, `task_tags`, `task_assignees`, `comments`, `audit_logs`):
 
 ```bash
 npm run db:migrate
@@ -240,13 +223,15 @@ Tests use Node.js''s built-in test runner (`node:test`) — no Jest required.
 npm test
 ```
 
-Expected output: **13 tests, 0 failures** across 3 suites:
+Expected output: **25 tests, 0 failures** across 5 suites:
 
 | Suite | File | What it covers |
 | --- | --- | --- |
 | AuthService | `auth.service.test.ts` | Login validation, registration, JWT generation |
 | TaskService | `task.service.test.ts` | CRUD validation, user isolation, messaging integration |
 | Security | `security.test.ts` | Cross-user access prevention, ID spoofing |
+| Template | `taskNotification.template.test.ts` | Email HTML rendering (bilingual) |
+| Schema | (additional validation tests) | Yup schema edge cases |
 
 Tests run against `.env.test` (included in the repo). No real database or RabbitMQ connection is made — all DAOs are mocked via dependency injection.
 
@@ -267,44 +252,65 @@ users
 projects
   id            uuid  PK
   name          varchar  NOT NULL
-  ownerId       uuid  FK → users(id)
-  isPublic      boolean  DEFAULT false
-  color         varchar  nullable
+  userId        uuid  FK → users(id)  CASCADE DELETE   (creator / original owner)
+  createdAt     timestamp
+
+project_settings                                        (1:1 with projects — PK = FK)
+  projectId     uuid  PK  FK → projects(id)  CASCADE DELETE
+  description   text  nullable
+  color         varchar(7)  DEFAULT '#4c90f0'           (hex color for UI chip)
+  isPublic      boolean  DEFAULT true
   createdAt     timestamp
 
 project_members
-  projectId     uuid  FK → projects(id)  CASCADE DELETE
   userId        uuid  FK → users(id)     CASCADE DELETE
+  projectId     uuid  FK → projects(id)  CASCADE DELETE
   role          varchar  (''OWNER'' | ''MEMBER'')
-  PRIMARY KEY (projectId, userId)
+  joinedAt      timestamp
+  PRIMARY KEY (userId, projectId)
 
-categories
+categories                                              (global reference table — no FK)
   id            uuid  PK
-  name          varchar  NOT NULL
-  projectId     uuid  FK → projects(id)  nullable
+  name          varchar(50)  UNIQUE NOT NULL
+  color         varchar(7)  NOT NULL                    (hex color for badge)
+  createdAt     timestamp
+
+tags
+  id            uuid  PK
+  name          varchar(50)  NOT NULL
+  color         varchar(7)  DEFAULT '#8a9ba8'
+  projectId     uuid  NOT NULL  FK → projects(id)  CASCADE DELETE
+  createdAt     timestamp
 
 tasks
   id            uuid  PK
   title         varchar  NOT NULL
-  description   text
+  description   text  nullable
   status        varchar  DEFAULT ''PENDING''  (''PENDING'' | ''IN_PROGRESS'' | ''COMPLETED'')
-  priority      varchar  DEFAULT ''MEDIUM''   (''LOW'' | ''MEDIUM'' | ''HIGH'' | ''URGENT'')
-  userId        uuid  NOT NULL  FK → users(id)  CASCADE DELETE
-  projectId     uuid  nullable  FK → projects(id)
-  categoryId    uuid  nullable  FK → categories(id)
+  priority      varchar  nullable              (''LOW'' | ''MEDIUM'' | ''HIGH'' | ''URGENT'')
+  dueDate       date  nullable                          (YYYY-MM-DD, no time component)
+  userId        uuid  NOT NULL  FK → users(id)      CASCADE DELETE
+  projectId     uuid  nullable  FK → projects(id)   CASCADE DELETE
+  categoryId    uuid  nullable  FK → categories(id) SET NULL
   createdAt     timestamp
-  updatedAt     timestamp nullable
-
-tags
-  id            uuid  PK
-  name          varchar  NOT NULL
-  color         varchar  nullable
-  projectId     uuid  FK → projects(id)  CASCADE DELETE
+  updatedAt     timestamp  nullable
 
 task_tags
   taskId        uuid  FK → tasks(id)  CASCADE DELETE
   tagId         uuid  FK → tags(id)   CASCADE DELETE
   PRIMARY KEY (taskId, tagId)
+
+task_assignees
+  taskId        uuid  FK → tasks(id)  CASCADE DELETE
+  userId        uuid  FK → users(id)  CASCADE DELETE
+  PRIMARY KEY (taskId, userId)
+
+comments
+  id            uuid  PK
+  taskId        uuid  FK → tasks(id)  CASCADE DELETE
+  userId        uuid  FK → users(id)  CASCADE DELETE
+  body          text  NOT NULL                          (CommonMark Markdown)
+  createdAt     timestamp
 
 audit_logs
   id            uuid  PK
