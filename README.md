@@ -1,6 +1,10 @@
 # Gestor de Tareas — Full-Stack Task Manager
 
-A full-stack task management application with JWT authentication, role-based access control (RBAC), project workspaces, kanban board with drag-and-drop, real-time KPI analytics, async email notifications, and an admin panel. Runs with a single Docker Compose command or in local development mode.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-127%20passing-brightgreen)](#running-the-tests)
+[![User Manual](https://img.shields.io/badge/docs-User%20Manual-blue)](docs/User_ManualV1.pdf)
+
+A full-stack task management application with JWT authentication, RBAC, project workspaces, kanban board with drag-and-drop, **real-time collaboration via Socket.IO**, per-task comments with Markdown, async email notifications, analytics dashboard, and a full admin panel. Runs with a single Docker Compose command.
 
 ---
 
@@ -8,31 +12,35 @@ A full-stack task management application with JWT authentication, role-based acc
 
 | Layer | Technologies |
 | --- | --- |
-| **Backend** | Node.js 24, Express 5, TypeScript (strict), Knex 3, PostgreSQL 15 |
-| **Auth** | JWT (httpOnly cookie) + bcrypt |
-| **Messaging** | RabbitMQ 3 (amqplib) — async task & project notifications |
-| **Email** | Nodemailer — Ethereal (dev) / SMTP (prod) |
-| **Frontend** | React 19, Vite 7, TypeScript, BlueprintJS v6, TanStack Query v5 |
+| **Backend** | Node.js 24 · Express 5 · TypeScript strict · Knex 3 · PostgreSQL 15 |
+| **Real-time** | Socket.IO 4 (WebSocket — tasks, projects, comments, admin events) |
+| **Auth** | JWT (httpOnly cookie) · bcrypt · rate limiting |
+| **Messaging** | RabbitMQ 3 (amqplib) — async worker process |
+| **Email** | Nodemailer — Ethereal (dev) / SMTP (prod) · HTML templates · bilingual |
+| **Frontend** | React 19 · Vite 7 · TypeScript · BlueprintJS v6 · TanStack Query v5 · dnd-kit |
 | **Charts** | Recharts |
+| **Markdown** | react-markdown (CommonMark — task comments) |
 | **i18n** | react-i18next (English / Spanish) |
-| **Containers** | Docker + Docker Compose |
+| **Containers** | Docker · Docker Compose (5 services) |
+| **Tests** | node:test (backend) · Vitest + Testing Library (frontend) |
+| **API Docs** | Swagger UI at `/api-docs` (OpenAPI 3.0) |
 
 ---
 
 ## Feature Overview
 
-| Area | What''s included |
+| Area | What's included |
 | --- | --- |
-| **Auth** | Login · Registration · JWT (httpOnly cookie) · Update display name |
-| **Projects** | Create / rename / delete workspaces · Public join / leave · Member management · Owner notifications by email |
-| **Tasks** | Full CRUD · Status workflow (Pending → In Progress → Completed) · Priority levels · Categories · Tags · Bulk delete · Drag-and-drop between columns · PDF export |
-| **Audit history** | Per-task change log — who changed what and when |
+| **Auth** | Login · Register · JWT httpOnly cookie · Update profile · Gravatar · Blocked account banner |
+| **Tasks** | CRUD · Kanban (Pending / In Progress / Completed) · Priority · Categories · Tags · Drag-and-drop · Bulk delete · PDF export · Audit history |
+| **Projects** | Create / rename / delete · Public/private · Join · Leave · Member management · Email notifications |
+| **Comments** | Per-task chat thread · CommonMark Markdown · Avatars with initials / Gravatar · Auto-scroll · Unread badge with count · Access restricted to project members |
+| **Real-time** | Task create / edit / move / delete · Project create / delete · Members added / removed · Comments · Admin panel user list |
 | **Dashboard** | KPI cards · Status donut chart · Workload bar chart · Trend line chart · PDF export |
-| **Admin panel** | User list · Per-user task stats · Promote / demote roles · PDF export |
-| **Notifications** | Email on task assignment · Email when a member joins a project (owner notified) |
-| **UI/UX** | Dark / Light theme · EN / ES i18n · Gravatar avatar · Responsive layout |
-| **Security** | Rate limiting on auth routes · CORS · RBAC middleware · Yup input validation |
-| **API Docs** | Swagger UI at `/api-docs` (OpenAPI 3.0, v2.0.0) |
+| **Admin panel** | User list with stats · Promote / demote · Block / unblock (immediate session expiry) · Delete user (CASCADE) · Resource Management · Lead Time by Category · Real-time updates |
+| **UI/UX** | Dark / Light theme · EN / ES · Responsive · Sort projects A–Z/recent · "Only my tasks" filter |
+| **Security** | RBAC middleware · Rate limiting · CORS · Yup validation · Comment access by project membership |
+| **API Docs** | Swagger UI at `/api-docs` (OpenAPI 3.0, Comments + Admin analytics included) |
 
 ---
 
@@ -40,7 +48,7 @@ A full-stack task management application with JWT authentication, role-based acc
 
 ```text
 .
-├── docker-compose.yml       # Orchestrates all 4 services
+├── docker-compose.yml       # Orchestrates all 5 services
 ├── .env.example             # Environment variable template — copy to .env
 ├── backend/                 # Node.js REST API + async worker
 │   ├── src/
@@ -141,13 +149,14 @@ SMTP_FROM="Task Manager <noreply@taskmanager.dev>"
 docker-compose up -d
 ```
 
-Docker builds the backend and frontend images on the first run (~1–2 min). After that, four containers start:
+Docker builds the backend and frontend images on the first run (~1–2 min). After that, five containers start:
 
 | Container | Description | Port |
 | --- | --- | --- |
 | `postgres_db` | PostgreSQL 15 | 5432 |
 | `rabbitmq_broker` | RabbitMQ + management UI | 5672 / 15672 |
-| `final_task_api` | Express REST API | 3000 |
+| `final_task_api` | Express REST API + Socket.IO | 3000 |
+| `final_task_worker` | RabbitMQ consumer (emails) | — |
 | `final_task_frontend` | React SPA (Nginx) | 5173 |
 
 ### 3. Initialise the database (first time only)
@@ -244,7 +253,7 @@ npm run dev          # App on http://localhost:5173
 
 ## Running the Tests
 
-**Backend** (Node.js built-in test runner — 13 tests):
+**Backend** (Node.js built-in test runner — 25 tests):
 
 ```bash
 cd backend
@@ -253,7 +262,7 @@ npm test
 
 Tests run against `.env.test` — no real database or RabbitMQ connection is needed. All DAOs are mocked via dependency injection.
 
-**Frontend** (Vitest — 27 tests):
+**Frontend** (Vitest — 102 tests):
 
 ```bash
 cd frontend
@@ -302,3 +311,41 @@ All variables live in a single `.env` at the project root. Never commit it — i
 | `SMTP_FROM` | Worker | `From` address shown in sent emails |
 
 See `.env.example` at the project root for a ready-to-copy template with inline comments.
+
+---
+
+## Real-time Events (Socket.IO)
+
+The server broadcasts these events to all authenticated connected clients. Authentication uses the same httpOnly JWT cookie as the REST API — no extra token passing needed.
+
+| Event | Trigger |
+| --- | --- |
+| `task-updated` | Task created, edited or moved between columns |
+| `task-deleted` | Task deleted |
+| `new-comment` | Comment posted on any task |
+| `project-created` | New project created |
+| `project-deleted` | Project deleted |
+| `project-members-changed` | Member joined, left, added or removed |
+| `user-registered` | New user account registered (refreshes admin panel) |
+
+---
+
+## Demo
+
+<!-- bare URL required for GitHub's inline video player -->
+https://github.com/JCSC79/Proyecto-Final-Task-Manager/raw/main/docs/Demo.mp4
+
+---
+
+## Documentation
+
+| Document | Description |
+| --- | --- |
+| [User Manual (PDF)](docs/User_ManualV1.pdf) | Full bilingual user guide (ES / EN) — covers all features, roles, filters, admin panel and email notifications |
+| [Demo video](docs/Demo.mp4) | Walkthrough of all main features |
+
+---
+
+## License
+
+[MIT](LICENSE) © 2026
