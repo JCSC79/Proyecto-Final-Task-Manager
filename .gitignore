@@ -31,6 +31,9 @@ npm-debug.log*
 #repomix-output.xml
 *.xml
 *.pdf
+# Allow PDFs and demo video tracked intentionally in docs/
+!docs/*.pdf
+!docs/*.mp4
 
 # Stale root lockfile (project uses backend/ and frontend/ sub-packages)
 /package-lock.json
