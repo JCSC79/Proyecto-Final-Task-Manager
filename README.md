@@ -332,8 +332,7 @@ The server broadcasts these events to all authenticated connected clients. Authe
 
 ## Demo
 
-<!-- bare URL required for GitHub's inline video player -->
-https://github.com/JCSC79/Proyecto-Final-Task-Manager/raw/main/docs/Demo.mp4
+https://github.com/user-attachments/assets/b1be17a5-70f4-4e86-ae4c-cc5d54d4c30f
 
 ---
 
